@@ -152,6 +152,13 @@ function fixtureEstate(): EstateData {
     ],
     // Beta Depot has no buildings yet — it should still exist as a destination.
     siteNames: ['Alpha Campus', 'Beta Depot'],
+    // Geo arrives from the CMMS `location` lookup now, not from typed settings.
+    // Beta Depot deliberately has none, so the "site hop needs geo on both ends"
+    // refusal stays exercised.
+    sites: [
+      { recordId: 11, name: 'Alpha Campus', lat: 12.9716, lng: 77.5946 },
+      { recordId: 12, name: 'Beta Depot' },
+    ],
     counts: {
       buildings: 2,
       floors: 3,

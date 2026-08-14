@@ -15,9 +15,16 @@
 .estate-3d {
   display: flex;
   flex-direction: column;
-  /* --app-h, never 100vh: the source used 100vh, which is the measurement the
-     app's viewport machinery exists to replace on mobile browsers. */
-  height: var(--app-h, 100%);
+  /* FILL THE PANE, never the viewport. --app-h is the whole visible viewport, and
+     this screen is not the whole viewport: it renders inside .as-mobile-main,
+     already inset by any top banner and by the 56px + safe-area dock, with
+     overflow hidden. Asserting --app-h here made the stage 56-90px taller than
+     its parent, so everything anchored to its bottom — the detail card's footer
+     actions, the walk-in D-pad's lower row — was clipped below the fold. Any top
+     banner (demo or error) pushed it further, and the Facilio iframe host clipped
+     it too. Measured at 375x812: parent 714px, this element 812px.
+     Same lesson as layout.css:125 — "Fill the space .app gives us". */
+  height: 100%;
   min-height: 0;
   font-family: var(--font-sans);
   background: var(--estate-bg);
@@ -393,4 +400,17 @@
 
   /* With a sheet docked at the bottom, the legend has nowhere to sit. */
   .est-legend { display: none !important; }
+
+  /* Centre the camera rail in the band the sheet is NOT covering.
+     The rail rides the right edge at top:50% (above), but a docked card is
+     full-width and paints at z-index 40 over the rail's 22 — so zoom in, zoom
+     out, back and reset all sat behind it whenever an asset was selected.
+     `--est-sheet-h` is published by EstateScreen from the card's measured box and
+     is 0 when no card is open, so this reduces to the plain top:50% it replaces.
+     Centring the free band (rather than offsetting from the bottom) keeps the
+     existing translateY(-50%) and `bottom: auto` correct — setting `bottom` here
+     as well would stretch the box between both edges and collapse its height. */
+  .est-zoom-rail {
+    top: calc((100% - var(--est-sheet-h, 0px)) / 2) !important;
+  }
 }

@@ -15,10 +15,19 @@ import type {
 // real-world quirk is preserved: assets parent to ANY BaseSpace level via
 // spaceId (asset 3006 parents straight to site 1001).
 
+/* `location` mirrors the live CMMS shape (an expanded lookup carrying lat/lng and
+   a postal address), because the outdoor leg and every site-to-site hop are
+   priced off it. Without it here, ?mock=1 would rehearse a portfolio that has no
+   geo — which is exactly the blind spot that let the missing `expand: location`
+   go unnoticed. The two sites that also exist in org 2915 carry its real
+   coordinates so mock and live agree. */
 const sites = [
-  { id: 1001, name: 'Greenfield Business Park', description: 'Mixed-use office park with two towers and a central admin block.', siteType: 'Office', moduleState: 'active', qrVal: 'facilio_1001' },
-  { id: 1002, name: 'Lakeside Manufacturing Plant', description: 'Heavy-industry facility with a production wing and utility block.', siteType: 'Compound', moduleState: 'active', qrVal: 'facilio_1002' },
-  { id: 1003, name: 'Harborview Medical Center', description: 'Regional hospital campus, three wards and a diagnostics wing.', siteType: 'Hospital', moduleState: 'active', qrVal: 'facilio_1003' },
+  { id: 1001, name: 'Greenfield Business Park', description: 'Mixed-use office park with two towers and a central admin block.', siteType: 'Office', moduleState: 'active', qrVal: 'facilio_1001',
+    location: { id: 9001, street: 'Bagillt Road', city: 'Greenfield', state: 'Wales', country: 'GB', zip: 'CH8 7HJ', lat: 53.2876619, lng: -3.2027173 } },
+  { id: 1002, name: 'Lakeside Manufacturing Plant', description: 'Heavy-industry facility with a production wing and utility block.', siteType: 'Compound', moduleState: 'active', qrVal: 'facilio_1002',
+    location: { id: 9002, street: 'West Electric Avenue', city: 'West Milwaukee', state: 'Wisconsin', country: 'US', zip: '53219', lat: 43.0068251, lng: -87.9759057 } },
+  { id: 1003, name: 'Harborview Medical Center', description: 'Regional hospital campus, three wards and a diagnostics wing.', siteType: 'Hospital', moduleState: 'active', qrVal: 'facilio_1003',
+    location: { id: 9003, street: '325 9th Avenue', city: 'Seattle', state: 'Washington', country: 'US', zip: '98104', lat: 47.6038321, lng: -122.3300624 } },
 ];
 
 const buildings = [

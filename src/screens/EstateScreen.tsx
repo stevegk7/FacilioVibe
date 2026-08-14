@@ -139,6 +139,48 @@ export default function EstateScreen() {
   const { scope, setLocation } = useLocationScope();
 
   const slotRef = useRef<HTMLDivElement | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  /**
+   * How much of the stage the docked detail card is covering, published as
+   * `--est-sheet-h` on the stage element.
+   *
+   * On a phone the card spans the full width and is bottom-docked, so anything
+   * else anchored to the stage's bottom — the zoom / back / reset rail — ends up
+   * UNDER it (the rail is z-index 22, the card 40). Measuring rather than
+   * hardcoding the 62% max-height keeps the rail correct while the card is
+   * animating in and when its content is shorter than the cap.
+   *
+   * The same variable is what a camera-framing offset should read later, so the
+   * focus flight can keep a selected asset out of the occluded band.
+   */
+  const publishSheetHeight = useCallback((el: HTMLDivElement | null) => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    if (!el) {
+      stage.style.removeProperty('--est-sheet-h');
+      return;
+    }
+    const write = () => {
+      const stageBox = stage.getBoundingClientRect();
+      const cardBox = el.getBoundingClientRect();
+      // Only the part that actually overlaps the stage counts.
+      const covered = Math.max(0, Math.round(stageBox.bottom - cardBox.top));
+      stage.style.setProperty('--est-sheet-h', `${Math.min(covered, Math.round(stageBox.height))}px`);
+    };
+    write();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(write);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const cardCleanupRef = useRef<(() => void) | undefined>(undefined);
+  const cardRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      cardCleanupRef.current?.();
+      cardCleanupRef.current = publishSheetHeight(el) ?? undefined;
+    },
+    [publishSheetHeight],
+  );
   const engineRef = useRef<EstateEngineApi | null>(null);
 
   const [nav, setNav] = useState<EngineNav>({ level: 0, buildingId: null, floorId: null });
@@ -863,7 +905,7 @@ export default function EstateScreen() {
   }
 
   return (
-    <div className="estate-3d">
+    <div className="estate-3d" ref={stageRef}>
       <div className="estate-viewport">
         <div ref={slotRef} style={{ position: 'absolute', inset: 0 }} />
 
@@ -1174,7 +1216,7 @@ export default function EstateScreen() {
 
         {/* floating detail card */}
         {(selAsset || selSpace) && (
-          <div className="est-card est-card-in" style={{ position: 'absolute', right: 14, top: 14, zIndex: 40, width: 336, maxWidth: 'calc(100% - 28px)', maxHeight: 'calc(100% - 76px)', display: 'flex', flexDirection: 'column', background: C.white, border: `1px solid ${C.line}`, borderRadius: 12, boxShadow: 'var(--shadow-xl)', overflow: 'hidden' }}>
+          <div ref={cardRef} className="est-card est-card-in" style={{ position: 'absolute', right: 14, top: 14, zIndex: 40, width: 336, maxWidth: 'calc(100% - 28px)', maxHeight: 'calc(100% - 76px)', display: 'flex', flexDirection: 'column', background: C.white, border: `1px solid ${C.line}`, borderRadius: 12, boxShadow: 'var(--shadow-xl)', overflow: 'hidden' }}>
             <div style={{ flex: 'none', display: 'flex', alignItems: 'flex-start', gap: 11, padding: '14px 14px 12px' }}>
               <span style={{ width: 38, height: 38, borderRadius: 9, background: C.blueBg, color: C.blue, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
                 <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={selAsset ? ICON_ASSET : ICON_SPACE} /></svg>

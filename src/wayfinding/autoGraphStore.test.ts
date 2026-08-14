@@ -97,6 +97,7 @@ function fixtureEstate(): EstateData {
     ],
     // Beta Depot has no buildings and no geo — unreachable until an overlay bridges it.
     siteNames: ['Alpha Campus', 'Beta Depot'],
+    sites: [{ recordId: 11, name: 'Alpha Campus' }, { recordId: 12, name: 'Beta Depot' }],
     counts: {
       buildings: 2,
       floors: 2,

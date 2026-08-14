@@ -147,6 +147,30 @@ export function buildEstate(raw, opts = {}) {
   const sites = (raw.sites || []).filter(keep);
   const siteName = new Map(sites.map((s) => [s.id, s.name]));
 
+  /* Site coordinates come from the CMMS `location` lookup (expanded in
+     api/estate.ts), NOT from anything typed by hand. A site whose location is
+     unset, or whose lat/lng are non-finite, is simply omitted — an absent site
+     is an honest "no geo", whereas a 0,0 would price a route through the Gulf
+     of Guinea. */
+  const outSites = sites.map((s) => {
+    const loc = s.location && typeof s.location === 'object' ? s.location : null;
+    const lat = loc ? Number(loc.lat) : NaN;
+    const lng = loc ? Number(loc.lng) : NaN;
+    const hasGeo = Number.isFinite(lat) && Number.isFinite(lng);
+    return {
+      recordId: s.id,
+      name: s.name,
+      ...(hasGeo ? { lat, lng } : {}),
+      ...(loc
+        ? {
+            address: [loc.street, loc.city, loc.state, loc.zip, loc.country]
+              .filter(Boolean)
+              .join(', '),
+          }
+        : {}),
+    };
+  });
+
   const buildings = (raw.buildings || []).filter(keep);
   const buildingIds = new Set(buildings.map((b) => b.id));
 
@@ -519,6 +543,11 @@ export function buildEstate(raw, opts = {}) {
         id: bid,
         name: b.name,
         recordId: b.id,
+        // siteId is declared in estate/types.ts and autoGraph keys its site nodes
+        // on it — but it was never emitted here, so every site fell back to a
+        // NAME key and could never match a `sitegeo.<numeric id>` document. That
+        // is why cross-site routing was permanently unroutable.
+        siteId: id(b.site),
         siteName: siteName.get(id(b.site)) || '',
         description: b.description || '',
         w,
@@ -566,6 +595,10 @@ export function buildEstate(raw, opts = {}) {
     name,
     buildings: outBuildings,
     siteNames: siteRows.map(([s]) => s),
+    /* Every site with its record id and, where the CMMS holds one, its
+       coordinates — so the wayfinding graph can price a site-to-site hop and
+       the outdoor deep link can name both ends without anyone typing a number. */
+    sites: outSites,
     counts: {
       buildings: outBuildings.length,
       floors: outBuildings.reduce((n, b) => n + b.floors.length, 0),

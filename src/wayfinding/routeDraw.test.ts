@@ -101,6 +101,7 @@ function fixtureEstate(): EstateData {
       },
     ],
     siteNames: ['Alpha Campus'],
+    sites: [{ recordId: 11, name: 'Alpha Campus' }],
     counts: {
       buildings: 2,
       floors: 3,

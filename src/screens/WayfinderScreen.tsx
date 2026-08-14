@@ -228,7 +228,20 @@ export default function WayfinderScreen() {
       // the heavy half and already lives in the lazy 3D chunk.
       const { buildEstate } = await import('../estate/buildEstate');
       const built = buildEstate(estate.data!, { sampleHealth: false });
-      return applyOverlay(buildAutoGraph(built, { siteGeo: siteGeos.data }), overlayQuery.data ?? null);
+      /* Site coordinates now come from the CMMS itself (the `location` lookup on
+         the site record), with the Settings-typed KV kept as an OVERRIDE rather
+         than the source. Before this the KV was the only lane, so a site nobody
+         had hand-geotagged could never take part in a site-to-site route — and
+         the screen's own advice to "add site coordinates in Settings" could not
+         work anyway, because the graph keyed sites by name and the KV by id. */
+      const fromCmms: Record<string, { lat: number; lng: number }> = {};
+      for (const s of built.sites) {
+        if (typeof s.lat === 'number' && typeof s.lng === 'number') {
+          fromCmms[String(s.recordId)] = { lat: s.lat, lng: s.lng };
+        }
+      }
+      const siteGeo = { ...fromCmms, ...(siteGeos.data ?? {}) };
+      return applyOverlay(buildAutoGraph(built, { siteGeo }), overlayQuery.data ?? null);
     },
   });
   const autoGraph: AutoGraph | null = autoGraphQuery.data ?? null;

@@ -118,10 +118,26 @@ export interface EstateBuilding {
   [field: string]: unknown;
 }
 
+/**
+ * A site as the estate builder resolved it, including the coordinates the CMMS
+ * already holds on its `location` lookup. `lat`/`lng` are absent — never 0 —
+ * when the site has no location set, so "no geo" stays distinguishable from
+ * "geo at the origin".
+ */
+export interface EstateSite {
+  recordId: number;
+  name: string;
+  lat?: number;
+  lng?: number;
+  /** Single-line postal address, for the outdoor handoff and Settings display. */
+  address?: string;
+}
+
 export interface EstateData {
   name: string;
   buildings: EstateBuilding[];
   siteNames: string[];
+  sites: EstateSite[];
   counts: {
     buildings: number;
     floors: number;

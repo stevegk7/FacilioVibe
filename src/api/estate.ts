@@ -78,7 +78,13 @@ async function loadPlans(): Promise<Record<string, unknown>> {
 export async function loadEstateRaw(showRetired = false): Promise<EstateRaw> {
   const [sites, buildings, floors, spaces, assets, workOrders, inspections, plans] =
     await Promise.all([
-      list('list-sites', { include_count: true }),
+      // `expand: location` is what makes site coordinates arrive. The field is a
+      // lookup, so without it the API returns a bare id — which is why this app
+      // believed Facilio held no geo and shipped a manual lat/lng card instead.
+      // Verified against the live org 2026-08-14: location expands to
+      // {id, street, city, state, country, zip, lat, lng}. Deliberately NO
+      // `select` here — an invalid field in select silently nulls the response.
+      list('list-sites', { include_count: true, expand: 'location' }),
       list('list-buildings', { expand: 'site' }),
       list('list-floors', { expand: 'building,site' }),
       list('list-spaces', { expand: 'building,floor' }),
