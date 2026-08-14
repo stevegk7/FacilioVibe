@@ -38,6 +38,7 @@ import DsSelect from '../components/DsSelect';
 import LocationPicker from '../components/LocationPicker';
 import ScanCodeSheet from '../components/ScanCodeSheet';
 import FacingCone from '../components/FacingCone';
+import FloorPlate from '../components/FloorPlate';
 import { loadGraph, nodeForCode, nodeForSurvey, saveGraph, withSurveyNodes, nodeById } from '../wayfinding/graph';
 import type { EdgeKind, NodeKind, WayGraph, WayNode } from '../wayfinding/graph';
 import { anchorFromFix, findRoute } from '../wayfinding/router';
@@ -45,6 +46,7 @@ import type { Route, RouteStep } from '../wayfinding/router';
 import { mapsDirectionsUrl } from '../wayfinding/legs';
 import { surveyForAsset, surveyForPlace } from '../wayfinding/resolve';
 import { canShowFacing, relativeBearing, turnPhrase } from '../wayfinding/facing';
+import type { PlateGeometry, PlateRect } from '../wayfinding/plate';
 import { useEstate } from '../estate/useEstate';
 import { buildAutoGraph, findNode, legEdge, routeOnGraph } from '../wayfinding/autoGraph';
 import type { AutoGraph, AutoNode, AutoRoute } from '../wayfinding/autoGraph';
@@ -255,7 +257,7 @@ export default function WayfinderScreen() {
       overlayQuery.data?.version ?? 0,
     ],
     enabled: !!estate.data,
-    queryFn: async (): Promise<AutoGraph> => {
+    queryFn: async (): Promise<{ graph: AutoGraph; plates: Record<number, PlateGeometry> }> => {
       // Only buildEstate is deferred: the graph module itself is small and its
       // route/find functions run in render paths, but the geometry builder is
       // the heavy half and already lives in the lazy 3D chunk.
@@ -274,10 +276,37 @@ export default function WayfinderScreen() {
         }
       }
       const siteGeo = { ...fromCmms, ...(siteGeos.data ?? {}) };
-      return applyOverlay(buildAutoGraph(built, { siteGeo }), overlayQuery.data ?? null);
+      /* Per-floor geometry for the 2D plate, harvested from the SAME build that
+         produced the graph. The estate is the expensive thing here (seven paged
+         reads plus the CAD plans); building it twice to draw a floor plan would
+         be the whole cost again for data already in hand. Floor-local metres, so
+         it shares the frame with the route legs and needs no projection. */
+      const plates: Record<number, PlateGeometry> = {};
+      for (const b of built.buildings) {
+        for (const f of b.floors) {
+          const plan = f.plan as
+            | { layers?: { walls?: number[][][] }; rooms?: PlateRect[] }
+            | null
+            | undefined;
+          plates[f.recordId] = {
+            ...(plan?.layers?.walls ? { walls: plan.layers.walls } : {}),
+            ...(plan?.rooms ? { rooms: plan.rooms } : {}),
+            // A floor with no bound plan still has its synthesised space
+            // outlines, which is enough to show a route in context.
+            spaces: (f.spaces ?? [])
+              .map((sp) => sp.polygon)
+              .filter((poly): poly is number[][] => Array.isArray(poly) && poly.length > 2),
+          };
+        }
+      }
+      return {
+        graph: applyOverlay(buildAutoGraph(built, { siteGeo }), overlayQuery.data ?? null),
+        plates,
+      };
     },
   });
-  const autoGraph: AutoGraph | null = autoGraphQuery.data ?? null;
+  const autoGraph: AutoGraph | null = autoGraphQuery.data?.graph ?? null;
+  const plates = autoGraphQuery.data?.plates ?? null;
 
   const [autoFrom, setAutoFrom] = useState<AutoNode | null>(null);
   const [autoTo, setAutoTo] = useState<AutoNode | null>(null);
@@ -1015,28 +1044,45 @@ export default function WayfinderScreen() {
               {autoRoute.legs.map((leg, i) => {
                 const edge = autoGraph ? legEdge(autoGraph, leg) : undefined;
                 const authored = Boolean(edge?.instruction);
+                /* A plate only for INDOOR legs: those points are floor-local, and
+                   the geometry they would be drawn over is the same floor's. An
+                   outdoor leg's points are world metres — drawing them on a floor
+                   plan would be a confident lie in the wrong frame. A vertical leg
+                   has nothing to draw at all; the step narrates the climb. */
+                const plate =
+                  leg.kind === 'indoor' && leg.floorId != null ? plates?.[leg.floorId] : null;
+                const floorLabel =
+                  leg.floorId != null && autoGraph
+                    ? autoGraph.nodes.find((n) => n.kind === 'floor' && n.recordId === leg.floorId)
+                        ?.label
+                    : undefined;
                 return (
-                  <div key={i} className="wf-auto-leg">
-                    <span className={`wf-auto-legkind wf-auto-legkind--${leg.kind}`}>{leg.kind}</span>
-                    <span className="wf-auto-leginstr">{leg.instruction}</span>
-                    {/* Distance is derived from schematic geometry on any floor
-                        without a bound plan, so it stays secondary to the words. */}
-                    <span className="wf-auto-legdist">{Math.round(leg.distanceM)} m</span>
-                    {mayEditGraph && edge && (
-                      <button
-                        className={authored ? 'wf-landmark-btn is-set' : 'wf-landmark-btn'}
-                        onClick={() => {
-                          setNoteFor({ edgeId: edge.id, current: edge.instruction ?? '' });
-                          setNoteText(edge.instruction ?? '');
-                          setNoteError(null);
-                        }}
-                        aria-label={
-                          authored ? `Edit the landmark for: ${leg.instruction}` : `Add a landmark for: ${leg.instruction}`
-                        }
-                        title={authored ? 'Edit this landmark' : 'Add a landmark'}
-                      >
-                        <Icon name={authored ? 'note' : 'plus'} size={14} />
-                      </button>
+                  <div key={i} className="wf-auto-legwrap">
+                    <div className="wf-auto-leg">
+                      <span className={`wf-auto-legkind wf-auto-legkind--${leg.kind}`}>{leg.kind}</span>
+                      <span className="wf-auto-leginstr">{leg.instruction}</span>
+                      {/* Distance is derived from schematic geometry on any floor
+                          without a bound plan, so it stays secondary to the words. */}
+                      <span className="wf-auto-legdist">{Math.round(leg.distanceM)} m</span>
+                      {mayEditGraph && edge && (
+                        <button
+                          className={authored ? 'wf-landmark-btn is-set' : 'wf-landmark-btn'}
+                          onClick={() => {
+                            setNoteFor({ edgeId: edge.id, current: edge.instruction ?? '' });
+                            setNoteText(edge.instruction ?? '');
+                            setNoteError(null);
+                          }}
+                          aria-label={
+                            authored ? `Edit the landmark for: ${leg.instruction}` : `Add a landmark for: ${leg.instruction}`
+                          }
+                          title={authored ? 'Edit this landmark' : 'Add a landmark'}
+                        >
+                          <Icon name={authored ? 'note' : 'plus'} size={14} />
+                        </button>
+                      )}
+                    </div>
+                    {plate && (
+                      <FloorPlate geometry={plate} route={leg.points} label={floorLabel} />
                     )}
                   </div>
                 );

@@ -585,3 +585,62 @@
   font-weight: 600;
   color: var(--ink-700);
 }
+
+/* ---------- 2D floor plate ----------
+   The route drawn flat on its floor. 3D is kept for the estate overview, where
+   it earns its place; routing on a plan is measurably easier to read. The
+   viewBox is in METRES, so every stroke width in FloorPlate is a real-world
+   width and the same plate reads identically on a big floor and a small one. */
+.wf-auto-legwrap + .wf-auto-legwrap { margin-top: 2px; }
+
+.wf-plate {
+  margin: 4px 0 2px;
+  padding: 0;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-sm);
+  background: var(--bg-app);
+  overflow: hidden;
+}
+
+.wf-plate svg { display: block; }
+
+/* Context, deliberately quiet — the eye should land on the route. */
+.wf-plate-room {
+  fill: var(--ink-100);
+  stroke: none;
+}
+
+.wf-plate-wall {
+  fill: none;
+  stroke: var(--ink-400);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The casing keeps the route legible where it crosses dense wall linework. */
+.wf-plate-route-casing {
+  fill: none;
+  stroke: var(--bg-app);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.9;
+}
+
+.wf-plate-route {
+  fill: none;
+  stroke: var(--blue-500);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.wf-plate-start {
+  fill: var(--bg-app);
+  stroke: var(--blue-500);
+  stroke-width: 0.12;
+}
+
+.wf-plate-end {
+  fill: var(--blue-500);
+  stroke: var(--bg-app);
+  stroke-width: 0.12;
+}
