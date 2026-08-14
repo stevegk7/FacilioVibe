@@ -9,7 +9,7 @@
 //    tap-chips, work orders are destinations
 //  - the ?asset= handoff consumed WHILE MOUNTED (the pre-rebuild staleness bug)
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { LocationProvider } from '../state/LocationContext';
@@ -29,6 +29,7 @@ import { buildDemoDataset, MOCK_DEMO_IDS } from '../wayfinding/demoData';
 import { withSurveyNodes } from '../wayfinding/graph';
 import { findRoute } from '../wayfinding/router';
 import { setOrientationForTest } from '../hooks/useHeading';
+import { ACTIVE_KEY, type ActiveRound } from '../rounds/roundsStore';
 
 function renderScreen() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -437,5 +438,97 @@ describe('work order → route in one tap', () => {
     const hint = await screen.findByText(/isn.t on any floor in the portfolio/);
     expect(hint).toBeInTheDocument();
     expect(hint.textContent).toMatch(/Routing coverage/);
+  });
+});
+
+/* ---------------- rounds ----------------
+   A technician's real task is a ROUND, not one asset. roundsStore has modelled
+   ordered stops from the start and the Wayfinder used exactly one function from
+   it — so scanning proved a stop and then nothing pointed at the next one. */
+describe('round in progress', () => {
+  /** Lobby → plant room, nothing stamped yet. */
+  function startRound(stops = ['demo-lobby', 'demo-plant']) {
+    const active: ActiveRound = {
+      roundId: 'r1',
+      roundName: 'Morning checks',
+      startedAt: '2026-08-15T07:00:00.000Z',
+      stops: stops.map((surveyId) => ({ surveyId })),
+    };
+    localStorage.setItem(ACTIVE_KEY, JSON.stringify(active));
+  }
+
+  it('names the round and the stop you are on', async () => {
+    startRound();
+    renderScreen();
+
+    expect(await screen.findByText('Morning checks')).toBeInTheDocument();
+    expect(screen.getByText('Stop 1 of 2')).toBeInTheDocument();
+    // Named from the survey itself, whatever the fixture calls it.
+    expect(document.querySelector('.wf-round-stop')?.textContent).toMatch(/\S/);
+  });
+
+  it('routes to the stop in one tap', async () => {
+    startRound();
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.click(await screen.findByRole('button', { name: /Route to it/ }));
+    // A real route to the standpoint, not just a label change.
+    expect(await screen.findByRole('button', { name: 'Guide me' })).toBeInTheDocument();
+  });
+
+  it('advances to the NEXT stop when a scan proves the one you were routing to', async () => {
+    startRound();
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.click(await screen.findByRole('button', { name: /Route to it/ }));
+    await screen.findByRole('button', { name: 'Guide me' });
+
+    // Scanning the lobby stamps stop 1; the round moves on and so does the route.
+    await scanCode(user, 'fv-sv-demo-lobby');
+    expect(await screen.findByText('Stop 2 of 2')).toBeInTheDocument();
+    expect(await screen.findByText(/Stop 2 of 2 — .*Route set/)).toBeInTheDocument();
+  });
+
+  it('a scan somewhere else re-anchors without hijacking the destination', async () => {
+    startRound();
+    const user = userEvent.setup();
+    renderScreen();
+    await screen.findByText('Stop 1 of 2');
+
+    // Not routing to anything yet — a stray scan must not retarget the round.
+    await scanCode(user, 'fv-sv-demo-server');
+    expect(await screen.findByText(/You are at/)).toBeInTheDocument();
+    expect(screen.getByText('Stop 1 of 2')).toBeInTheDocument();
+  });
+
+  it('says the round is done rather than showing a phantom stop', async () => {
+    const active: ActiveRound = {
+      roundId: 'r1',
+      roundName: 'Morning checks',
+      startedAt: '2026-08-15T07:00:00.000Z',
+      stops: [{ surveyId: 'demo-lobby', via: 'qr', at: '2026-08-15T07:05:00.000Z' }],
+    };
+    localStorage.setItem(ACTIVE_KEY, JSON.stringify(active));
+    renderScreen();
+
+    expect(await screen.findByText('All stops done')).toBeInTheDocument();
+  });
+
+  it('still counts a stop whose standpoint was deleted, rather than shortening the round', async () => {
+    startRound(['demo-lobby', 'survey-that-was-deleted']);
+    renderScreen();
+    await screen.findByText('Stop 1 of 2');
+
+    // Stamp the first so the deleted one becomes current.
+    const active = JSON.parse(localStorage.getItem(ACTIVE_KEY) as string) as ActiveRound;
+    active.stops[0].via = 'qr';
+    localStorage.setItem(ACTIVE_KEY, JSON.stringify(active));
+
+    cleanup();
+    renderScreen();
+    expect(await screen.findByText(/no longer exists/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Route to it/ })).toBeDisabled();
   });
 });

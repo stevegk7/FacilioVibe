@@ -644,3 +644,55 @@
   stroke: var(--bg-app);
   stroke-width: 0.12;
 }
+
+/* ---------- round in progress ----------
+   Above the hint and above the portfolio lane on purpose: when a round is
+   running it IS the task, and every other destination on this screen is a
+   detour from it. */
+.wf-round {
+  border: 1px solid var(--blue-200);
+  background: var(--blue-025);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.wf-round-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.wf-round-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--blue-600);
+}
+
+.wf-round-count {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  /* ink-600, not ink-500: the lighter token measures 3.22:1 on this ground. */
+  color: var(--ink-600);
+}
+
+.wf-round-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.wf-round-stop {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-900);
+  min-width: 0;
+}
+
+.wf-round-go { flex: none; }

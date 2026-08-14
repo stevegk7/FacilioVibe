@@ -82,7 +82,13 @@ import {
   type JourneyPhase,
 } from '../wayfinding/journey';
 import { currentTab, onNavigate, navParamId, setNavParams, goToTab } from '../shell/router';
-import { stampStopByCode } from '../rounds/roundsStore';
+import {
+  currentStopIndex,
+  getActiveRound,
+  onActiveRoundChange,
+  stampStopByCode,
+  type ActiveRound,
+} from '../rounds/roundsStore';
 import { runToolLoop } from '../voice/toolLoop';
 import { defaultDeps, type VoiceDeps } from '../voice/deps';
 import type { Asset, SiteGeo, Survey, WorkOrder } from '../api/types';
@@ -172,6 +178,20 @@ export default function WayfinderScreen() {
   /** The conversation IS the navigator now — one thread, persisted per session. */
   const [thread, setThread] = useState<WfMessage[]>(loadChat);
   const spokeRef = useRef(false);
+  /**
+   * The round in progress, if any.
+   *
+   * A technician's real task is a ROUND — an ordered set of stops — not a single
+   * asset. roundsStore has modelled that from the start and the Wayfinder used
+   * exactly one function from it (stampStopByCode), so scanning proved a stop and
+   * then nothing pointed at the next one. Subscribed rather than read once,
+   * because a scan on this very screen advances it.
+   */
+  const [activeRound, setActiveRound] = useState<ActiveRound | null>(getActiveRound);
+  useEffect(() => onActiveRoundChange(setActiveRound), []);
+  /** Set by a scan that completed the stop we were routing to — see applyScan. */
+  const [followRound, setFollowRound] = useState(false);
+
   /** Landmark authoring: which derived edge is being written, and its text. */
   const [noteFor, setNoteFor] = useState<{ edgeId: string; current: string } | null>(null);
   const [noteText, setNoteText] = useState('');
@@ -738,6 +758,69 @@ export default function WayfinderScreen() {
     [autoGraph, scope.siteId, setLocation, applyResolvedNode],
   );
 
+  /**
+   * The stop this round is currently on: the first one with no proof yet.
+   *
+   * Resolved against ALL surveys rather than the scoped ones, so a round that
+   * belongs to another site still names its stop instead of silently reading as
+   * finished. Routing to it scopes the screen the same way a work-order tap does.
+   */
+  const nextStop = useMemo(() => {
+    if (!activeRound) return null;
+    const index = currentStopIndex(activeRound);
+    if (index < 0) return null; // every stop stamped — the round is done
+    const stop = activeRound.stops[index];
+    const survey = (surveys.data ?? []).find((s) => s.id === stop.surveyId);
+    return {
+      index,
+      total: activeRound.stops.length,
+      surveyId: stop.surveyId,
+      // A stop whose survey has been deleted still counts and still shows, with
+      // an honest label — dropping it would silently shorten the round.
+      name: survey?.name ?? 'a standpoint that no longer exists',
+      siteId: survey?.siteId,
+      routable: !!survey,
+    };
+  }, [activeRound, surveys.data]);
+
+  /** Route to a round stop, scoping to its site first when nothing is scoped. */
+  const routeToStop = useCallback(() => {
+    if (!nextStop?.routable) return;
+    if (scope.siteId == null && nextStop.siteId != null) {
+      setLocation({ scope: { siteId: nextStop.siteId }, names: {} });
+      // The graph for that site has to load before nodeForSurvey can resolve;
+      // the effect below picks the stop up once it has.
+      return;
+    }
+    const node = graph ? nodeForSurvey(graph, nextStop.surveyId) : undefined;
+    if (!node) {
+      setHint(`${nextStop.name} isn’t on this site’s route map yet.`);
+      return;
+    }
+    setDest({ nodeId: node.id, label: nextStop.name });
+    setJourney('preview');
+    setStepIdx(0);
+    setHint(null);
+  }, [nextStop, scope.siteId, setLocation, graph]);
+
+  /**
+   * Advance to the next stop once the stamp has actually landed.
+   *
+   * stampStopByCode is async, so at the moment of the scan `nextStop` is still
+   * the stop just completed. Waiting for the round subscription to report the
+   * new state means the route is set from what was WRITTEN, not from what was
+   * assumed — and if the stamp failed, nothing moves and the technician is still
+   * pointed at the stop they have to prove.
+   */
+  useEffect(() => {
+    if (!followRound || !nextStop) return;
+    // Still showing the stop we just stamped: the write has not landed yet.
+    if (dest && graph && nodeForSurvey(graph, nextStop.surveyId)?.id === dest.nodeId) return;
+    setFollowRound(false);
+    routeToStop();
+    say(`Stop ${nextStop.index + 1} of ${nextStop.total} — ${nextStop.name}. Route set.`);
+  }, [followRound, nextStop, dest, graph, routeToStop, say]);
+
   const route: Route | null = useMemo(() => {
     if (!graph || !dest || !anchor) return null;
     return findRoute(graph, anchor.nodeId, dest.nodeId);
@@ -785,6 +868,13 @@ export default function WayfinderScreen() {
     if (dest && node.id === dest.nodeId) {
       setJourney('arrived');
       setHint(null);
+      /* On a round, arriving IS the cue for the next stop — the scan just proved
+         this one. Only when they were actually routing HERE, though: a scan
+         somewhere else is a re-anchor, and retargeting a destination the user
+         chose deliberately would be the app overriding them. The stamp is
+         async, so the advance rides the round subscription rather than racing
+         it — see the effect below. */
+      if (activeRound) setFollowRound(true);
       return;
     }
     // The route recomputes from the scanned node, so its first remaining step
@@ -1020,6 +1110,38 @@ export default function WayfinderScreen() {
               <div className="wf-msg wf-msg--ai">
                 <p className="wf-msg-text">Thinking…</p>
               </div>
+            )}
+          </div>
+        )}
+        {/* A round in progress outranks everything else on this screen: it is
+            the task, and every other destination is a detour from it. */}
+        {activeRound && (
+          <div className="wf-round" role="group" aria-label="Round in progress">
+            <div className="wf-round-head">
+              <span className="wf-round-name">{activeRound.roundName}</span>
+              {nextStop ? (
+                <span className="wf-round-count">
+                  Stop {nextStop.index + 1} of {nextStop.total}
+                </span>
+              ) : (
+                <span className="wf-round-count">All stops done</span>
+              )}
+            </div>
+            {nextStop ? (
+              <div className="wf-round-body">
+                <span className="wf-round-stop">{nextStop.name}</span>
+                <button
+                  className="btn-cta wf-round-go"
+                  onClick={routeToStop}
+                  disabled={!nextStop.routable}
+                >
+                  <Icon name="route" size={16} /> Route to it
+                </button>
+              </div>
+            ) : (
+              <p className="wf-round-body muted small" style={{ margin: 0 }}>
+                Every stop is stamped — finish the round from the Rounds screen.
+              </p>
             )}
           </div>
         )}
