@@ -110,7 +110,13 @@ export interface RoleMap {
 export const EMPTY_ROLE_MAP: RoleMap = { admins: [] };
 
 /** Where a role decision came from — so the UI can be honest about a degraded store. */
-export type RoleSource = 'platform' | 'bootstrap' | 'map' | 'default' | 'unavailable';
+export type RoleSource =
+  | 'platform'
+  | 'bootstrap'
+  | 'map'
+  | 'unconfigured'
+  | 'default'
+  | 'unavailable';
 
 export interface RoleResolution {
   role: Role;
@@ -153,6 +159,18 @@ export function resolveRole(
   if (address && BOOTSTRAP_ADMINS.includes(address)) return { role: 'admin', source: 'bootstrap' };
   if (address && map?.admins.includes(address)) return { role: 'admin', source: 'map' };
   if (storeDown) return { role: 'technician', source: 'unavailable' };
+
+  // FIRST RUN. Nobody has been made an administrator yet, so there is nobody
+  // who can make one: a technician's Settings deliberately hides the very card
+  // that edits the list. Deny-by-default plus a self-service gate is a trap —
+  // it locked real administrators into a restricted app with no way out, which
+  // is exactly what happened on the first live test.
+  //
+  // So an EMPTY list means "not configured", not "everyone is denied". The
+  // moment one administrator is named the gate closes behind them and every
+  // unlisted person is a technician, which is the behaviour that was wanted.
+  if (!map || map.admins.length === 0) return { role: 'admin', source: 'unconfigured' };
+
   return { role: 'technician', source: 'default' };
 }
 

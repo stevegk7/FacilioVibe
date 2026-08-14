@@ -13,11 +13,28 @@ import {
 const MAP: RoleMap = { admins: ['lead@facilio.com'] };
 
 describe('role resolution', () => {
-  it('denies by default — an unlisted email is a technician, never an admin', () => {
-    expect(resolveRole('someone@facilio.com', { admins: [] })).toEqual({
+  it('denies an unlisted email once administrators HAVE been configured', () => {
+    expect(resolveRole('someone@facilio.com', MAP)).toEqual({
       role: 'technician',
       source: 'default',
     });
+  });
+
+  it('treats an EMPTY list as unconfigured, not as everyone-denied', () => {
+    // The trap this closes: a technician's Settings hides the card that edits
+    // the list, so deny-by-default on an empty list locks the org out of its
+    // own permissions with nobody able to grant them.
+    expect(resolveRole('anyone@facilio.com', { admins: [] })).toEqual({
+      role: 'admin',
+      source: 'unconfigured',
+    });
+    expect(resolveRole('anyone@facilio.com', null).source).toBe('unconfigured');
+  });
+
+  it('closes the gate the moment one administrator is named', () => {
+    expect(resolveRole('anyone@facilio.com', { admins: ['lead@facilio.com'] }).role).toBe(
+      'technician',
+    );
   });
 
   it('promotes an email the admin listed', () => {
@@ -49,7 +66,7 @@ describe('role resolution', () => {
     });
   });
 
-  it('denies a signed-out user with no email', () => {
+  it('denies a signed-out user with no email, once configured', () => {
     expect(resolveRole(undefined, MAP).role).toBe('technician');
     expect(resolveRole('', MAP).role).toBe('technician');
   });
@@ -57,8 +74,9 @@ describe('role resolution', () => {
   it('survives junk in the store rather than throwing at whoever signed in', () => {
     expect(normaliseRoleMap(null)).toEqual({ admins: [] });
     expect(normaliseRoleMap({ admins: 'not-an-array' })).toEqual({ admins: [] });
-    expect(resolveRole('lead@facilio.com', normaliseRoleMap({ admins: null })).role).toBe(
-      'technician',
+    // admins:null normalises to an EMPTY list, which is "unconfigured".
+    expect(resolveRole('lead@facilio.com', normaliseRoleMap({ admins: null })).source).toBe(
+      'unconfigured',
     );
   });
 });
@@ -101,7 +119,7 @@ describe('the platform’s own admin flag', () => {
   // shipped a release where real administrators arrived as technicians, so
   // these pin that it is consulted FIRST and needs nothing else to work.
   it('makes a platform administrator an admin, whatever the list says', () => {
-    expect(resolveRole('nobody@facilio.com', { admins: [] }, false, true)).toEqual({
+    expect(resolveRole('nobody@facilio.com', MAP, false, true)).toEqual({
       role: 'admin',
       source: 'platform',
     });
@@ -122,8 +140,6 @@ describe('the platform’s own admin flag', () => {
   });
 
   it('still denies an unlisted, unflagged user', () => {
-    expect(resolveRole('someone@facilio.com', { admins: [] }, false, false).role).toBe(
-      'technician',
-    );
+    expect(resolveRole('someone@facilio.com', MAP, false, false).role).toBe('technician');
   });
 });

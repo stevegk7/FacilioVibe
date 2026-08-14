@@ -50,6 +50,7 @@ function siteIdOfEmbKey(key: string): string {
 /** Why this person has the role they have, in words rather than jargon. */
 const ROLE_REASON: Record<string, string> = {
   platform: 'administrator in Facilio',
+  unconfigured: 'no administrators configured yet — add one below to close this',
   bootstrap: 'built-in administrator',
   map: 'listed under Administrators below',
   default: 'not listed as an administrator',
