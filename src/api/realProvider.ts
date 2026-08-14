@@ -2,6 +2,15 @@ import { vibe } from './vibe';
 import { cmms, chunk, fetchAllPages, inFilter, rowsOf } from './facilioHelpers';
 import { callFn } from './scriptFns';
 import { visibleRows } from './recordPolicy';
+import {
+  allowedPlaces,
+  assetIdsFrom,
+  canReadWorkOrder,
+  scopeGeneration,
+  sessionScope,
+  visibleWorkOrders,
+  type AllowedPlaces,
+} from './scope';
 import { loadEstateRaw } from './estate';
 import type { DataProvider } from './dataProvider';
 import type {
@@ -87,9 +96,17 @@ interface RawWorkOrder {
   moduleState?: string | { name?: string; displayName?: string };
   priority?: string | { name?: string };
   resource?: { id?: number; name?: string };
-  assignedTo?: { id?: number; name?: string } | string;
+  // A bare number when the lookup is NOT expanded — which is what every WO read
+  // used to send. Handle all three shapes rather than trusting the expand.
+  assignedTo?: { id?: number; name?: string; email?: string } | number | string;
   dueDate?: string;
   createdTime?: string;
+}
+
+interface RawEmployee {
+  id: number;
+  name?: string;
+  email?: string;
 }
 
 // Task row shape is org-dependent; map defensively. `status`/closed flags vary
@@ -104,12 +121,21 @@ interface RawTask {
 
 const WO_SELECT = 'id,subject,description,moduleState,priority,resource,assignedTo,dueDate,createdTime';
 
+/**
+ * `assignedTo` joins `resource` in the expand because scoping needs the
+ * assignee's id, and an unexpanded lookup arrives as a bare number with no name
+ * or email on it. Two of five expand slots used (the CMMS caps it at five).
+ */
+const WO_EXPAND = 'resource,assignedTo';
+
 function lookupName(v: string | { name?: string; displayName?: string } | undefined): string | undefined {
   if (typeof v === 'string') return v;
   return v?.displayName ?? v?.name;
 }
 
 function toWorkOrder(row: RawWorkOrder): WorkOrder {
+  const assignee = row.assignedTo;
+  const assigneeObject = typeof assignee === 'object' && assignee !== null ? assignee : undefined;
   return {
     id: row.id,
     subject: row.subject,
@@ -118,7 +144,11 @@ function toWorkOrder(row: RawWorkOrder): WorkOrder {
     priority: lookupName(row.priority),
     resourceId: row.resource?.id,
     resourceName: row.resource?.name,
-    assignedTo: typeof row.assignedTo === 'string' ? row.assignedTo : row.assignedTo?.name,
+    assignedTo: typeof assignee === 'string' ? assignee : assigneeObject?.name,
+    // Keep the id whatever shape it arrived in. Dropping it here was what made
+    // "work orders assigned to me" impossible to answer.
+    assignedToId: typeof assignee === 'number' ? assignee : assigneeObject?.id,
+    assignedToEmail: assigneeObject?.email,
     dueDate: row.dueDate,
     createdTime: row.createdTime,
   };
@@ -202,10 +232,106 @@ async function resolveScopeSpaceIds(scope: LocationScope | undefined): Promise<n
   return [...ids];
 }
 
+/** The space tree, unscoped. Shared by listAllSpaces and the scoping memo below. */
+async function fetchSpaces(): Promise<Space[]> {
+  const rows = await fetchAllPages<RawSpace>('list-spaces', {
+    select: 'id,name,site,building,floor',
+    expand: 'site,building,floor',
+  });
+  return visibleRows(rows).map((s) => ({
+    id: s.id,
+    name: s.name,
+    siteId: s.site?.id,
+    buildingId: s.building?.id,
+    floorId: s.floor?.id,
+    spaceType: s.spaceType,
+  }));
+}
+
+/**
+ * A technician's world: the assets their own work orders are raised against,
+ * and the places containing them.
+ *
+ * Memoised per session for the same reason `spacesMemo` is — every screen asks,
+ * and the answer cannot change without the session changing. It deliberately
+ * fetches through the raw helpers rather than the provider's own methods, which
+ * are themselves scoped by this result and would recurse forever.
+ *
+ * Returns null for an admin, meaning "no narrowing", which keeps the admin path
+ * exactly as fast as it was before this feature existed.
+ */
+let worldMemo: { gen: number; value: Promise<{ assetIds: Set<number>; places: AllowedPlaces }> } | null =
+  null;
+
+/** Narrow an asset list to the technician's own; a no-op for an admin. */
+async function scopeAssets(assets: Asset[]): Promise<Asset[]> {
+  const world = await myWorld();
+  return world ? assets.filter((a) => world.assetIds.has(a.id)) : assets;
+}
+
+async function myWorld(): Promise<{ assetIds: Set<number>; places: AllowedPlaces } | null> {
+  if (sessionScope().role === 'admin') return null;
+  const gen = scopeGeneration();
+  if (!worldMemo || worldMemo.gen !== gen) {
+    worldMemo = {
+      gen,
+      value: (async () => {
+        const rows = await fetchAllPages<RawWorkOrder>('list-work-orders', {
+          select: WO_SELECT,
+          expand: WO_EXPAND,
+        });
+        const assetIds = assetIdsFrom(visibleWorkOrders(rows.map(toWorkOrder)));
+        if (!assetIds.size) {
+          return { assetIds, places: allowedPlaces([], [], assetIds) };
+        }
+        // Only the assets actually referenced, not the whole org.
+        const assetRows = await Promise.all(
+          chunk([...assetIds], 50).map((part) =>
+            fetchAllPages<RawAsset>('list-assets', {
+              select: ASSET_SELECT,
+              expand: 'space',
+              filters: inFilter('id', part),
+            }),
+          ),
+        );
+        const assets = visibleRows(assetRows.flat()).map(toAsset);
+        return { assetIds, places: allowedPlaces(assets, await fetchSpaces(), assetIds) };
+      })(),
+    };
+  }
+  return worldMemo.value;
+}
+
 export const realProvider: DataProvider = {
   getCurrentUser: () => vibe.getCurrentUser(),
   login: () => vibe.login(),
   logout: () => vibe.logout(),
+
+  /**
+   * Verified quirk, and the reason this is not a one-line exact-match filter:
+   * a '+' in an email BREAKS a CMMS filter. Against org #2915,
+   * `email(contains)=yaaminy.sk` returns both plus-addressed accounts, while
+   * `email(contains)=yaaminy.sk+technician` and `email(is)=<full address>`
+   * both return nothing at all — no error, just an empty page.
+   *
+   * So filter on the part before the '+', which is always a prefix of the real
+   * address, and make the exact comparison here where JavaScript can be trusted.
+   */
+  async resolveEmployeeId(email: string): Promise<number | null> {
+    const address = email.trim().toLowerCase();
+    const local = address.split('@')[0] ?? '';
+    const probe = (local.split('+')[0] || local).trim();
+    if (!probe) return null;
+    const res = await cmms<RawEmployee[]>('list-employees', {
+      select: 'id,name,email',
+      filters: `email(contains)=${probe}`,
+      page_size: 200,
+    });
+    const row = rowsOf<RawEmployee>(res.data).find(
+      (r) => (r.email ?? '').trim().toLowerCase() === address,
+    );
+    return row?.id ?? null;
+  },
 
   listSites: (q) => list<Site>('list-sites', q),
 
@@ -216,7 +342,10 @@ export const realProvider: DataProvider = {
     });
     // Retired/test records are filtered HERE, in the data layer, so the asset
     // list and the 3D estate can never report different counts for the same org.
-    return visibleRows(rows).map((b) => ({ id: b.id, name: b.name, siteId: b.site?.id }));
+    // Assignment scoping rides the same seam, one line below.
+    const buildings = visibleRows(rows).map((b) => ({ id: b.id, name: b.name, siteId: b.site?.id }));
+    const world = await myWorld();
+    return world ? buildings.filter((b) => world.places.buildingIds.has(b.id)) : buildings;
   },
 
   async listFloors(): Promise<Floor[]> {
@@ -224,28 +353,21 @@ export const realProvider: DataProvider = {
       select: 'id,name,building,site,floorlevel',
       expand: 'building,site',
     });
-    return visibleRows(rows).map((f) => ({
+    const floors = visibleRows(rows).map((f) => ({
       id: f.id,
       name: f.name,
       floorLevel: typeof f.floorlevel === 'number' ? f.floorlevel : undefined,
       buildingId: f.building?.id,
       siteId: f.site?.id,
     }));
+    const world = await myWorld();
+    return world ? floors.filter((f) => world.places.floorIds.has(f.id)) : floors;
   },
 
   async listAllSpaces(): Promise<Space[]> {
-    const rows = await fetchAllPages<RawSpace>('list-spaces', {
-      select: 'id,name,site,building,floor',
-      expand: 'site,building,floor',
-    });
-    return visibleRows(rows).map((s) => ({
-      id: s.id,
-      name: s.name,
-      siteId: s.site?.id,
-      buildingId: s.building?.id,
-      floorId: s.floor?.id,
-      spaceType: s.spaceType,
-    }));
+    const spaces = await fetchSpaces();
+    const world = await myWorld();
+    return world ? spaces.filter((s) => world.places.spaceIds.has(s.id)) : spaces;
   },
 
   async searchAssets(search: AssetSearch = {}): Promise<Asset[]> {
@@ -260,7 +382,7 @@ export const realProvider: DataProvider = {
         expand: 'space',
         ...(filters.length ? { filters: filters.join('&') } : {}),
       });
-      return visibleRows(rows).map(toAsset);
+      return scopeAssets(visibleRows(rows).map(toAsset));
     }
 
     if (!spaceIds.length) return [];
@@ -275,7 +397,7 @@ export const realProvider: DataProvider = {
         }),
       ),
     );
-    return visibleRows(parts.flat()).map(toAsset);
+    return scopeAssets(visibleRows(parts.flat()).map(toAsset));
   },
 
   async getAsset(id: number): Promise<Asset | null> {
@@ -285,10 +407,29 @@ export const realProvider: DataProvider = {
       filters: inFilter('id', [id]),
     });
     const row = rowsOf<RawAsset>(res.data)[0];
-    return row ? toAsset(row) : null;
+    // A direct id read is how a typed URL tries to walk around the list filter.
+    return row ? ((await scopeAssets([toAsset(row)]))[0] ?? null) : null;
   },
 
-  listWorkOrders: (q) => list<WorkOrder>('list-work-orders', q),
+  /**
+   * This path used to send no projection and no expand, and cast raw rows
+   * straight to WorkOrder — so `assignedTo` was whatever the server felt like
+   * returning rather than the mapped string the type promised. It now goes
+   * through the same select/expand/mapper as every other work-order read.
+   */
+  async listWorkOrders(q?: ListQuery): Promise<PageResult<WorkOrder>> {
+    const res = await cmms<RawWorkOrder[]>('list-work-orders', {
+      select: WO_SELECT,
+      expand: WO_EXPAND,
+      ...toPayload(q),
+    });
+    return {
+      data: visibleWorkOrders(rowsOf<RawWorkOrder>(res.data).map(toWorkOrder)),
+      page: res.pagination?.page ?? q?.page ?? 1,
+      pageSize: res.pagination?.pageSize ?? q?.pageSize ?? 50,
+      ...(q?.includeCount && typeof res.count === 'number' ? { totalCount: res.count } : {}),
+    };
+  },
 
   async listWorkOrdersForAssets(assetIds: number[]): Promise<WorkOrder[]> {
     if (!assetIds.length) return [];
@@ -296,22 +437,23 @@ export const realProvider: DataProvider = {
       chunk(assetIds, 50).map((part) =>
         fetchAllPages<RawWorkOrder>('list-work-orders', {
           select: WO_SELECT,
-          expand: 'resource',
+          expand: WO_EXPAND,
           filters: inFilter('resource', part),
         }),
       ),
     );
-    return parts.flat().map(toWorkOrder);
+    return visibleWorkOrders(parts.flat().map(toWorkOrder));
   },
 
   async getWorkOrder(id: number): Promise<WorkOrder | null> {
     const res = await cmms<RawWorkOrder[]>('list-work-orders', {
       select: WO_SELECT,
-      expand: 'resource',
+      expand: WO_EXPAND,
       filters: inFilter('id', [id]),
     });
     const row = rowsOf<RawWorkOrder>(res.data)[0];
-    return row ? toWorkOrder(row) : null;
+    const wo = row ? toWorkOrder(row) : null;
+    return canReadWorkOrder(wo) ? wo : null;
   },
 
   async listWorkOrderTasks(workOrderId: number): Promise<WorkOrderTask[]> {

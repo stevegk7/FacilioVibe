@@ -3,6 +3,7 @@ import ErrorBoundary from '../shell/ErrorBoundary';
 import { detectEmbed } from '../shell/embed';
 import Sheet from '../components/Sheet';
 import { LayoutGridIcon } from './icons';
+import type { Capability } from '../api/roles';
 import './layout.css';
 
 /**
@@ -42,6 +43,17 @@ export interface ShellScreen {
    * Diagnostics would misdescribe them.
    */
   section?: 'workspace' | 'admin';
+  /**
+   * Capability required to reach this screen at all. Screens without one are
+   * open to everyone signed in — their CONTENT is scoped by the data layer
+   * instead, which is the normal case (a technician opens the estate and sees
+   * their own buildings, rather than being told the estate does not exist).
+   *
+   * The filtering happens in App.tsx BEFORE the list reaches this component, so
+   * an unauthorised screen is not merely unlisted: `tabFromLocation` cannot
+   * resolve an id that is not in `screens`, which is what closes ?tab=.
+   */
+  requires?: Capability;
   component: ComponentType;
 }
 

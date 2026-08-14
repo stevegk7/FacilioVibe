@@ -30,6 +30,12 @@ export interface DataProvider {
   /** Redirects the browser to identity-service (no-op in mock). */
   login(): void;
   logout(): void;
+  /**
+   * The signed-in person's EMPLOYEE record id, which is a different id space
+   * from `CurrentUser.user.uid` and the one work-order assignment points at.
+   * Null when the org has no employee row for that address.
+   */
+  resolveEmployeeId(email: string): Promise<number | null>;
 
   // ---- portfolio reads (Phase 2.1) ----
   listSites(query?: ListQuery): Promise<PageResult<Site>>;

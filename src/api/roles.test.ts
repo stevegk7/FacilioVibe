@@ -1,0 +1,97 @@
+// Role decides whether you see your own work or everyone's, so the interesting
+// cases are the failure ones: an unknown email, a store that will not answer,
+// and junk written into the map by hand.
+import { describe, expect, it } from 'vitest';
+import {
+  BOOTSTRAP_ADMINS,
+  can,
+  normaliseRoleMap,
+  resolveRole,
+  type RoleMap,
+} from './roles';
+
+const MAP: RoleMap = { admins: ['lead@facilio.com'] };
+
+describe('role resolution', () => {
+  it('denies by default — an unlisted email is a technician, never an admin', () => {
+    expect(resolveRole('someone@facilio.com', { admins: [] })).toEqual({
+      role: 'technician',
+      source: 'default',
+    });
+  });
+
+  it('promotes an email the admin listed', () => {
+    expect(resolveRole('lead@facilio.com', MAP)).toEqual({ role: 'admin', source: 'map' });
+  });
+
+  it('matches case- and whitespace-insensitively, as the store is hand-edited', () => {
+    expect(resolveRole('  LEAD@Facilio.COM ', MAP).role).toBe('admin');
+    expect(normaliseRoleMap({ admins: ['  Lead@Facilio.com '] }).admins).toEqual([
+      'lead@facilio.com',
+    ]);
+  });
+
+  it('resolves a bootstrap admin WITHOUT the store, so deny-by-default cannot lock Settings', () => {
+    // The motivating failure: fvApi is not promoted on this channel, every read
+    // degrades to empty, and the only screen that could fix the list is admin-only.
+    expect(resolveRole(BOOTSTRAP_ADMINS[0], null, true)).toEqual({
+      role: 'admin',
+      source: 'bootstrap',
+    });
+  });
+
+  it('reports an unreadable store as its own reason rather than a real denial', () => {
+    // Same answer, different reason — the UI can then say "couldn't read
+    // permissions" instead of implying someone deliberately restricted you.
+    expect(resolveRole('someone@facilio.com', null, true)).toEqual({
+      role: 'technician',
+      source: 'unavailable',
+    });
+  });
+
+  it('denies a signed-out user with no email', () => {
+    expect(resolveRole(undefined, MAP).role).toBe('technician');
+    expect(resolveRole('', MAP).role).toBe('technician');
+  });
+
+  it('survives junk in the store rather than throwing at whoever signed in', () => {
+    expect(normaliseRoleMap(null)).toEqual({ admins: [] });
+    expect(normaliseRoleMap({ admins: 'not-an-array' })).toEqual({ admins: [] });
+    expect(resolveRole('lead@facilio.com', normaliseRoleMap({ admins: null })).role).toBe(
+      'technician',
+    );
+  });
+});
+
+describe('capabilities', () => {
+  it('gives an admin every capability', () => {
+    expect(can('admin', 'wo.viewAll')).toBe(true);
+    expect(can('admin', 'diagnostics.view')).toBe(true);
+    expect(can('admin', 'people.manage')).toBe(true);
+  });
+
+  it('lets a technician raise work but never see or reassign anyone else’s', () => {
+    expect(can('technician', 'wo.create')).toBe(true);
+    expect(can('technician', 'wo.viewAll')).toBe(false);
+    expect(can('technician', 'wo.assign')).toBe(false);
+    expect(can('technician', 'wo.delete')).toBe(false);
+  });
+
+  it('keeps every admin surface off the technician', () => {
+    for (const capability of [
+      'diagnostics.view',
+      'settings.admin',
+      'people.manage',
+      'dashboard.org',
+      'survey.manage',
+      'round.manage',
+      'portfolio.edit',
+      'asset.edit',
+      'estate.viewAll',
+      'ar.configure',
+      'wayfinder.edit',
+    ] as const) {
+      expect(can('technician', capability)).toBe(false);
+    }
+  });
+});

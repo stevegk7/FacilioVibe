@@ -9,6 +9,8 @@ import {
   savePlaceAssetPolicy,
   type PlaceAssetPolicy,
 } from '../api/permissions';
+import { loadRoleMap, saveRoleMap } from '../api/roles';
+import { useCan } from '../state/SessionContext';
 import { EMPTY_LINKS, loadLinks, saveLinks, type LinkTemplates } from '../api/links';
 import { useSites } from '../api/hooks';
 import { detectEmbed } from '../shell/embed';
@@ -455,11 +457,84 @@ function DangerZoneCard() {
   );
 }
 
+/**
+ * Who is an administrator.
+ *
+ * Deny-by-default means this list is the ONLY way anyone becomes an admin
+ * (short of the bootstrap constant in roles.ts), so it has to be reachable and
+ * legible — an empty list is a working configuration, not a broken one.
+ */
+function RolesCard() {
+  const [emails, setEmails] = useState('');
+  const [status, setStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    void loadRoleMap().then((map) => setEmails(map.admins.join('\n')));
+  }, []);
+
+  const save = async () => {
+    try {
+      await saveRoleMap({
+        admins: emails
+          .split(/[\n,]/)
+          .map((e) => e.trim())
+          .filter(Boolean),
+      });
+      setStatus('Saved');
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : 'Could not save');
+    }
+  };
+
+  return (
+    <div className="kit-card">
+      <div className="kit-card-hd">
+        <h3>Administrators</h3>
+        {status && <span className="muted small">{status}</span>}
+      </div>
+      <div className="kit-card-bd">
+        <p className="muted small" style={{ marginTop: 0 }}>
+          Everyone else is a technician: they see the work orders assigned to them and the assets,
+          rooms and buildings that work touches, and nothing else. Facilio has no role API this app
+          can read, so the list lives here.
+        </p>
+        <label className="field">
+          <span>Admin emails, one per line</span>
+          <textarea
+            rows={4}
+            value={emails}
+            onChange={(e) => setEmails(e.target.value)}
+            onBlur={() => void save()}
+            placeholder="cafm.admin@facilio.com"
+          />
+        </label>
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsScreen() {
+  const can = useCan();
+
+  // A technician gets their own session and nothing that configures the org.
+  if (!can('settings.admin')) {
+    return (
+      <section className="screen page">
+        <h2>Settings</h2>
+        <SessionCard />
+        <p className="muted">
+          Organisation settings, integrations and permissions are managed by your CAFM
+          administrator.
+        </p>
+      </section>
+    );
+  }
+
   return (
     <section className="screen page">
       <h2>Settings</h2>
       <SessionCard />
+      <RolesCard />
       <AppStoreHealthCard />
       <SiteGeoCard />
       <RecognitionIndexCard />

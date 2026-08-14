@@ -192,6 +192,14 @@ Verified quirks of this org's API, all learned the hard way:
 - `siteId` works fine as a *filter* on `workorder`; it just never comes back in
   a `select`.
 - `sort_by: "id"` is rejected: "Field 'id' is not sortable."
+- **A `+` in an email breaks a filter, silently.** `email(contains)=yaaminy.sk`
+  returns both plus-addressed accounts; `email(contains)=yaaminy.sk+technician`
+  and `email(is)=<the full address>` both return an empty page with
+  `success:true` and no error. Filter on the part before the `+` and make the
+  exact comparison in JS — `realProvider.resolveEmployeeId` does this.
+- `role` does not exist on `employee`: `expand=role` fails `INVALID_FIELD`.
+  There is no role/permission data reachable from the app, which is why
+  `src/api/roles.ts` keeps the admin list in the app's own KV store.
 - Failures are reported in-band at HTTP 200. Check `success`, not the status.
 
 ## 7. The app's own storage (`fvApi`)

@@ -61,6 +61,18 @@ export interface WorkOrder {
   resourceId?: number;
   resourceName?: string;
   assignedTo?: string;
+  /**
+   * The assignee's record id, kept because the display NAME cannot answer
+   * "is this mine?" — two people share a name, and the scoping rule that hides
+   * one technician's work from another must not turn on a string match.
+   *
+   * Which id space this is (org user vs employee record) is not yet settled:
+   * no work order in org #2915 currently carries an assignee, so there is
+   * nothing live to check against. `mine()` in scope.ts therefore matches on
+   * id OR email OR name and tightens once real assigned data exists.
+   */
+  assignedToId?: number;
+  assignedToEmail?: string;
   dueDate?: string; // UTC ISO 8601 — convert to local time before rendering
   createdTime?: string;
 }

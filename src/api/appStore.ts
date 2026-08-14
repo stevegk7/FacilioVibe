@@ -51,6 +51,15 @@ export function onAppStoreStatus(listener: (reason: string | null) => void): () 
   return () => statusListeners.delete(listener);
 }
 
+/**
+ * The current reason, for callers that must DISTINGUISH "read nothing" from
+ * "could not read". A permission gate is the motivating case: reads degrade to
+ * empty here, and an empty admin list must not be mistaken for a real one.
+ */
+export function appStoreUnavailable(): string | null {
+  return unavailableReason;
+}
+
 function setUnavailable(reason: string | null) {
   if (unavailableReason === reason) return;
   unavailableReason = reason;

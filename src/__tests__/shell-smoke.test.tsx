@@ -60,7 +60,9 @@ describe('shell-smoke', () => {
     bootAt('?mock=1&tab=diagnostics');
 
     expect(await screen.findByRole('tab', { name: 'Diagnostics' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Diagnostics' })).toBeInTheDocument();
+    // Diagnostics loads in its own chunk now, so the heading arrives after a
+    // Suspense fallback rather than on the same tick as the tab.
+    expect(await screen.findByRole('heading', { name: 'Diagnostics' })).toBeInTheDocument();
     // The dock tabs are still there alongside it
     expect(screen.getByRole('tab', { name: 'AR' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Wayfinder' })).toBeInTheDocument();

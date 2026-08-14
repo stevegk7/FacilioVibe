@@ -1,4 +1,13 @@
 import { visibleRows } from './recordPolicy';
+import {
+  allowedPlaces,
+  assetIdsFrom,
+  canReadWorkOrder,
+  sessionScope,
+  visibleAssets,
+  visibleWorkOrders,
+  type AllowedPlaces,
+} from './scope';
 import type { DataProvider } from './dataProvider';
 import type {
   Asset,
@@ -85,12 +94,17 @@ const assets: Asset[] = [
 
 // Mutable on purpose — status changes, task ticks and creates hit these arrays
 // so the mock behaves like a live org within a session.
+// Assignment matters now that it decides visibility, so the fixtures carry a
+// deliberate spread: two belong to the mock user (uid 1 — see getCurrentUser
+// below), two belong to other people, one is unassigned. A technician must see
+// exactly the first pair, which is what makes ?mock=1 a real rehearsal of the
+// gate rather than a screenshot of it.
 const workOrders: WorkOrder[] = [
-  { id: 4001, subject: 'AHU-03 vibration above threshold', status: 'Open', priority: 'High', resourceId: 3001, resourceName: 'AHU-03', assignedTo: 'Priya', dueDate: '2026-08-15T17:00:00Z', createdTime: '2026-08-12T09:14:00Z' },
-  { id: 4002, subject: 'Quarterly UPS battery inspection', status: 'Open', priority: 'Medium', resourceId: 3002, resourceName: 'UPS-A2', assignedTo: 'Arun', dueDate: '2026-08-20T12:00:00Z', createdTime: '2026-08-10T08:00:00Z' },
-  { id: 4003, subject: 'Conveyor M-114 belt replacement', status: 'In Progress', priority: 'High', resourceId: 3003, resourceName: 'Conveyor Motor M-114', assignedTo: 'Raj', dueDate: '2026-08-14T10:00:00Z', createdTime: '2026-08-11T15:40:00Z' },
+  { id: 4001, subject: 'AHU-03 vibration above threshold', status: 'Open', priority: 'High', resourceId: 3001, resourceName: 'AHU-03', assignedTo: 'Mock User', assignedToId: 1, assignedToEmail: 'mock@facilio.com', dueDate: '2026-08-15T17:00:00Z', createdTime: '2026-08-12T09:14:00Z' },
+  { id: 4002, subject: 'Quarterly UPS battery inspection', status: 'Open', priority: 'Medium', resourceId: 3002, resourceName: 'UPS-A2', assignedTo: 'Arun', assignedToId: 2, assignedToEmail: 'arun@facilio.com', dueDate: '2026-08-20T12:00:00Z', createdTime: '2026-08-10T08:00:00Z' },
+  { id: 4003, subject: 'Conveyor M-114 belt replacement', status: 'In Progress', priority: 'High', resourceId: 3003, resourceName: 'Conveyor Motor M-114', assignedTo: 'Mock User', assignedToId: 1, assignedToEmail: 'mock@facilio.com', dueDate: '2026-08-14T10:00:00Z', createdTime: '2026-08-11T15:40:00Z' },
   { id: 4004, subject: 'Pump P-07 seal leak', status: 'On Hold', priority: 'Low', resourceId: 3004, resourceName: 'Feed Pump P-07', dueDate: '2026-08-28T09:00:00Z', createdTime: '2026-08-09T11:05:00Z' },
-  { id: 4005, subject: 'Isolation room pressure check', status: 'Closed', priority: 'High', resourceId: 3005, resourceName: 'Isolation Room AHU', assignedTo: 'Priya', dueDate: '2026-08-08T16:00:00Z', createdTime: '2026-08-05T07:30:00Z' },
+  { id: 4005, subject: 'Isolation room pressure check', status: 'Closed', priority: 'High', resourceId: 3005, resourceName: 'Isolation Room AHU', assignedTo: 'Priya', assignedToId: 3, assignedToEmail: 'priya@facilio.com', dueDate: '2026-08-08T16:00:00Z', createdTime: '2026-08-05T07:30:00Z' },
 ];
 
 const tasksByWo = new Map<number, WorkOrderTask[]>([
@@ -165,6 +179,28 @@ function scopeSpaceIds(search: AssetSearch): number[] | undefined {
   return [...ids];
 }
 
+/**
+ * A technician's world, derived rather than declared: the assets their own work
+ * orders are raised against, and the places those assets sit in. Recomputed per
+ * call because the fixtures are mutable within a session (a status change or a
+ * create must show up immediately) and the arrays are tiny.
+ */
+function myAssetIds(): Set<number> {
+  return assetIdsFrom(visibleWorkOrders(workOrders));
+}
+
+function narrow<T extends { id: number }>(rows: T[], level: keyof AllowedPlaces): T[] {
+  if (sessionScope().role === 'admin') return rows;
+  const allowed = allowedPlaces(assets, spaces, myAssetIds())[level];
+  return rows.filter((row) => allowed.has(row.id));
+}
+
+/** For rows already reduced to raw estate shape, where only the id survives. */
+function onlyIds<T extends { id: number }>(rows: T[], ids: Set<number>): T[] {
+  if (sessionScope().role === 'admin') return rows;
+  return rows.filter((row) => ids.has(row.id));
+}
+
 export const mockProvider: DataProvider = {
   async getCurrentUser() {
     return {
@@ -179,18 +215,26 @@ export const mockProvider: DataProvider = {
     // no-op
   },
 
+  // The mock identity IS uid 1, and the fixtures assign work to that id, so the
+  // two id spaces coincide here. Anyone else has no employee record.
+  async resolveEmployeeId(email: string) {
+    return email.trim().toLowerCase() === 'mock@facilio.com' ? 1 : null;
+  },
+
   listSites: (q) => paginate(sites, q),
   // Same record policy as realProvider — mock mode must not show a set the live
-  // org would hide, or ?mock=1 stops being a faithful rehearsal.
-  listBuildings: () => delay(visibleRows(buildings)),
-  listFloors: () => delay(visibleRows(floors)),
-  listAllSpaces: () => delay(visibleRows(spaces)),
+  // org would hide, or ?mock=1 stops being a faithful rehearsal. The same now
+  // goes for assignment scoping: a technician here sees what a technician there
+  // would see, which is the only way to rehearse the gate without credentials.
+  listBuildings: () => delay(narrow(visibleRows(buildings), 'buildingIds')),
+  listFloors: () => delay(narrow(visibleRows(floors), 'floorIds')),
+  listAllSpaces: () => delay(narrow(visibleRows(spaces), 'spaceIds')),
 
   async searchAssets(search: AssetSearch = {}) {
     const ids = scopeSpaceIds(search);
     const text = search.text?.trim().toLowerCase();
     return delay(
-      visibleRows(assets).filter((a) => {
+      visibleAssets(visibleRows(assets), myAssetIds()).filter((a) => {
         if (ids && !ids.includes(a.spaceId ?? -1)) return false;
         if (text && !a.name.toLowerCase().includes(text)) return false;
         return true;
@@ -199,17 +243,23 @@ export const mockProvider: DataProvider = {
   },
 
   async getAsset(id: number) {
-    return delay(assets.find((a) => a.id === id) ?? null);
+    const asset = assets.find((a) => a.id === id) ?? null;
+    // A direct id read is exactly how a hand-typed URL tries to walk around the
+    // list filter, so it answers the same question the list does.
+    return delay(visibleAssets(asset ? [asset] : [], myAssetIds())[0] ?? null);
   },
 
-  listWorkOrders: (q) => paginate(workOrders, q),
+  listWorkOrders: (q) => paginate(visibleWorkOrders(workOrders), q),
 
   async listWorkOrdersForAssets(assetIds: number[]) {
-    return delay(workOrders.filter((wo) => assetIds.includes(wo.resourceId ?? -1)));
+    return delay(
+      visibleWorkOrders(workOrders).filter((wo) => assetIds.includes(wo.resourceId ?? -1)),
+    );
   },
 
   async getWorkOrder(id: number) {
-    return delay(workOrders.find((wo) => wo.id === id) ?? null);
+    const wo = workOrders.find((w) => w.id === id) ?? null;
+    return delay(canReadWorkOrder(wo) ? wo : null);
   },
 
   async listWorkOrderTasks(workOrderId: number) {
@@ -303,7 +353,10 @@ export const mockProvider: DataProvider = {
         category: a.category,
         space: a.spaceId ? { id: a.spaceId, name: a.spaceName } : null,
       })),
-      workOrders: workOrders.map((w) => ({
+      // Scoped BEFORE the map, because the raw estate row deliberately drops
+      // assignment — filtering afterwards would hide every marker, including
+      // the technician's own.
+      workOrders: visibleWorkOrders(workOrders).map((w) => ({
         id: w.id,
         subject: w.subject,
         moduleState: w.status,
@@ -316,10 +369,10 @@ export const mockProvider: DataProvider = {
     };
     return delay({
       ...raw,
-      buildings: visibleRows(raw.buildings, showRetired),
-      floors: visibleRows(raw.floors, showRetired),
-      spaces: visibleRows(raw.spaces, showRetired),
-      assets: visibleRows(raw.assets, showRetired),
+      buildings: narrow(visibleRows(raw.buildings, showRetired), 'buildingIds'),
+      floors: narrow(visibleRows(raw.floors, showRetired), 'floorIds'),
+      spaces: narrow(visibleRows(raw.spaces, showRetired), 'spaceIds'),
+      assets: onlyIds(visibleRows(raw.assets, showRetired), myAssetIds()),
     });
   },
 };

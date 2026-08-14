@@ -23,19 +23,25 @@ import {
   SettingsIcon,
   type ShellScreen,
 } from './layout';
+import { SessionProvider, useCan } from './state/SessionContext';
 import ARScreen from './screens/ARScreen';
 import EstateScreen from './screens/EstateScreenLazy';
-import SurveysScreen from './screens/SurveysScreen';
-import PortfolioScreen from './screens/PortfolioScreen';
-import CaptureScreen from './screens/CaptureScreen';
-import RoomsScreen from './screens/RoomsScreen';
-import VoiceSheet from './screens/VoiceSheet';
-import DashboardScreen from './screens/DashboardScreen';
-import RoundsScreen, { ActiveRoundChip } from './screens/RoundsScreen';
 import WayfinderScreen from './screens/WayfinderScreen';
-import SettingsScreen from './screens/SettingsScreen';
-import DiagnosticsScreen from './screens/DiagnosticsScreen';
+import RoundsScreen, { ActiveRoundChip } from './screens/RoundsScreen';
 import BoomScreen from './screens/BoomScreen';
+import { lazyScreen } from './screens/lazyScreen';
+
+// The dock three (plus Rounds, which App renders the ActiveRoundChip from and
+// so could not leave the entry chunk anyway) stay eager. Everything else is
+// deferred — see lazyScreen for why the entry chunk had no room left.
+const SurveysScreen = lazyScreen(() => import('./screens/SurveysScreen'), 'surveys');
+const PortfolioScreen = lazyScreen(() => import('./screens/PortfolioScreen'), 'the portfolio');
+const CaptureScreen = lazyScreen(() => import('./screens/CaptureScreen'), 'capture');
+const RoomsScreen = lazyScreen(() => import('./screens/RoomsScreen'), 'rooms');
+const VoiceSheet = lazyScreen(() => import('./screens/VoiceSheet'), 'Effi');
+const DashboardScreen = lazyScreen(() => import('./screens/DashboardScreen'), 'the dashboard');
+const SettingsScreen = lazyScreen(() => import('./screens/SettingsScreen'), 'settings');
+const DiagnosticsScreen = lazyScreen(() => import('./screens/DiagnosticsScreen'), 'diagnostics');
 
 installGlobalErrorHandlers();
 
@@ -61,7 +67,10 @@ const SCREENS: ShellScreen[] = [
   { id: 'rooms', label: 'Rooms', icon: <HomeIcon />, visible: false, component: RoomsScreen },
   { id: 'voice', label: 'Voice', icon: <MicIcon />, visible: false, component: VoiceSheet },
   { id: 'settings', label: 'Settings', icon: <SettingsIcon />, visible: false, component: SettingsScreen },
-  { id: 'diagnostics', label: 'Diagnostics', icon: <ClipboardListIcon />, visible: false, component: DiagnosticsScreen },
+  // The only screen a technician cannot reach AT ALL. Everywhere else they get
+  // a scoped view of their own work; diagnostics is org plumbing with nothing
+  // in it for them, and the spec asks for it to be hidden outright.
+  { id: 'diagnostics', label: 'Diagnostics', icon: <ClipboardListIcon />, visible: false, requires: 'diagnostics.view', component: DiagnosticsScreen },
   // Deliberate crash screen for the error-boundary test — ?tab=boom only.
   { id: 'boom', label: 'Boom', visible: false, devOnly: true, component: BoomScreen },
 ];
@@ -76,6 +85,23 @@ function landingTab(): string {
   const desktop =
     typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 1024px)').matches;
   return desktop ? 'estate' : 'ar';
+}
+
+/**
+ * The registry, minus anything this person may not open.
+ *
+ * Filtering HERE rather than inside AppShell is what makes the gate real: the
+ * shell resolves ?tab= against the array it is handed, so a screen removed here
+ * cannot be reached by typing its id into the URL — it is not merely hidden
+ * from the dock, the sidebar and the More sheet.
+ */
+function RoleAwareShell() {
+  const can = useCan();
+  const screens = useMemo(
+    () => SCREENS.filter((screen) => !screen.requires || can(screen.requires)),
+    [can],
+  );
+  return <AppShell screens={screens} initialTab={landingTab()} />;
 }
 
 export default function App() {
@@ -154,11 +180,13 @@ export default function App() {
           </div>
         )}
         <AuthGate embedded={embed.embedded}>
-          {() => (
-            <LocationProvider>
-              <ActiveRoundChip />
-              <AppShell screens={SCREENS} initialTab={landingTab()} />
-            </LocationProvider>
+          {(me) => (
+            <SessionProvider me={me}>
+              <LocationProvider>
+                <ActiveRoundChip />
+                <RoleAwareShell />
+              </LocationProvider>
+            </SessionProvider>
           )}
         </AuthGate>
       </div>

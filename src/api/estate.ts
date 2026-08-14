@@ -14,6 +14,7 @@
  */
 import { fetchAllPages } from './facilioHelpers';
 import { visibleRows } from './recordPolicy';
+import { allowedPlaces, sessionScope, visibleWorkOrders } from './scope';
 import { PLAN_ASSIGNMENTS } from '../estate/planAssignments';
 import type { EstateRaw, RawRow } from '../estate/types';
 
@@ -94,15 +95,70 @@ export async function loadEstateRaw(showRetired = false): Promise<EstateRaw> {
       loadPlans(),
     ]);
 
+  // The estate is its own work-order read path — it does not go through
+  // listWorkOrders — so the assignment gate has to be applied here too, or the
+  // 3D model would quietly show a technician every marker in the portfolio.
+  const scopedWorkOrders = visibleWorkOrders(workOrders as AssigneeRow[]);
+  const narrowed = narrowEstate(
+    { buildings, floors, spaces, assets },
+    scopedWorkOrders,
+  );
+
   return {
     sites: visibleRows(sites, showRetired),
-    buildings: visibleRows(buildings, showRetired),
-    floors: visibleRows(floors, showRetired),
-    spaces: visibleRows(spaces, showRetired),
-    assets: visibleRows(assets, showRetired),
-    workOrders,
+    buildings: visibleRows(narrowed.buildings, showRetired),
+    floors: visibleRows(narrowed.floors, showRetired),
+    spaces: visibleRows(narrowed.spaces, showRetired),
+    assets: visibleRows(narrowed.assets, showRetired),
+    workOrders: scopedWorkOrders as RawRow[],
     inspections: inspections.rows,
     inspectionsUnavailable: inspections.unavailable,
     plans,
+  };
+}
+
+/** The estate rows this narrowing touches, in the raw shape the CMMS returns. */
+type AssigneeRow = RawRow & { assignedTo?: unknown; resource?: { id?: number } };
+type Lookup = { id?: number } | null | undefined;
+
+/**
+ * Reduce the estate to the places a technician's own work reaches. An admin
+ * gets the arrays back untouched — same object, no copying, no cost.
+ */
+function narrowEstate(
+  rows: { buildings: RawRow[]; floors: RawRow[]; spaces: RawRow[]; assets: RawRow[] },
+  scopedWorkOrders: AssigneeRow[],
+): { buildings: RawRow[]; floors: RawRow[]; spaces: RawRow[]; assets: RawRow[] } {
+  if (sessionScope().role === 'admin') return rows;
+
+  const assetIds = new Set<number>();
+  for (const wo of scopedWorkOrders) {
+    const id = wo.resource?.id;
+    if (typeof id === 'number') assetIds.add(id);
+  }
+
+  // Map the raw rows into the flat shape allowedPlaces expects, so the walk
+  // from asset → space → floor/building/site is the one rule, stated once.
+  const places = allowedPlaces(
+    rows.assets.map((a) => ({
+      id: Number(a.id),
+      name: String(a.name ?? ''),
+      spaceId: (a.space as Lookup)?.id,
+    })),
+    rows.spaces.map((s) => ({
+      id: Number(s.id),
+      name: String(s.name ?? ''),
+      siteId: (s.site as Lookup)?.id,
+      buildingId: (s.building as Lookup)?.id,
+      floorId: (s.floor as Lookup)?.id,
+    })),
+    assetIds,
+  );
+
+  return {
+    buildings: rows.buildings.filter((b) => places.buildingIds.has(Number(b.id))),
+    floors: rows.floors.filter((f) => places.floorIds.has(Number(f.id))),
+    spaces: rows.spaces.filter((s) => places.spaceIds.has(Number(s.id))),
+    assets: rows.assets.filter((a) => assetIds.has(Number(a.id))),
   };
 }
