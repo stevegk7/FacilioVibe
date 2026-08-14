@@ -9,9 +9,18 @@
   overflow: hidden;
 }
 
+/* Embedded chrome puts a 44px tab bar above the screen and, unlike the mobile
+   shell, gives the pane no height of its own — without this the flex column
+   has nothing to be 100% OF, so the internal scroller collapses and the body
+   runs off the bottom. Same rule Surveys carries (surveys.css). */
+.embedded .wf-screen { height: calc(var(--app-h) - 44px); }
+
 .wf-head {
   flex: none;
-  padding: 14px 16px 10px;
+  /* The head is the topmost painted element on this screen and no ancestor
+     reserves the inset, so without --safe-t the title, the assist input and
+     the site chip render under the notch / Dynamic Island. */
+  padding: calc(14px + var(--safe-t)) 16px 10px;
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-surface);
 }
@@ -19,7 +28,7 @@
 .wf-body {
   flex: 1;
   min-height: 0;
-  padding: 8px 16px 20px;
+  padding: 8px 16px calc(20px + var(--safe-b));
 }
 
 .wf-edit-btn { height: 36px; padding: 0 12px; }
@@ -146,10 +155,12 @@
   color: var(--ink-900);
 }
 
+/* 44px: the house floor for anything tappable (src/styles.css) — and this one
+   is pressed with a thumb while walking. */
 .wf-mic {
   flex: none;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   border: none;
@@ -223,7 +234,11 @@
 .wf-route-actions { display: flex; gap: 10px; margin-top: 14px; }
 .wf-route-actions .btn-cta { flex: 1; }
 .wf-route-actions .btn-quiet { flex: none; width: auto; padding: 0 16px; }
-.wf-route-actions.secondary { justify-content: space-between; margin-top: 10px; }
+/* The bare .link-btn computes to ~28px — under the 44px rule. These two sit
+   in the guided card, tapped mid-walk, so they get real target height. */
+.wf-route-actions.secondary { justify-content: space-between; margin-top: 4px; }
+.wf-route-actions.secondary .link-btn { min-height: 44px; padding: 0 4px; }
+.wf-edge-row .link-btn { min-height: 44px; padding: 0 4px; }
 
 /* ---------- guided mode ---------- */
 
@@ -295,7 +310,16 @@
 }
 
 .scs-camera .fv-cam, .scs-camera video, .scs-camera canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.scs-frame { position: absolute; }
+
+/* The reticle is borrowed from the full-screen survey flow, where it is sized
+   against the VIEWPORT (min(58vw, 240px) at top:38%). In this 240px-tall box
+   that square hangs off the top edge and gets clipped by the overflow — so it
+   is re-sized against the box it is actually in. */
+.scs-frame {
+  position: absolute;
+  top: 50%;
+  width: min(60%, 168px);
+}
 
 .wf-foot-actions { display: flex; gap: 10px; margin-top: 14px; }
 .wf-foot-actions .btn-quiet { flex: 1; }

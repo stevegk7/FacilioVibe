@@ -18,7 +18,11 @@ let seeding: Promise<void> | null = null;
 
 export async function seedMockDemoData(): Promise<void> {
   if (!isMockMode()) return;
-  // One in-flight seed per session — two screens mounting at once must not race.
+  // One IN-FLIGHT seed — two screens mounting at once must not race. The
+  // promise is released when it settles, so (a) a failed seed retries instead
+  // of being cached forever, and (b) clearing mock storage from Settings'
+  // Danger zone re-seeds on the next visit rather than leaving the app empty
+  // until a reload. The kvGet guard below is what keeps re-runs cheap.
   seeding ??= (async () => {
     const dataset = buildDemoDataset(MOCK_DEMO_IDS);
     const existing = await appStore.kvGet('settings', graphKey(dataset.graph.siteId));
@@ -29,7 +33,9 @@ export async function seedMockDemoData(): Promise<void> {
       ...dataset.surveys.map((s) => appStore.kvPut('surveys', `survey.${s.id}`, s)),
       ...dataset.codes.map((c) => appStore.kvPut('codes', normalizeCode(c.code), c)),
     ]);
-  })();
+  })().finally(() => {
+    seeding = null;
+  });
   return seeding;
 }
 

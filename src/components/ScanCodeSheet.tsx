@@ -8,7 +8,7 @@
  * ergonomics. Camera fails (desktop, denied, webview without flags) → the
  * typed lane is right there, not behind another tap.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { isMockMode } from '../api/provider';
 import { CameraView } from './camera/CameraView';
 import { useCamera } from './camera/useCamera';
@@ -32,6 +32,13 @@ export default function ScanCodeSheet({
   const mock = isMockMode();
   const camera = useCamera(open && !mock);
   const [typed, setTyped] = useState('');
+  // The decode interval must call the CURRENT handler. Held in a ref because
+  // the interval is created once per camera state, and the parent's handler
+  // is re-created every render over fresh state (graph, dest, anchor) — a
+  // frozen closure decoded fine and then acted on a graph that was still
+  // loading when the sheet opened, silently doing nothing.
+  const onCodeRef = useRef(onCode);
+  onCodeRef.current = onCode;
 
   // Continuous decode off the live frame — the camera IS the scanner; walking
   // up to the sticker is the whole interaction. (Pattern from PlaceAssets.)
@@ -39,6 +46,10 @@ export default function ScanCodeSheet({
     if (!open || mock) return;
     const work = document.createElement('canvas');
     let busy = false;
+    let cancelled = false;
+    // A sticker stays in frame for seconds — fire ONCE per code, as the
+    // contract above promises, rather than every 400ms tick.
+    let lastCode: string | null = null;
     const timer = setInterval(() => {
       if (busy) return;
       const fc = camera.frameCanvasRef.current;
@@ -52,13 +63,19 @@ export default function ScanCodeSheet({
       busy = true;
       void decodeQr(src, w, h, work)
         .then((hit) => {
-          if (hit?.data) onCode(hit.data);
+          // A decode that resolves after the sheet closed must not act.
+          if (cancelled || !hit?.data || hit.data === lastCode) return;
+          lastCode = hit.data;
+          onCodeRef.current(hit.data);
         })
         .finally(() => {
           busy = false;
         });
     }, 400);
-    return () => clearInterval(timer);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mock, camera.state]);
 

@@ -50,7 +50,7 @@ import {
   type Destination,
   type JourneyPhase,
 } from '../wayfinding/journey';
-import { onNavigate, navParamId, setNavParams, goToTab } from '../shell/router';
+import { currentTab, onNavigate, navParamId, setNavParams, goToTab } from '../shell/router';
 import { stampStopByCode } from '../rounds/roundsStore';
 import { runToolLoop } from '../voice/toolLoop';
 import { defaultDeps, type VoiceDeps } from '../voice/deps';
@@ -81,11 +81,17 @@ function storeAnchor(anchor: Anchor | null): void {
   }
 }
 
-function useGraph(siteId: number | undefined, surveys: Survey[]) {
+function useGraph(siteId: number | undefined, surveys: Survey[], surveysReady: boolean) {
   return useQuery({
-    queryKey: ['wf-graph', siteId ?? 0, surveys.length],
+    // Keyed on the survey IDENTITIES, not their count: two different surveys
+    // of the same number served a stale graph from cache, and a renamed
+    // standpoint never reached the node list.
+    queryKey: ['wf-graph', siteId ?? 0, surveys.map((s) => s.id).sort().join(',')],
     queryFn: async () => withSurveyNodes(await loadGraph(siteId ?? 0), surveys),
-    enabled: siteId !== undefined,
+    // Waiting for the surveys read is what keeps a half-built graph — one with
+    // edges pointing at sv: nodes that do not exist yet — out of the hands of
+    // destination resolution, which would call a pinned asset unpinned.
+    enabled: siteId !== undefined && surveysReady,
   });
 }
 
@@ -126,7 +132,15 @@ export default function WayfinderScreen() {
         .then((rows) => rows.map((r) => r.value).filter((s) => s && Array.isArray(s.markers))),
   });
 
-  const graphQuery = useGraph(scope.siteId, surveys.data ?? []);
+  // The KV holds every site's standpoints in one collection. Without this
+  // filter another site's standpoints became nodes in THIS site's graph, its
+  // codes anchored you "here", and its assets resolved as routable.
+  const siteSurveys = useMemo(
+    () => (surveys.data ?? []).filter((s) => scope.siteId == null || s.siteId === scope.siteId),
+    [surveys.data, scope.siteId],
+  );
+
+  const graphQuery = useGraph(scope.siteId, siteSurveys, !surveys.isPending);
   const graph = graphQuery.data;
 
   // Open work orders are the reason anyone opens this screen.
@@ -138,8 +152,17 @@ export default function WayfinderScreen() {
   /** Asset → its standpoint node, or null with an honest hint. */
   const destinationForAsset = useCallback(
     (asset: { id: number; name: string }, workOrderId?: number): boolean => {
-      if (!graph) return false;
-      const host = surveyForAsset(surveys.data ?? [], asset.id);
+      if (!graph) {
+        // Silence here made work-order rows look dead. Say which of the two
+        // reasons it is, because they need different actions from the user.
+        setHint(
+          scope.siteId == null
+            ? 'Pick a site first — routes are per site.'
+            : 'Still loading this site’s route map — try again in a moment.',
+        );
+        return false;
+      }
+      const host = surveyForAsset(siteSurveys, asset.id);
       const node = host ? nodeForSurvey(graph, host.id) : undefined;
       if (!node) {
         setHint(
@@ -153,19 +176,27 @@ export default function WayfinderScreen() {
       setHint(null);
       return true;
     },
-    [graph, surveys.data],
+    [graph, siteSurveys, scope.siteId],
   );
 
   // Handoffs land as ?asset= — react while MOUNTED, not only at mount (the
   // pre-merge screen read it once in a useState initialiser, so pushing a new
   // asset at an open Wayfinder did nothing — the exact bug router.ts names).
   const consumeAssetParam = useCallback(() => {
+    // Only OUR tab's params are ours to take. popstate fires for every
+    // navigation, including the one carrying an asset TO the 3D estate while
+    // this screen is still mounted — consuming that would steal it.
+    if (currentTab() !== 'wayfinder') return;
     const assetId = navParamId('asset');
     if (assetId == null || !graph) return;
     if (dest?.assetId === assetId) return;
     void provider.getAsset(assetId).then((asset) => {
-      if (asset) destinationForAsset(asset);
-      setNavParams({ asset: null }); // consumed — a stale param must not re-fire
+      // Re-check: an async hop later the user may have navigated away, and
+      // the param now belongs to whoever they navigated to.
+      if (currentTab() !== 'wayfinder' || navParamId('asset') !== assetId) return;
+      // Clear ONLY on success. Clearing after a failed resolve (surveys not
+      // loaded yet, asset unpinned) burned the handoff permanently.
+      if (asset && destinationForAsset(asset)) setNavParams({ asset: null });
     });
   }, [graph, dest, destinationForAsset]);
 
@@ -176,13 +207,36 @@ export default function WayfinderScreen() {
 
   // With no scan yet, GPS picks the nearest entrance — labelled as the guess
   // it is, never dressed up as a scan.
+  //
+  // POLLED, not sampled once: useGeoFix deliberately keeps the fix in a REF
+  // (a fix arriving must not re-render the AR stage), so nothing re-runs this
+  // effect when the first fix lands seconds after the graph settles. Sampling
+  // once meant the auto-anchor only ever worked in mock mode, where the
+  // fixture is returned synchronously. The interval stops on the first fix.
   useEffect(() => {
     if (anchor || !graph) return;
-    const fix = getFix();
-    if (!fix) return;
-    const near = nearestNode(graph, fix, ['entrance']) ?? nearestNode(graph, fix);
-    if (near) setAnchor({ nodeId: near.id, via: 'gps', at: Date.now() });
+    const tryAnchor = (): boolean => {
+      const fix = getFix();
+      if (!fix) return false;
+      const near = nearestNode(graph, fix, ['entrance']) ?? nearestNode(graph, fix);
+      if (!near) return false;
+      setAnchor({ nodeId: near.id, via: 'gps', at: Date.now() });
+      return true;
+    };
+    if (tryAnchor()) return;
+    const timer = setInterval(() => {
+      if (tryAnchor()) clearInterval(timer);
+    }, 2000);
+    return () => clearInterval(timer);
   }, [graph, anchor, getFix]);
+
+  // An anchor is a claim about a PLACE; when the loaded graph has no such
+  // node the claim is meaningless — a leftover from another site, or a node
+  // deleted in the editor. Drop it rather than route from a phantom.
+  useEffect(() => {
+    if (!graph || !anchor) return;
+    if (!nodeById(graph, anchor.nodeId)) setAnchor(null);
+  }, [graph, anchor]);
 
   useEffect(() => storeAnchor(anchor), [anchor]);
 
@@ -191,10 +245,22 @@ export default function WayfinderScreen() {
     return findRoute(graph, anchor.nodeId, dest.nodeId);
   }, [graph, dest, anchor]);
 
-  // Arrival is a state, not an inference: route says "zero steps left".
+  // Arrival is a state, not an inference: route says "zero steps left". It
+  // must also UN-arrive — re-anchoring away from the destination used to
+  // leave "You've arrived" on screen while the user walked off.
   useEffect(() => {
-    if (route && route.steps.length === 0 && dest) setJourney('arrived');
+    if (!dest) return;
+    if (route && route.steps.length === 0) setJourney('arrived');
+    else if (route && route.steps.length > 0) {
+      setJourney((phase) => (phase === 'arrived' ? 'preview' : phase));
+    }
   }, [route, dest]);
+
+  // Any change of start or destination invalidates guided progress — the
+  // recomputed route's step 1 is wherever you now are.
+  useEffect(() => {
+    setStepIdx(0);
+  }, [anchor?.nodeId, dest?.nodeId]);
 
   /**
    * A scanned code is the strongest fact this screen ever receives: it
@@ -209,21 +275,20 @@ export default function WayfinderScreen() {
       return;
     }
     setScanOpen(false);
-    void stampStopByCode(code).catch(() => undefined);
+    // Stamp with the code as ENROLLED, not as typed: rounds compare exactly,
+    // while node lookup is case/space-insensitive, so a hand-typed
+    // "FV-SV-DEMO-PLANT" anchored here but silently failed to stamp the stop.
+    void stampStopByCode(node.code ?? code).catch(() => undefined);
     setAnchor({ nodeId: node.id, via: 'scan', at: Date.now() });
     if (dest && node.id === dest.nodeId) {
       setJourney('arrived');
       setHint(null);
       return;
     }
-    if (dest) {
-      // The route recomputes from the scanned node, so its first remaining
-      // step is index 0 — guided progress snaps there, on or off the old path.
-      if (journey === 'guided') setStepIdx(0);
-      setHint(`Route updated from ${node.name}`);
-    } else {
-      setHint(`You are at ${node.name}`);
-    }
+    // The route recomputes from the scanned node, so its first remaining step
+    // is index 0 — the anchor effect resets progress for us, on or off the
+    // old path. Off-route is a re-anchor, never an alarm.
+    setHint(dest ? `Route updated from ${node.name}` : `You are at ${node.name}`);
   };
 
   /* ---------------- assistant lane ---------------- */
@@ -463,18 +528,41 @@ export default function WayfinderScreen() {
           />
         )}
 
-        {journey === 'guided' && route && dest && (
+        {journey === 'guided' && route && dest && route.steps.length > 0 && (
           <GuidedCard
             route={route}
+            // Clamped everywhere it is USED, not only where it is rendered: a
+            // recomputed shorter route left onAdvance/onBack working from a
+            // step index that no longer existed.
             stepIdx={Math.min(stepIdx, route.steps.length - 1)}
             onAdvance={() => {
-              if (stepIdx + 1 >= route.steps.length) setJourney('arrived');
-              else setStepIdx(stepIdx + 1);
+              const current = Math.min(stepIdx, route.steps.length - 1);
+              if (current + 1 >= route.steps.length) setJourney('arrived');
+              else setStepIdx(current + 1);
             }}
-            onBack={() => setStepIdx(Math.max(0, stepIdx - 1))}
+            onBack={() => setStepIdx(Math.max(0, Math.min(stepIdx, route.steps.length - 1) - 1))}
             onScan={() => setScanOpen(true)}
             onExit={() => setJourney('preview')}
           />
+        )}
+
+        {/* Guided mode with no route to guide — the graph lost its path (an
+            edge removed, a re-anchor onto an unconnected standpoint). Offer
+            the two ways out rather than stranding the user in a blank mode. */}
+        {journey === 'guided' && (!route || route.steps.length === 0) && dest && (
+          <div className="wf-route">
+            <p className="wf-hint" style={{ margin: 0 }}>
+              No mapped path from {atNode?.name ?? 'here'} to {dest.label} right now.
+            </p>
+            <div className="wf-route-actions">
+              <button className="btn-cta" onClick={() => setScanOpen(true)}>
+                <Icon name="qr" size={18} /> Scan to re-anchor
+              </button>
+              <button className="btn-quiet" onClick={() => setJourney('preview')}>
+                Exit guide
+              </button>
+            </div>
+          </div>
         )}
 
         {journey !== 'guided' && (

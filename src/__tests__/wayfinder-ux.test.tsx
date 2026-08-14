@@ -9,7 +9,7 @@
 //    tap-chips, work orders are destinations
 //  - the ?asset= handoff consumed WHILE MOUNTED (the pre-rebuild staleness bug)
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { LocationProvider } from '../state/LocationContext';
@@ -174,6 +174,62 @@ describe('wayfinder — handoffs land while mounted', () => {
     expect(await screen.findByText(/Cross the plaza to Tower A/)).toBeInTheDocument();
     // Consumed: the param must not survive to re-fire on the next navigation.
     expect(new URLSearchParams(window.location.search).get('asset')).toBeNull();
+  });
+});
+
+// Every case below is a defect an adversarial review found and confirmed
+// against this branch. They are regression guards, not hypotheticals.
+describe('wayfinder — confirmed regressions', () => {
+  it('un-arrives when a scan moves you off the destination', async () => {
+    const user = userEvent.setup();
+    renderScreen();
+    await screen.findByRole('button', { name: /Quarterly UPS battery inspection/ });
+    await user.type(screen.getByRole('textbox', { name: 'Destination' }), 'Primary Pump{Enter}');
+    await screen.findByRole('button', { name: 'Guide me' });
+
+    await scanCode(user, 'fv-sv-demo-plant');
+    expect(await screen.findByText("You've arrived")).toBeInTheDocument();
+
+    // Walking back to the lobby must not leave "You've arrived" on screen.
+    await scanCode(user, 'fv-sv-demo-lobby');
+    await waitFor(() => expect(screen.queryByText("You've arrived")).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Guide me' })).toBeInTheDocument();
+  });
+
+  it('drops a stale anchor that names a node this site has no longer', async () => {
+    sessionStorage.setItem(
+      'fv.wayfinder.anchor',
+      JSON.stringify({ nodeId: 'sv:some-other-sites-standpoint', via: 'scan', at: Date.now() }),
+    );
+    renderScreen();
+    await screen.findByRole('button', { name: /Quarterly UPS battery inspection/ });
+
+    // Re-anchored by GPS to a node that exists, never left pointing at a ghost.
+    expect(await screen.findByText('nearest entrance by GPS')).toBeInTheDocument();
+  });
+
+  it('keeps a work-order tap honest when no site is picked', async () => {
+    const user = userEvent.setup();
+    sessionStorage.removeItem('fv.location');
+    renderScreen();
+
+    const row = await screen.findByRole('button', { name: /Quarterly UPS battery inspection/ });
+    await user.click(row);
+    // Silence used to make the row look dead; it now says which of the two
+    // reasons applies.
+    expect(await screen.findByText(/Pick a site first/)).toBeInTheDocument();
+  });
+
+  it('does not steal an ?asset param aimed at another tab', async () => {
+    renderScreen();
+    await screen.findByRole('button', { name: /Quarterly UPS battery inspection/ });
+
+    // A handoff to the 3D estate: the Wayfinder is still mounted for a commit
+    // and hears the same popstate. It must leave the param alone.
+    act(() => {
+      goToTab('estate', { asset: 3007 });
+    });
+    expect(new URLSearchParams(window.location.search).get('asset')).toBe('3007');
   });
 });
 

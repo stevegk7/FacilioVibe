@@ -47,10 +47,15 @@ if (!health?.ok) {
 
 const dataset = buildDemoDataset(LIVE_DEMO_IDS);
 
-/** Every (collection, key, value) this dataset owns. */
-const rows = [
-  { collection: 'settings', key: `wf.graph.${dataset.graph.siteId}`, value: dataset.graph },
-  { collection: 'settings', key: `sitegeo.${dataset.sitegeo.siteId}`, value: dataset.sitegeo },
+/**
+ * Rows this dataset owns OUTRIGHT — every key is demo-only, so --sweep may
+ * delete them wholesale.
+ *
+ * The two SHARED documents (wf.graph.<site> and sitegeo.<site>) are
+ * deliberately NOT here: they are one-per-site records an admin also edits,
+ * so they are merged on the way in and un-merged (not deleted) on the way out.
+ */
+const ownRows = [
   ...dataset.surveys.map((s) => ({ collection: 'surveys', key: `survey.${s.id}`, value: s })),
   ...dataset.codes.map((c) => ({
     collection: 'codes',
@@ -59,17 +64,48 @@ const rows = [
   })),
 ];
 
+const graphKey = `wf.graph.${dataset.graph.siteId}`;
+const geoKey = `sitegeo.${dataset.sitegeo.siteId}`;
+
+function readJson(collection, key) {
+  const res = fvApi('kvGet', { collection, key });
+  return res?.value ? JSON.parse(res.value) : null;
+}
+
 if (mode === 'check') {
-  for (const row of rows) console.log(`${row.collection}/${row.key}`);
-  console.log(`${rows.length} keys (dry run — nothing written)`);
+  for (const row of ownRows) console.log(`${row.collection}/${row.key}`);
+  console.log(`settings/${graphKey} (merged — demo nodes/edges only)`);
+  console.log(`settings/${geoKey} (written only if absent)`);
+  console.log(`${ownRows.length + 2} keys (dry run — nothing written)`);
   process.exit(0);
 }
 
 if (mode === 'sweep') {
-  for (const row of rows) {
+  for (const row of ownRows) {
     const res = fvApi('kvDelete', { collection: row.collection, key: row.key });
     console.log(`deleted ${row.collection}/${row.key} existed=${res?.existed}`);
   }
+  // Surgical: pull the demo nodes/edges back out and leave everything a human
+  // drew. Deleting the whole document would destroy the very hand-authored
+  // edges the seeder's merge went to the trouble of preserving.
+  const current = readJson('settings', graphKey);
+  if (current) {
+    const demoNodeIds = new Set(dataset.graph.nodes.map((n) => n.id));
+    const demoEdgeIds = new Set(dataset.graph.edges.map((e) => e.id));
+    const kept = {
+      ...current,
+      nodes: (current.nodes ?? []).filter((n) => !demoNodeIds.has(n.id)),
+      edges: (current.edges ?? []).filter((e) => !demoEdgeIds.has(e.id)),
+    };
+    if (kept.nodes.length || kept.edges.length) {
+      fvApi('kvPut', { collection: 'settings', key: graphKey, value: JSON.stringify(kept) });
+      console.log(`kept ${kept.nodes.length} nodes / ${kept.edges.length} hand-authored edges`);
+    } else {
+      fvApi('kvDelete', { collection: 'settings', key: graphKey });
+      console.log(`deleted settings/${graphKey} (nothing hand-authored in it)`);
+    }
+  }
+  console.log(`left settings/${geoKey} alone — site coordinates are not demo data`);
   process.exit(0);
 }
 
@@ -77,12 +113,8 @@ if (mode === 'sweep') {
 // hand in the editor. Overwriting hand-drawn edges with demo data would be
 // destructive — merge instead: demo nodes/edges are added only if their ids
 // are absent, and everything human stays.
-const existingGraph = fvApi('kvGet', {
-  collection: 'settings',
-  key: `wf.graph.${dataset.graph.siteId}`,
-});
-if (existingGraph?.value) {
-  const current = JSON.parse(existingGraph.value);
+const current = readJson('settings', graphKey);
+if (current) {
   const nodeIds = new Set((current.nodes ?? []).map((n) => n.id));
   const edgeIds = new Set((current.edges ?? []).map((e) => e.id));
   dataset.graph.nodes = [
@@ -93,17 +125,30 @@ if (existingGraph?.value) {
     ...(current.edges ?? []),
     ...dataset.graph.edges.filter((e) => !edgeIds.has(e.id)),
   ];
-  rows[0].value = dataset.graph;
   console.log('merged into the existing graph (hand-authored content preserved)');
 }
 
-for (const row of rows) {
+for (const row of ownRows) {
   fvApi('kvPut', {
     collection: row.collection,
     key: row.key,
     value: JSON.stringify(row.value),
   });
   console.log(`put ${row.collection}/${row.key}`);
+}
+
+fvApi('kvPut', { collection: 'settings', key: graphKey, value: JSON.stringify(dataset.graph) });
+console.log(`put settings/${graphKey}`);
+
+// Site coordinates are REAL data an admin sets in Settings, and the demo's
+// are a placeholder. Never overwrite a real fix with a placeholder — seed it
+// only when the site has none, so the outdoor "Directions to site" leg works
+// out of the box without lying about where the site is.
+if (readJson('settings', geoKey)) {
+  console.log(`kept existing settings/${geoKey} (admin-set coordinates win)`);
+} else {
+  fvApi('kvPut', { collection: 'settings', key: geoKey, value: JSON.stringify(dataset.sitegeo) });
+  console.log(`put settings/${geoKey}`);
 }
 
 const counts = fvApi('health', {});
