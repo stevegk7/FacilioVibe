@@ -11,6 +11,29 @@ import { __resetPoseForTest, __setPoseForTest } from '../ar/ArSpace';
 import type { Survey } from '../api/types';
 
 const scanBus = vi.hoisted(() => ({ emit: null as ((code: string) => void) | null }));
+
+/**
+ * A gate on the surveys KV read. appStore is a Proxy (it resolves mock-vs-real
+ * per property access), so it cannot be spied on — wrap the module instead.
+ * Inert until a test sets `kvGate.hold`, so every other test is untouched.
+ */
+const kvGate = vi.hoisted(() => ({ hold: null as Promise<void> | null }));
+vi.mock('../api/appStore', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../api/appStore')>();
+  return {
+    ...actual,
+    appStore: new Proxy(actual.appStore, {
+      get(target, prop: keyof typeof actual.appStore) {
+        const value = Reflect.get(target, prop);
+        if (prop !== 'kvList' || typeof value !== 'function') return value;
+        return async (...args: Parameters<typeof actual.appStore.kvList>) => {
+          if (args[0] === 'surveys' && kvGate.hold) await kvGate.hold;
+          return (value as typeof actual.appStore.kvList)(...args);
+        };
+      },
+    }),
+  };
+});
 vi.mock('../vision/scanLoop', async () => {
   const React = await import('react');
   return {
@@ -66,8 +89,17 @@ async function standAtStandpoint() {
   render(<App />);
   // AR is live on open now; just wait for the stage.
   await screen.findByRole('button', { name: 'AR on' });
+  // Wait for the mocked scan loop to arm itself before firing.
+  //
+  // `scanBus.emit` is assigned by an effect inside the mock, and finding the
+  // "AR on" button does not guarantee that effect has flushed. Emitting through
+  // `?.` while it was still null silently did NOTHING — the scan simply never
+  // happened, and the assertion below then failed as though the app were
+  // broken. Which interleaving you got depended on machine load, so this failed
+  // about one full-suite run in five and passed every time in isolation.
+  await waitFor(() => expect(scanBus.emit).not.toBeNull());
   await act(async () => {
-    scanBus.emit?.(SURVEY.qrCode as string);
+    scanBus.emit!(SURVEY.qrCode as string);
   });
   await screen.findByText(`Localized · ${SURVEY.name} · QR`);
   return user;
@@ -88,6 +120,8 @@ beforeEach(() => {
 afterEach(() => {
   setOrientationForTest(null);
   __resetPoseForTest();
+  // A test that fails mid-way must not leave the KV gate armed for the next one.
+  kvGate.hold = null;
 });
 
 describe('AR maintenance loop (mock mode)', () => {
@@ -215,4 +249,46 @@ it('the open window WINS the stacking war, anchors on its dot, and always offers
   expect(
     screen.getByRole('button', { name: /Open summary — set link in Settings/ }),
   ).toBeInTheDocument();
+});
+
+/**
+ * Regression: a sticker scanned before the standpoint registry has loaded.
+ *
+ * The QR effect used to record the hit's timestamp on its very first run, then
+ * try to match the code against `surveys` — which is empty while its query is
+ * in flight. The match failed, and the recorded timestamp meant the effect
+ * never retried the hit when the surveys arrived: the scan was swallowed.
+ *
+ * The field never showed it, because the real scan loop re-emits every tick
+ * with a fresh `at` while the code is in frame. The mock here emits ONCE, which
+ * is what turns a self-healing race into a deterministic assertion — and what
+ * made the suite flaky before the fix, since whether the emit beat the query
+ * depended purely on machine load.
+ */
+it('a sticker scanned before the survey registry loads still localizes', async () => {
+  seed();
+
+  // Hold the surveys read open so the scan is guaranteed to arrive first —
+  // the losing side of the race every time, instead of once in twenty runs.
+  let releaseSurveys: (() => void) | null = null;
+  kvGate.hold = new Promise<void>((resolve) => {
+    releaseSurveys = resolve;
+  });
+
+  window.history.replaceState({}, '', '/?mock=1&tab=ar');
+  render(<App />);
+  await screen.findByRole('button', { name: 'AR on' });
+
+  // Scan while the registry is still in flight. One emit, as the mock gives.
+  await act(async () => {
+    scanBus.emit?.(SURVEY.qrCode as string);
+  });
+  expect(screen.queryByText(`Localized · ${SURVEY.name} · QR`)).toBeNull();
+
+  // Registry arrives — the deferred hit must now be honoured.
+  await act(async () => {
+    releaseSurveys?.();
+    await Promise.resolve();
+  });
+  expect(await screen.findByText(`Localized · ${SURVEY.name} · QR`)).toBeInTheDocument();
 });

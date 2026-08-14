@@ -99,6 +99,45 @@ guessed):
 Current scores (live, 2× samples): fv-voice **16/16 clean**, fv-tasks clean,
 fv-wo-draft clean. Re-run after any prompt change; the exit code is CI-able.
 
+## A race worth remembering
+
+The QR lane used to mark a scan as consumed *before* it could act on it:
+`lastQrAt.current = qrHit.at` ran on the effect's first pass, but both resolution
+paths match the code against `surveys`, which is empty while its query is in
+flight. A sticker scanned in the first moments after AR opened resolved to
+nothing — and because the timestamp was already recorded, the effect never
+retried it when the registry arrived. The scan was silently swallowed.
+
+It does not show up in the field: the real scan loop re-emits every tick with a
+fresh `at` while the code is in frame, so the next tick succeeds. A dropped first
+scan is still half a second of a technician standing there wondering, so the
+effect now waits for the registry rather than consuming a hit it cannot resolve.
+`ar-maintenance-smoke.test.tsx` holds the surveys read open and asserts the
+deferred hit is honoured.
+
+**The lesson generalises: do not consume an event until the state you will
+resolve it against has loaded.**
+
+### …and a flake that looked like it, and wasn't
+
+This bug was found while chasing an intermittent failure in the same test, and it
+is worth recording that it was *not* the cause. The flake was in the harness: the
+mocked scan loop assigns `scanBus.emit` from an effect, finding the "AR on"
+button does not guarantee that effect has flushed, and the helper fired through
+`scanBus.emit?.(...)`. When the mock was not yet armed, the optional call
+**silently did nothing** — no scan, and an assertion failure that read exactly
+like a broken app. Which interleaving you got depended on machine load: about one
+full-suite run in five, never in isolation.
+
+Two hypotheses were tested and disproved before instrumenting it — the app bug
+above (fixing it did not move the failure rate) and a too-tight `findBy` budget
+(measurement showed the chain at ~250 ms idle and ~600 ms under load, and raising
+the budget changed nothing). Recording the actual state at the moment of failure
+took one run and answered it immediately.
+
+**Optional chaining on a test double hides the case where the double is not
+ready.** Assert it is armed, then call it unconditionally.
+
 ## Platform notes
 
 - "Agent teams" is not a Studio primitive — the tool loop IS the team:

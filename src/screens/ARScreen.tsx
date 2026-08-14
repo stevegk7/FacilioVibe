@@ -332,6 +332,19 @@ export default function ARScreen() {
   useEffect(() => {
     const qrHit = scan.qrHit;
     if (!qrHit || qrHit.at === lastQrAt.current) return;
+    // Do NOT consume the hit until the standpoint registry it is resolved
+    // against has loaded. Both paths below match the code against `surveys`,
+    // which is EMPTY_SURVEYS while its query is in flight — so a sticker
+    // scanned in the first moments after AR opens resolved to nothing, and
+    // because the line below had already recorded its timestamp, the effect
+    // never retried it when the surveys arrived. The scan was swallowed.
+    //
+    // It self-heals in the field (the scan loop re-emits every tick with a new
+    // `at` while the code is in frame), which is why it went unnoticed — but a
+    // dropped first scan is a real half-second of the technician standing there
+    // wondering. Wait for the query to settle instead; an empty-but-loaded
+    // registry still falls through to resolveCode for asset and space codes.
+    if (surveysQuery.isPending) return;
     lastQrAt.current = qrHit.at;
     const code = qrHit.code;
     const reloc = relocRef.current;
@@ -386,7 +399,10 @@ export default function ARScreen() {
       }
       setCodeSheet(code); // unknown / conflict → the registry sheets
     })();
-  }, [scan.qrHit, surveys]);
+    // isPending is a dep so a hit deferred above is retried the moment the
+    // registry settles — including the error case, where `surveys` keeps its
+    // EMPTY_SURVEYS identity and would not re-trigger this on its own.
+  }, [scan.qrHit, surveys, surveysQuery.isPending]);
 
   // asset lock from the vision lane focuses the asset panel
   useEffect(() => {
