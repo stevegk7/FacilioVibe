@@ -32,7 +32,7 @@ import { useLocationScope } from '../state/LocationContext';
 import { openRecordSummary, isEmbeddedInFacilio } from '../api/nav';
 import { fillLink, loadLinks, EMPTY_LINKS, type LinkTemplates } from '../api/links';
 import PortfolioScreen from './PortfolioScreen';
-import EffiOverlay from '../voice/EffiOverlay';
+import { searchEstate, type EstateSearchHit, type SearchableEstate } from '../estate/searchEstate';
 import type {
   EngineNav,
   EngineSelection,
@@ -106,6 +106,10 @@ function paletteFromTokens(): Record<string, number> {
     primary: '--blue-500',
     closed: '--estate-inactive',
     marker: '--blue-400',
+    // Scene backdrop + ground. Slightly deeper than the old hardcoded flat
+    // grey so the white panels and pins actually stand off the canvas.
+    sceneBg: '--estate-scene',
+    ground: '--estate-ground',
   };
   for (const [key, token] of Object.entries(map)) {
     const v = hex(token);
@@ -131,7 +135,6 @@ export default function EstateScreen() {
   const [engineError, setEngineError] = useState<string | null>(null);
   const [plan, setPlan] = useState<FindOnSitePlan | null>(null);
   const [links, setLinks] = useState<LinkTemplates>(EMPTY_LINKS);
-  const [effiOpen, setEffiOpen] = useState(false);
   const [planMode, setPlanMode] = useState<'drawing' | 'solid'>('drawing');
   const [camMode, setCamMode] = useState<'orbit' | 'walk'>('orbit');
   const [importState, setImportState] = useState<
@@ -168,6 +171,24 @@ export default function EstateScreen() {
     () => (estate.data ? buildEstate(estate.data, { sampleHealth }) : null),
     [estate.data, sampleHealth],
   );
+
+  /* The engine's own setSearch only dims pins on a floor that is already open —
+     typing at estate level looked broken. This answers "where is it?" instead:
+     a ranked dropdown, and picking a hit flies there. */
+  const searchHits = useMemo(
+    () => searchEstate(data as unknown as SearchableEstate | null, search),
+    [data, search],
+  );
+  const pickHit = (h: EstateSearchHit) => {
+    const eng = engineRef.current;
+    if (!eng) return;
+    if (h.kind === 'asset') eng.flyToMarker(Number(h.recordId));
+    // The select() patch recovers when the space's floor isn't open, so one
+    // call is enough from any level.
+    else if (h.kind === 'space') eng.select(Number(h.recordId), 'space');
+    else eng.enterBuilding(String(h.recordId));
+    setSearch('');
+  };
 
   /* ---------- engine callbacks, behind a stable identity ----------
      The engine is constructed once and outlives these renders, so it must not
@@ -337,15 +358,28 @@ export default function EstateScreen() {
   /* ---------- gates ---------- */
   if (estate.isLoading) {
     return (
-      <section className="screen">
-        <p className="muted">Reading your estate from Facilio…</p>
+      <section className="screen est-gate" aria-busy="true">
+        <div className="est-loading" role="status">
+          <div className="est-loading-stack" aria-hidden="true">
+            <span /><span /><span />
+          </div>
+          <strong className="est-loading-title">Reading your estate from Facilio</strong>
+          <span className="est-loading-sub">Sites · buildings · floors · spaces · assets</span>
+          <div className="est-loading-bar" aria-hidden="true"><span /></div>
+        </div>
       </section>
     );
   }
   if (estate.isError) {
     return (
-      <section className="screen">
-        <p className="error">{(estate.error as Error)?.message ?? 'Could not load the estate.'}</p>
+      <section className="screen est-gate">
+        <div className="est-loading" role="alert">
+          <div className="est-loading-stack est-loading-stack--still" aria-hidden="true">
+            <span /><span /><span />
+          </div>
+          <strong className="est-loading-title">The estate didn’t load</strong>
+          <span className="est-loading-sub">{(estate.error as Error)?.message ?? 'Could not load the estate.'}</span>
+        </div>
       </section>
     );
   }
@@ -857,94 +891,98 @@ export default function EstateScreen() {
               </div>
             </div>
           </div>
-        ) : (
-          <button className="est-row" onClick={() => setPanelOpen(true)} style={{ position: 'absolute', left: 14, top: 14, zIndex: 24, display: 'flex', alignItems: 'center', gap: 8, background: C.white, border: `1px solid ${C.line}`, borderRadius: 8, padding: '8px 13px', cursor: 'pointer', boxShadow: 'var(--shadow-md)' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.sub} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3l8 4.5-8 4.5-8-4.5L12 3z" /><path d="M4 12l8 4.5 8-4.5" /><path d="M4 16.5L12 21l8-4.5" /></svg>
-            <span style={{ fontSize: 12.5, fontWeight: 500, color: C.ink }}>Navigator</span>
-          </button>
-        )}
+        ) : null}
 
-        {/* search + sample health, off the deleted header */}
-        <div style={{ position: 'absolute', right: 14, top: 14, zIndex: 23, display: (selAsset || selSpace) ? 'none' : 'flex', alignItems: 'center', gap: 8 }}>
-          <input
-            className="est-input"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Find an asset"
-            aria-label="Find an asset"
-            style={{ width: 190, height: 32, border: `1px solid ${C.line}`, borderRadius: 4, padding: '0 12px', fontSize: 12.5, fontFamily: 'var(--font-sans)', color: C.ink, outline: 'none', background: C.white }}
-          />
-          <button
-            role="switch"
-            aria-checked={sampleHealth}
-            onClick={() => setSampleHealth((v) => !v)}
-            title="Overlay sample work orders and asset health on the estate. Nothing is written back to Facilio."
-            style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 500, padding: '6px 12px', borderRadius: 4, cursor: 'pointer', color: sampleHealth ? C.blueDk : C.sub, background: sampleHealth ? C.blueBg : C.white, border: `1px solid ${sampleHealth ? C.blueBd : C.line}`, whiteSpace: 'nowrap' }}
-          >
-            <span style={{ width: 22, height: 12, borderRadius: 7, background: sampleHealth ? C.blue : '#c6d3e4', position: 'relative', flex: 'none', transition: 'background var(--dur-base) var(--ease-standard)' }}>
-              <span style={{ position: 'absolute', top: 2, left: sampleHealth ? 12 : 2, width: 8, height: 8, borderRadius: '50%', background: C.white, transition: 'left var(--dur-base) var(--ease-standard)' }} />
-            </span>
-            Sample health
-          </button>
-        </div>
-
-        {/* walking HUD — replaces the floor tools while you are inside the plan */}
-        {camMode === 'walk' && (
-          <>
-            <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: 14, zIndex: 26, display: 'flex', alignItems: 'center', gap: 10, background: C.white, border: `1px solid ${C.line}`, borderRadius: 8, padding: '7px 12px', boxShadow: 'var(--shadow-md)' }}>
-              <span style={{ fontSize: 12, color: C.sub, whiteSpace: 'nowrap' }}>
-                Drag to look · W A S D or arrows to walk
-              </span>
-              <button
-                className="est-primary"
-                onClick={() => engineRef.current?.setCameraMode('orbit')}
-                style={{ height: 26, padding: '0 11px', fontSize: 12, fontWeight: 500, color: C.white, background: C.blue, border: 'none', borderRadius: 4, cursor: 'pointer', whiteSpace: 'nowrap' }}
-              >
-                Leave
+        {/* ---------- top chrome ----------
+            One flex column. Three clusters used to be absolutely pinned to the
+            same top:14 (navigator · floor tools · search + health) and collided
+            on any phone narrower than their sum. Rows lay out; pins overlap. */}
+        <div className="est-chrome-top">
+          <div className="est-chrome-row">
+            {!panelOpen && (
+              <button className="est-row est-nav-btn" onClick={() => setPanelOpen(true)}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.sub} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3l8 4.5-8 4.5-8-4.5L12 3z" /><path d="M4 12l8 4.5 8-4.5" /><path d="M4 16.5L12 21l8-4.5" /></svg>
+                <span style={{ fontSize: 12.5, fontWeight: 500, color: C.ink }}>Navigator</span>
               </button>
-            </div>
-
-            {/* Touch pad. A phone has no W A S D, and a virtual stick is a lot of
-                machinery for four directions — these are the four directions. */}
-            <div
-              aria-label="Walk"
-              style={{ position: 'absolute', left: 18, bottom: 18, zIndex: 26, display: 'grid', gridTemplateColumns: 'repeat(3, 44px)', gridTemplateRows: 'repeat(2, 44px)', gap: 6 }}
-            >
-              {([
-                { label: 'Forward', d: 'M12 19V5M6 11l6-6 6 6', col: 2, row: 1, f: 1, s: 0 },
-                { label: 'Left', d: 'M19 12H5M11 6l-6 6 6 6', col: 1, row: 2, f: 0, s: -1 },
-                { label: 'Back', d: 'M12 5v14M6 13l6 6 6-6', col: 2, row: 2, f: -1, s: 0 },
-                { label: 'Right', d: 'M5 12h14M13 6l6 6-6 6', col: 3, row: 2, f: 0, s: 1 },
-              ] as const).map((btn) => (
+            )}
+            <span className="est-chrome-spacer" aria-hidden="true" />
+            {!(selAsset || selSpace) && (
+              <>
+                <div className="est-search-wrap">
+                  <input
+                    className="est-input est-search-input"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && searchHits[0]) pickHit(searchHits[0]);
+                      else if (e.key === 'Escape') setSearch('');
+                    }}
+                    placeholder="Find an asset"
+                    aria-label="Find an asset"
+                    role="combobox"
+                    aria-expanded={searchHits.length > 0}
+                    aria-controls="est-search-pop"
+                    style={{ height: 34, border: `1px solid ${C.line}`, borderRadius: 8, padding: '0 12px', fontSize: 12.5, fontFamily: 'var(--font-sans)', color: C.ink, outline: 'none', background: C.white }}
+                  />
+                  {searchHits.length > 0 && (
+                    <div id="est-search-pop" className="est-search-pop" role="listbox" aria-label="Matches">
+                      {searchHits.map((h) => (
+                        <button
+                          key={`${h.kind}:${h.recordId}`}
+                          role="option"
+                          aria-selected={false}
+                          className="est-search-hit"
+                          onClick={() => pickHit(h)}
+                        >
+                          <span className={`est-search-kind est-search-kind--${h.kind}`}>
+                            {h.kind === 'asset' ? 'Asset' : h.kind === 'space' ? 'Space' : 'Building'}
+                          </span>
+                          <span className="est-search-label">{h.label}</span>
+                          <span className="est-search-sub">{h.sub}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <button
-                  key={btn.label}
-                  aria-label={btn.label}
-                  // Pointer events, not click: walking is held, not tapped. The
-                  // cancel/leave pair is what stops a finger sliding off the pad
-                  // from walking forever.
-                  onPointerDown={(e) => {
-                    e.currentTarget.setPointerCapture(e.pointerId);
-                    engineRef.current?.setWalkInput(btn.f, btn.s);
-                  }}
-                  onPointerUp={() => engineRef.current?.setWalkInput(0, 0)}
-                  onPointerCancel={() => engineRef.current?.setWalkInput(0, 0)}
-                  onPointerLeave={() => engineRef.current?.setWalkInput(0, 0)}
-                  style={{ gridColumn: btn.col, gridRow: btn.row, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.94)', border: `1px solid ${C.line}`, borderRadius: 8, color: C.sub, cursor: 'pointer', boxShadow: 'var(--shadow-md)', touchAction: 'none' }}
+                  role="switch"
+                  aria-checked={sampleHealth}
+                  onClick={() => setSampleHealth((v) => !v)}
+                  title="Overlay sample work orders and asset health on the estate. Nothing is written back to Facilio."
+                  style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 500, height: 34, padding: '0 12px', borderRadius: 8, cursor: 'pointer', color: sampleHealth ? C.blueDk : C.sub, background: sampleHealth ? C.blueBg : C.white, border: `1px solid ${sampleHealth ? C.blueBd : C.line}`, whiteSpace: 'nowrap' }}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d={btn.d} />
-                  </svg>
+                  <span style={{ width: 22, height: 12, borderRadius: 7, background: sampleHealth ? C.blue : '#c6d3e4', position: 'relative', flex: 'none', transition: 'background var(--dur-base) var(--ease-standard)' }}>
+                    <span style={{ position: 'absolute', top: 2, left: sampleHealth ? 12 : 2, width: 8, height: 8, borderRadius: '50%', background: C.white, transition: 'left var(--dur-base) var(--ease-standard)' }} />
+                  </span>
+                  <span className="est-health-label">Sample health</span>
                 </button>
-              ))}
-            </div>
-          </>
-        )}
+              </>
+            )}
+          </div>
 
-        {/* floor tools: import a plan, and read it as a drawing or as a space.
-            Only inside a floor — neither means anything at estate or building level. */}
-        {activeF && camMode === 'orbit' && !selAsset && !selSpace && (
-          <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: 14, zIndex: 23, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* walking HUD — replaces the floor tools while you are inside the plan */}
+          {camMode === 'walk' && (
+            <div className="est-chrome-row est-chrome-center">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: C.white, border: `1px solid ${C.line}`, borderRadius: 8, padding: '7px 12px', boxShadow: 'var(--shadow-md)' }}>
+                <span style={{ fontSize: 12, color: C.sub, whiteSpace: 'nowrap' }}>
+                  <span className="est-walk-hint-desk">Drag to look · W A S D or arrows to walk</span>
+                  <span className="est-walk-hint-mob">Drag to look · pad to walk</span>
+                </span>
+                <button
+                  className="est-primary"
+                  onClick={() => engineRef.current?.setCameraMode('orbit')}
+                  style={{ height: 26, padding: '0 11px', fontSize: 12, fontWeight: 500, color: C.white, background: C.blue, border: 'none', borderRadius: 4, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                >
+                  Leave
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* floor tools: import a plan, and read it as a drawing or as a space.
+              Only inside a floor — neither means anything at estate or building level. */}
+          {activeF && camMode === 'orbit' && !selAsset && !selSpace && (
+            <div className="est-chrome-row est-floor-tools">
               {activePlan && (
                 <div role="group" aria-label="Floor view" style={{ display: 'flex', background: C.white, border: `1px solid ${C.line}`, borderRadius: 6, overflow: 'hidden', boxShadow: 'var(--shadow-md)' }}>
                   {(['drawing', 'solid'] as const).map((mode) => (
@@ -993,8 +1031,10 @@ export default function EstateScreen() {
                 }}
               />
             </div>
+          )}
 
-            {importState.kind !== 'idle' && (
+          {activeF && camMode === 'orbit' && !selAsset && !selSpace && importState.kind !== 'idle' && (
+            <div className="est-chrome-row est-chrome-center">
               <div
                 role="status"
                 style={{ maxWidth: 420, textAlign: 'center', fontSize: 12, lineHeight: 1.45, padding: '7px 12px', borderRadius: 8, background: C.white, border: `1px solid ${importState.kind === 'error' ? C.redBd : C.line}`, color: importState.kind === 'error' ? C.red : C.sub, boxShadow: 'var(--shadow-md)' }}
@@ -1003,7 +1043,44 @@ export default function EstateScreen() {
                 {importState.kind === 'done' && importState.message}
                 {importState.kind === 'error' && importState.message}
               </div>
-            )}
+            </div>
+          )}
+        </div>
+
+        {/* Touch pad. A phone has no W A S D, and a virtual stick is a lot of
+            machinery for four directions — these are the four directions. Pinned
+            bottom-left, outside the top chrome, opposite the zoom rail. */}
+        {camMode === 'walk' && (
+          <div
+            aria-label="Walk"
+            style={{ position: 'absolute', left: 18, bottom: 18, zIndex: 26, display: 'grid', gridTemplateColumns: 'repeat(3, 44px)', gridTemplateRows: 'repeat(2, 44px)', gap: 6 }}
+          >
+            {([
+              { label: 'Forward', d: 'M12 19V5M6 11l6-6 6 6', col: 2, row: 1, f: 1, s: 0 },
+              { label: 'Left', d: 'M19 12H5M11 6l-6 6 6 6', col: 1, row: 2, f: 0, s: -1 },
+              { label: 'Back', d: 'M12 5v14M6 13l6 6 6-6', col: 2, row: 2, f: -1, s: 0 },
+              { label: 'Right', d: 'M5 12h14M13 6l6 6-6 6', col: 3, row: 2, f: 0, s: 1 },
+            ] as const).map((btn) => (
+              <button
+                key={btn.label}
+                aria-label={btn.label}
+                // Pointer events, not click: walking is held, not tapped. The
+                // cancel/leave pair is what stops a finger sliding off the pad
+                // from walking forever.
+                onPointerDown={(e) => {
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  engineRef.current?.setWalkInput(btn.f, btn.s);
+                }}
+                onPointerUp={() => engineRef.current?.setWalkInput(0, 0)}
+                onPointerCancel={() => engineRef.current?.setWalkInput(0, 0)}
+                onPointerLeave={() => engineRef.current?.setWalkInput(0, 0)}
+                style={{ gridColumn: btn.col, gridRow: btn.row, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.94)', border: `1px solid ${C.line}`, borderRadius: 8, color: C.sub, cursor: 'pointer', boxShadow: 'var(--shadow-md)', touchAction: 'none' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d={btn.d} />
+                </svg>
+              </button>
+            ))}
           </div>
         )}
 
@@ -1175,7 +1252,7 @@ export default function EstateScreen() {
         )}
 
         {/* toolbar */}
-        <div style={{ position: 'absolute', right: 14, bottom: 14, zIndex: 22, display: 'flex', flexDirection: 'column', background: C.white, border: `1px solid ${C.line}`, borderRadius: 8, overflow: 'hidden', boxShadow: 'var(--shadow-md)' }}>
+        <div className="est-zoom-rail" style={{ position: 'absolute', right: 14, bottom: 14, zIndex: 22, display: 'flex', flexDirection: 'column', background: C.white, border: `1px solid ${C.line}`, borderRadius: 8, overflow: 'hidden', boxShadow: 'var(--shadow-md)' }}>
           {tools.map((t) => (
             <button key={t.label} className="est-tool" onClick={t.onClick} title={t.label} aria-label={t.label} style={{ width: 38, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: C.sub, borderBottom: `1px solid ${t.bd}`, background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={t.d} /></svg>
@@ -1202,24 +1279,9 @@ export default function EstateScreen() {
           </div>
         )}
 
-        {/* Effi, on the desk surface.
-            EffiOverlay already took assetInView as a prop; feeding it from the
-            3D selection is what makes that prop surface-agnostic — "create a
-            work order, it's leaking oil" now behaves identically whether the
-            asset is in front of the camera or picked in the model. No
-            captureFrame here: there is no camera on this screen, and the photo
-            lanes degrade honestly without one. */}
-        <EffiOverlay
-          open={effiOpen}
-          onOpenChange={setEffiOpen}
-          assetInView={
-            selAsset
-              ? { id: selAsset.recordId, name: String(selAsset.name ?? selAsset.code ?? '') }
-              : undefined
-          }
-          woUrl={(id) => fillLink(links.wo, id)}
-          onShowAsset={(assetId) => engineRef.current?.flyToMarker(assetId)}
-        />
+        {/* Effi's overlay used to sit here. Removed at the client's request —
+            on a desk screen the orb covered the zoom rail, and voice lives on
+            the Voice screen and the camera surfaces where it earns its space. */}
       </div>
     </div>
   );

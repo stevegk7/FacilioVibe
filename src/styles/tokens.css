@@ -132,6 +132,12 @@
   /* The viewport backdrop. Deliberately a step darker than --bg-app so the white
      floating navigator and detail card read as floating above the scene. */
   --estate-bg: #eef2f8;
+  /* Engine scene colors, read by paletteFromTokens() and applied via
+     setPalette — the scene background/fog and the ground disc. A step deeper
+     than the panels so white chrome stands off the canvas instead of
+     dissolving into it. */
+  --estate-scene: #dfe8f4;
+  --estate-ground: #cfdbec;
   /* The 3D status ramp's amber. Distinct from --warning-500's pure yellow, which
      stays the room-wash colour — the scene uses both, side by side. */
   --warning-600: #e5a800;

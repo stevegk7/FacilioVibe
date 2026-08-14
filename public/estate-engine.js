@@ -964,6 +964,9 @@
 
     var api = {};
     api.enterBuilding = function (bid) {
+      // PATCH (facilio-vision-3d): a stale or foreign id (handoff, breadcrumb
+      // after a rebuild) must be a no-op, not a crash inside camBuilding.
+      if (!B[bid]) return;
       if (camMode === 'walk') api.setCameraMode('orbit');
 
       var now = Date.now();
@@ -975,6 +978,9 @@
       if (camMode === 'walk') api.setCameraMode('orbit');
 
       if (activeB !== bid) return api.flyToFloor(bid, fid);
+      // PATCH (facilio-vision-3d): unknown building or floor id — no-op before
+      // any state is mutated, so a bad deep link cannot strand the camera.
+      if (!B[bid] || !B[bid].floors.some(function (r) { return r.data.recordId === fid; })) return;
       var prev = activeF;
       activeF = fid; level = 2; focusId = null; focusSpaceId = null;
       selectedId = null; clearTimeout(focusT);
@@ -1040,8 +1046,24 @@
       }
       if (recordId === null) { selRing.visible = selDisc.visible = selWave.visible = selBeam.visible = false; if (cb.onSelect) cb.onSelect(null); return; }
       if (kind === 'space') {
-        var rbS = B[activeB], rfS = rbS.floors.find(function (r) { return r.data.recordId === activeF; });
-        var sp = rfS.data.spaces.find(function (x) { return x.recordId === recordId; });
+        var rbS = B[activeB], rfS = rbS && rbS.floors.find(function (r) { return r.data.recordId === activeF; });
+        var sp = rfS && rfS.data.spaces.find(function (x) { return x.recordId === recordId; });
+        // PATCH (facilio-vision-3d): the caller's floor isn't open (breadcrumb
+        // after Back, a handoff, a search hit from estate level). Find the
+        // owner and fly there instead of throwing — this was "Cannot read
+        // properties of undefined (reading 'data')" in the error banner.
+        if (!sp) {
+          var ownB = null, ownF = null;
+          data.buildings.forEach(function (b2) {
+            b2.floors.forEach(function (f2) {
+              if (f2.spaces.some(function (s2) { return s2.recordId === recordId; })) { ownB = b2; ownF = f2; }
+            });
+          });
+          if (!ownB) { selectedId = null; return; }
+          api.flyToFloor(ownB.id, ownF.recordId);
+          later(function () { api.select(recordId, 'space'); }, 1400);
+          return;
+        }
         // v5: the blue room fill is the selection — no pulse ring on spaces
         selRing.visible = selDisc.visible = selWave.visible = selBeam.visible = false;
         if (cb.onSelect) cb.onSelect({ kind: 'space', space: sp, b: rbS.data, f: rfS.data });
@@ -1216,7 +1238,10 @@
       if (!editMode) return;
       var rf = activeFloor(); if (!rf) return;
       toNdc(e);
-      var vis = rf.pins.filter(function (p) { return p.sprite.visible; });
+      // PATCH (facilio-vision-3d): virtual pins (work-order markers) carry
+      // sprite:null — raycasting them was "null is not an object (evaluating
+      // 'p.sprite.visible')" on every tap of a floor that had one.
+      var vis = rf.pins.filter(function (p) { return p.sprite && p.sprite.visible; });
       var hit = ray.intersectObjects(vis.map(function (p) { return p.sprite; }), true)[0];
       if (hit) {
         var mk = markerOf(hit.object);
@@ -1287,7 +1312,8 @@
       toNdc(e);
       var rf = activeFloor();
       if (rf) {
-        var vis = rf.pins.filter(function (p) { return p.sprite.visible; }).map(function (p) { return p.sprite; });
+        // PATCH (facilio-vision-3d): same null-sprite guard as pointerdown.
+        var vis = rf.pins.filter(function (p) { return p.sprite && p.sprite.visible; }).map(function (p) { return p.sprite; });
         var hit = ray.intersectObjects(vis, true)[0];
         if (hit) { var mm = markerOf(hit.object); if (mm) { api.select(mm.recordId); return; } }
         var spaceMeshes = rf.data.spaces.map(function (sp) { return sp._mesh; }).filter(function (x) { return x && x.visible !== false; });
@@ -1726,6 +1752,11 @@
       if (typeof p.primary === 'number') PALETTE.primary = p.primary;
       if (typeof p.closed === 'number') PALETTE.closed = p.closed;
       if (typeof p.marker === 'number') PALETTE.marker = p.marker;
+      // PATCH (facilio-vision-3d): scene backdrop is themable too — the flat
+      // hardcoded backdrop read as "vague white" against white panels. Fog
+      // follows the background or distant buildings silhouette wrongly.
+      if (typeof p.sceneBg === 'number') { scene.background.setHex(p.sceneBg); scene.fog.color.setHex(p.sceneBg); }
+      if (typeof p.ground === 'number') ground.material.color.setHex(p.ground);
       applyState();
     };
     return api;

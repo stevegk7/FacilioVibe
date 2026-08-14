@@ -430,3 +430,130 @@ describe('estate-engine dispose()', () => {
     engine.dispose();
   });
 });
+
+/* ------------------------------------------------------------------ */
+/* Stale-id and null-sprite guards.                                    */
+/*                                                                     */
+/* Two crashes shipped to phones: tapping any floor that had a         */
+/* work-order marker ("null is not an object (evaluating               */
+/* 'p.sprite.visible')" — virtual pins carry sprite:null), and asking  */
+/* the engine about an id it does not know ("Cannot read properties of */
+/* undefined (reading 'data')" — select/enterFloor dereferenced the    */
+/* result of floors.find() without checking it). The doctrine under    */
+/* both fixes: an id the engine does not know must no-op or recover,   */
+/* never throw.                                                        */
+/* ------------------------------------------------------------------ */
+
+describe('estate-engine stale-id and null-sprite guards', () => {
+  /** tinyEstate plus a work-order marker — the shape that crashed taps. */
+  function estateWithWorkOrderPin() {
+    const data = tinyEstate();
+    data.buildings[0].floors[0].markers.push({
+      recordId: 41,
+      markerModuleName: 'workorder',
+      name: 'WO-1 belt inspection',
+      code: 'WO-1',
+      status: 'open',
+      spaceId: 21,
+      x: 2,
+      z: 2,
+    });
+    return data;
+  }
+
+  /** A quick tap: down + up with no movement, under the 450ms threshold. */
+  function tap(canvas: HTMLCanvasElement) {
+    (canvas as unknown as { setPointerCapture: () => void }).setPointerCapture = () => {};
+    const PE = (window as unknown as { PointerEvent?: typeof MouseEvent }).PointerEvent ?? MouseEvent;
+    canvas.dispatchEvent(new PE('pointerdown', { clientX: 10, clientY: 10, bubbles: true }));
+    canvas.dispatchEvent(new PE('pointerup', { clientX: 10, clientY: 10, bubbles: true }));
+  }
+
+  /** jsdom reports listener exceptions on window instead of rethrowing
+      through dispatchEvent — collect them so the assertion sees the crash. */
+  function collectWindowErrors(run: () => void): unknown[] {
+    const errors: unknown[] = [];
+    const onError = (e: ErrorEvent) => {
+      errors.push(e.error ?? e.message);
+      e.preventDefault();
+    };
+    window.addEventListener('error', onError);
+    try {
+      run();
+    } finally {
+      window.removeEventListener('error', onError);
+    }
+    return errors;
+  }
+
+  it('the tap harness really does catch the old crash (mutated engine)', () => {
+    // Self-verification: evaluate the engine source with the guard stripped
+    // back to the shipped bug, and prove this file's tap simulation sees the
+    // TypeError. Without this, a green "does not throw" test could be green
+    // because the harness misses the code path, not because the fix works.
+    const file = path.resolve(process.cwd(), 'public/estate-engine.js');
+    const src = fs.readFileSync(file, 'utf8');
+    const broken = src.replaceAll('p.sprite && p.sprite.visible', 'p.sprite.visible');
+    expect(broken).not.toBe(src); // the guard is present to strip
+
+    const realEngine = window.EstateEngine;
+    try {
+      // eslint-disable-next-line no-new-func
+      new Function(broken)();
+      const data = estateWithWorkOrderPin();
+      const engine = mountEngine(data);
+      engine.enterBuilding('1');
+      engine.enterFloor('1', 11);
+
+      // The freshly mounted host is the LAST child of body — a bare
+      // querySelector('canvas') would hit an earlier test's dead canvas.
+      const canvas = document.body.lastElementChild!.querySelector('canvas') as HTMLCanvasElement;
+      const errors = collectWindowErrors(() => tap(canvas));
+      // V8 says "reading 'visible'", JavaScriptCore said "evaluating
+      // 'p.sprite.visible'" — 'visible' is the invariant across engines.
+      expect(String(errors[0] ?? '')).toMatch(/visible/i);
+    } finally {
+      window.EstateEngine = realEngine;
+    }
+  });
+
+  it('tapping a floor that has a work-order pin does not throw', () => {
+    const engine = mountEngine(estateWithWorkOrderPin());
+    engine.enterBuilding('1');
+    engine.enterFloor('1', 11);
+
+    const canvas = document.body.lastElementChild!.querySelector('canvas') as HTMLCanvasElement;
+    const errors = collectWindowErrors(() => tap(canvas));
+    expect(errors).toEqual([]);
+  });
+
+  it('select(id, space) with an unknown id is a no-op, not a crash', () => {
+    const engine = mountEngine(tinyEstate());
+    expect(() => engine.select(999999, 'space')).not.toThrow();
+    expect(engine.getState().level).toBe(0);
+  });
+
+  it('select(id, space) from estate level flies to the owning floor', () => {
+    // The breadcrumb/search path: the space exists, but its floor is not open.
+    // The old code dereferenced floors.find(...)'s miss — the "reading 'data'"
+    // banner. Now it must start the flight instead.
+    const engine = mountEngine(tinyEstate());
+    expect(engine.getState().level).toBe(0);
+    expect(() => engine.select(21, 'space')).not.toThrow();
+    // enterBuilding happens synchronously inside flyToFloor; the rest is timed.
+    expect(engine.getState().buildingId).toBe('1');
+    expect(engine.getState().level).toBeGreaterThanOrEqual(1);
+  });
+
+  it('enterBuilding and enterFloor ignore ids the estate does not contain', () => {
+    const engine = mountEngine(tinyEstate());
+    expect(() => engine.enterBuilding('no-such-building')).not.toThrow();
+    expect(engine.getState().level).toBe(0);
+
+    engine.enterBuilding('1');
+    expect(() => engine.enterFloor('1', 999999)).not.toThrow();
+    const st = engine.getState();
+    expect(st.level).toBe(1);        // never claimed to be inside a floor
+    expect(st.floorId).toBeNull();   // no dangling floor id
+  });
+});
