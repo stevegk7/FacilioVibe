@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { afterEach, beforeEach } from 'vitest';
 import { installMockProvider } from '../api/provider';
 import { mockProvider } from '../api/mockProvider';
@@ -11,6 +11,30 @@ import { setSessionScope } from '../api/scope';
 // here, once. A static import in a test-only file costs the shipped bundle
 // nothing.
 installMockProvider(mockProvider);
+
+/**
+ * Give a `findBy*` a budget proportionate to the test's own.
+ *
+ * testTimeout is 20s (vite.config.ts, raised for the AR suites with a measured
+ * reason). Testing Library's per-query budget was left at its 1s default, and
+ * that mismatch is the whole flake: every intermittent failure in this suite has
+ * the same shape — a `findByText`/`findByRole` immediately after mount, giving up
+ * after one second while the test still had nineteen in hand.
+ *
+ * What must happen inside that second before the assertion can pass: the auth
+ * check resolves, the demo dataset seeds into the mock KV, several react-query
+ * reads settle, and — since screens became lazy — a dynamic import resolves too.
+ * On an idle machine that fits comfortably. On a busy one it does not, and the
+ * failure reads "Unable to find an element", which looks exactly like a
+ * regression rather than like a stopwatch running out. That misreading cost real
+ * time: a green commit was investigated as a regression because of it.
+ *
+ * No assertion is weakened. A genuinely missing element still fails — it takes
+ * 5s to say so instead of 1s, and only on the path that was going to fail
+ * anyway. A passing test pays nothing: these resolve the moment the element
+ * appears, so the cap is a ceiling, not a delay.
+ */
+configure({ asyncUtilTimeout: 5000 });
 
 /**
  * Every test starts as an ADMIN.
