@@ -30,18 +30,21 @@ import { loadEditGraphPolicy, policyAllows } from '../api/permissions';
 import { resolveDestination } from '../api/agents';
 import { useLocationScope } from '../state/LocationContext';
 import { useGeoFix } from '../hooks/useGeoFix';
+import { useHeading } from '../hooks/useHeading';
 import { useVoice } from '../voice/useVoice';
 import Icon from '../components/Icon';
 import Sheet from '../components/Sheet';
 import DsSelect from '../components/DsSelect';
 import LocationPicker from '../components/LocationPicker';
 import ScanCodeSheet from '../components/ScanCodeSheet';
+import FacingCone from '../components/FacingCone';
 import { loadGraph, nodeForCode, nodeForSurvey, saveGraph, withSurveyNodes, nodeById } from '../wayfinding/graph';
 import type { EdgeKind, NodeKind, WayGraph, WayNode } from '../wayfinding/graph';
 import { anchorFromFix, findRoute } from '../wayfinding/router';
 import type { Route, RouteStep } from '../wayfinding/router';
 import { mapsDirectionsUrl } from '../wayfinding/legs';
 import { surveyForAsset, surveyForPlace } from '../wayfinding/resolve';
+import { canShowFacing, relativeBearing, turnPhrase } from '../wayfinding/facing';
 import { useEstate } from '../estate/useEstate';
 import { buildAutoGraph, findNode, legEdge, routeOnGraph } from '../wayfinding/autoGraph';
 import type { AutoGraph, AutoNode, AutoRoute } from '../wayfinding/autoGraph';
@@ -1509,6 +1512,16 @@ function GuidedCard({
 }) {
   const step = route.steps[stepIdx];
   const next = route.steps[stepIdx + 1];
+  /* Sampled at 400ms rather than every sensor event: this is a phrase and a
+     wedge, not an AR overlay, and re-rendering the guided card at 60Hz to move a
+     cone by a degree is battery spent for nothing. Hooks run before the early
+     return below so their order never changes between renders. */
+  const orientation = useHeading(400);
+  const facing = useMemo(() => {
+    if (!step || !canShowFacing(step.bearing, orientation)) return null;
+    const relative = relativeBearing(step.bearing as number, orientation.heading);
+    return { relative, phrase: turnPhrase(relative), accuracyDeg: orientation.accuracyDeg };
+  }, [step, orientation]);
   if (!step) return null;
   return (
     <div className="wf-route wf-guided">
@@ -1530,7 +1543,18 @@ function GuidedCard({
           </span>
         )}
         <p className="wf-now-text">{step.text}</p>
-        {step.meters != null && <span className="wf-step-meta">{Math.round(step.meters)}m</span>}
+        <span className="wf-now-meta">
+          {step.meters != null && <span className="wf-step-meta">{Math.round(step.meters)}m</span>}
+          {/* Only where the step HAS a bearing and the compass is genuinely
+              north-referenced — see canShowFacing. Most indoor edges have no
+              bearing, and nothing is drawn for those rather than a guess. */}
+          {facing && (
+            <span className="wf-facing-wrap">
+              <FacingCone relativeDeg={facing.relative} accuracyDeg={facing.accuracyDeg} />
+              <span className="wf-facing-text">{facing.phrase}</span>
+            </span>
+          )}
+        </span>
       </div>
 
       {next && (

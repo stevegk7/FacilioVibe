@@ -11,7 +11,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { LocationProvider } from '../state/LocationContext';
 import WayfinderScreen from '../screens/WayfinderScreen';
 import { __resetDemoSeedForTest } from '../api/seedDemoData';
@@ -28,6 +28,7 @@ import {
 import { buildDemoDataset, MOCK_DEMO_IDS } from '../wayfinding/demoData';
 import { withSurveyNodes } from '../wayfinding/graph';
 import { findRoute } from '../wayfinding/router';
+import { setOrientationForTest } from '../hooks/useHeading';
 
 function renderScreen() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -303,5 +304,78 @@ describe('arrivalPhase', () => {
     expect(arrivalPhase(null, 'guided')).toBe('guided');
     expect(arrivalPhase(null, 'preview')).toBe('preview');
     expect(arrivalPhase({ steps: [1] }, 'guided')).toBe('guided');
+  });
+});
+
+/* ---------------- facing ----------------
+   The one thing a phone can genuinely add at a standpoint is which way to TURN:
+   the failure there is rotational, not positional. These pin the refusals as
+   hard as the happy path, because a confident arrow pointing the wrong way costs
+   more trust than showing nothing — and most indoor edges have no bearing at all.
+
+   Driven here rather than in a browser on purpose: the indicator polls the
+   sensor on an interval, and a hidden/background tab throttles timers, which
+   makes a live browser check unreliable in both directions. */
+describe('facing indicator', () => {
+  afterEach(() => setOrientationForTest(null));
+
+  /** Entrance → lobby → … → plant room, then into guided mode on step 1. */
+  async function guidedFirstStep(user: ReturnType<typeof userEvent.setup>) {
+    renderScreen();
+    await screen.findByRole('button', { name: /Quarterly UPS battery inspection/ });
+    await user.type(screen.getByRole('textbox', { name: 'Destination' }), 'Primary Pump{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Guide me' }));
+    await screen.findByText('Step 1 of 5');
+  }
+
+  /**
+   * Turn the technician, then let the sensor poll land INSIDE act.
+   *
+   * useHeading samples on an interval rather than per event (a phrase and a
+   * wedge do not need 60Hz), so a bare assertion races that tick. Waiting one
+   * full period explicitly makes these deterministic instead of leaning on a
+   * findBy timeout — which is what made them the first thing to fall over when
+   * the machine was busy.
+   */
+  async function faceTowards(deg: number) {
+    await act(async () => {
+      setOrientationForTest(deg);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    });
+  }
+
+  it('shows which way to turn once the compass is north-referenced', async () => {
+    const user = userEvent.setup();
+    await guidedFirstStep(user);
+    // Nothing before a compass exists — a desktop browser never sees this.
+    expect(screen.queryByRole('img', { name: /Destination/ })).not.toBeInTheDocument();
+
+    // Step 1 (entrance → lobby) is the only demo step with both ends geotagged;
+    // its bearing is ~224°. Facing due south, that is slightly to the right.
+    await faceTowards(180);
+    expect(screen.getByRole('img', { name: 'Destination slightly right' })).toBeInTheDocument();
+  });
+
+  it('re-phrases as the technician turns', async () => {
+    const user = userEvent.setup();
+    await guidedFirstStep(user);
+
+    await faceTowards(224);
+    expect(screen.getByRole('img', { name: 'Destination straight ahead' })).toBeInTheDocument();
+
+    await faceTowards(44);
+    expect(screen.getByRole('img', { name: 'Destination behind you' })).toBeInTheDocument();
+  });
+
+  it('says nothing on a step with no bearing — most indoor edges', async () => {
+    const user = userEvent.setup();
+    await guidedFirstStep(user);
+    await faceTowards(180);
+    expect(screen.getByRole('img', { name: /Destination/ })).toBeInTheDocument();
+
+    // Step 2 (lobby → lift) has no geotag on the lift, so no bearing exists.
+    await user.click(screen.getByRole('button', { name: /I'm here — next/ }));
+    await screen.findByText('Step 2 of 5');
+    expect(screen.queryByRole('img', { name: /Destination/ })).not.toBeInTheDocument();
   });
 });

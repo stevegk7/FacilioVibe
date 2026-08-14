@@ -45,6 +45,18 @@ export interface Orientation {
   ok: boolean;
   /** True when the heading is north-referenced; false = arbitrary session origin. */
   absolute: boolean;
+  /**
+   * Reported compass error in degrees, when the platform gives one.
+   *
+   * iOS publishes `webkitCompassAccuracy` on every orientation event; this
+   * module already read it to REJECT junk (>50°) and then threw the number
+   * away. Anything that draws a "you are facing this way" indicator needs it,
+   * because the honest way to render a heading is a cone whose width is the
+   * reported error — never a confident arrow. Android's absolute event carries
+   * no accuracy at all, so this stays undefined there and callers must assume
+   * the pessimistic case rather than the flattering one.
+   */
+  accuracyDeg?: number;
 }
 
 const RAD = Math.PI / 180;
@@ -90,6 +102,8 @@ let relSeenAt = 0;
 /** Slow lane: relative yaw + yawOffset = true bearing. */
 let yawOffset = 0;
 let compassSeenAt = 0;
+/** Last reported compass error (iOS only). Undefined = the platform said nothing. */
+let compassAccuracyDeg: number | undefined;
 let offsetSeeded = false;
 /** While held, the compass may not move the frame — see holdYawOffset(). */
 let offsetHeld = false;
@@ -136,6 +150,7 @@ function publish(at = Date.now()) {
   smoothed.pitch = Math.max(-90, Math.min(90, p.elevation));
   smoothed.ok = true;
   smoothed.absolute = compassSeenAt > 0 && at - compassSeenAt < 10_000;
+  smoothed.accuracyDeg = smoothed.absolute ? compassAccuracyDeg : undefined;
   ring.push({ q: qRel, at });
   if (ring.length > RING) ring.shift();
   history.push({ heading: smoothed.heading, pitch: smoothed.pitch, at });
@@ -242,6 +257,8 @@ function onDeviceOrientation(e: DeviceOrientationEvent) {
     !Number.isNaN(webkit) &&
     (typeof accuracy !== 'number' || (accuracy >= 0 && accuracy <= 50))
   ) {
+    // Kept, not just gated on: the facing indicator sizes its cone from this.
+    compassAccuracyDeg = typeof accuracy === 'number' && accuracy >= 0 ? accuracy : undefined;
     // compass heading is where the device TOP points; the camera looks out
     // the back. Derive the camera bearing by re-basing the relative pose's
     // yaw origin — the relative attitude carries the geometry, the compass
@@ -476,6 +493,7 @@ export function setOrientationForTest(heading: number | null, pitch = 0): void {
     offsetSeeded = false;
     offsetHeld = false;
     compassSeenAt = 0;
+    compassAccuracyDeg = undefined;
     lastRelPose = null;
     speedDegS = 0;
     ring.length = 0;

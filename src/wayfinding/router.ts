@@ -30,6 +30,16 @@ export interface RouteStep {
   meters?: number;
   /** One line a technician can act on without looking at anything else. */
   text: string;
+  /**
+   * Compass bearing from `from` to `to`, when BOTH ends are geotagged.
+   *
+   * Already computed for the step's compass word and then discarded; kept now
+   * because a bearing plus the device heading is what turns "40m northeast" —
+   * unactionable without a compass in your hand — into "slightly left".
+   * Undefined for most indoor edges, and the facing indicator simply does not
+   * appear for those rather than guessing one.
+   */
+  bearing?: number;
 }
 
 export interface Route {
@@ -150,7 +160,15 @@ export function findRoute(graph: WayGraph, fromId: string, toId: string): Route 
     const from = byId.get(hop.node) as WayNode;
     const to = byId.get(cursor) as WayNode;
     const meters = edgeMeters(hop.edge, from, to);
-    steps.unshift({ from, to, edge: hop.edge, meters, text: stepText(from, to, hop.edge, meters) });
+    const bearing = bearingBetween(from, to, hop.edge);
+    steps.unshift({
+      from,
+      to,
+      edge: hop.edge,
+      meters,
+      text: stepText(from, to, hop.edge, meters),
+      ...(bearing !== undefined ? { bearing } : {}),
+    });
     cursor = hop.node;
   }
 
@@ -160,6 +178,24 @@ export function findRoute(graph: WayGraph, fromId: string, toId: string): Route 
     totalMeters: known.length ? known.reduce((a, b) => a + b, 0) : undefined,
     destination: goal,
   };
+}
+
+/**
+ * Bearing between two nodes, or undefined unless BOTH carry coordinates.
+ *
+ * A vertical hop has no meaningful bearing even when both ends are geotagged —
+ * "face north-east to take the lift" is noise — so those are excluded too.
+ */
+function bearingBetween(from: WayNode, to: WayNode, edge: WayEdge): number | undefined {
+  if (edge.kind === 'lift' || edge.kind === 'stairs') return undefined;
+  if (from.lat == null || from.lng == null || to.lat == null || to.lng == null) return undefined;
+  // Two nodes at the same point (a lift shaft's two levels, a mis-tagged pair)
+  // have no direction to face.
+  if (from.lat === to.lat && from.lng === to.lng) return undefined;
+  return initialBearingDeg(
+    { lat: from.lat, lng: from.lng },
+    { lat: to.lat, lng: to.lng },
+  );
 }
 
 /** The node closest to a GPS fix — how an outdoor arrival picks its entrance. */

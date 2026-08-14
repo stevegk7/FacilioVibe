@@ -555,3 +555,33 @@
   outline: 2px solid var(--blue-500);
   outline-offset: 2px;
 }
+
+/* ---------- facing indicator ----------
+   Sits beside the distance because that is the pairing that matters at a
+   decision point: how far, and which way. Only rendered where the step has a
+   real bearing and the compass is north-referenced. */
+.wf-now-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.wf-facing-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--blue-600);
+}
+
+.wf-facing svg {
+  display: block;
+  /* No transition: the cone must track the phone, not glide after it. A lagging
+     direction indicator is worse than a jumpy one. */
+}
+
+.wf-facing-text {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-700);
+}

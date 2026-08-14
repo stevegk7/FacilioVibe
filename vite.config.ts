@@ -1,3 +1,4 @@
+import { cpus } from 'node:os';
 import { defineConfig, type Plugin } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import fs from 'node:fs';
@@ -58,6 +59,23 @@ export default defineConfig({
      * path still fails, and now says what was missing instead of just "timed out".
      */
     testTimeout: 20_000,
+    /**
+     * Cap the fan-out. vitest defaults to roughly one worker per core, and each
+     * worker here boots a jsdom environment — several of them also construct a
+     * real three.js scene. On a 10-core machine that is enough oversubscription
+     * to matter: measured on 2026-08-15, an unconstrained run drove load average
+     * to ~90, stretched a 14.5 s suite to 350 s, and failed ~20 tests on
+     * timeouts that every one of them passes in isolation.
+     *
+     * That failure mode is worse than slow, because it looks exactly like a
+     * regression: the same run was red on a commit that had been green an hour
+     * earlier, which cost real time to disprove by re-running the baseline in a
+     * separate worktree. Half the cores keeps wall-clock close to the default
+     * while leaving the machine responsive and the result trustworthy.
+     *
+     * If a future run is slow, raise this deliberately — do not remove it.
+     */
+    maxWorkers: Math.max(2, Math.floor(cpus().length / 2)),
     exclude: ['**/node_modules/**', '**/dist/**', '**/.claude/**', '**/fixtures/**'],
   },
 });
