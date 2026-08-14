@@ -1,0 +1,614 @@
+/* =========================================================
+   AR HUD + marker family — Vision AR System design, Dock HUD
+   direction (1b) + shared foundations 01–03.
+   Everything here renders OVER a camera feed: dark scrim
+   discipline, no backdrop-filter (webview cost), readable on
+   any background.
+   ========================================================= */
+
+@keyframes vsPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.82); }
+}
+
+@keyframes vsRing {
+  0% { opacity: 0.55; transform: scale(0.7); }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+
+/* ---------- stage ---------- */
+
+.ar-stage {
+  position: relative;
+  /* The shell owns the dock; the stage fills EXACTLY what is left. No 100vh,
+     no min-height floor (a floor is what pushed the dock under the fold), and
+     no internal page scroll — sheets and panels scroll themselves. */
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: var(--hud-bg);
+  color: #fff;
+  font-family: var(--font-sans);
+}
+
+/* top + bottom scrims so chrome stays readable over any feed */
+.ar-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(11, 18, 32, 0.78) 0%,
+    rgba(11, 18, 32, 0.26) 20%,
+    rgba(11, 18, 32, 0) 38%,
+    rgba(11, 18, 32, 0.4) 72%,
+    rgba(11, 18, 32, 0.9) 100%
+  );
+}
+
+/* Zone D crosshair — placement pointer, dead centre */
+.ar-crosshair {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 36px;
+  height: 36px;
+  pointer-events: none;
+}
+
+.ar-crosshair span { position: absolute; background: rgba(255, 255, 255, 0.7); }
+.ar-crosshair .n { top: 0; left: 50%; width: 1px; height: 10px; }
+.ar-crosshair .s { bottom: 0; left: 50%; width: 1px; height: 10px; }
+.ar-crosshair .w { left: 0; top: 50%; height: 1px; width: 10px; }
+.ar-crosshair .e { right: 0; top: 50%; height: 1px; width: 10px; }
+
+/* ---------- chip taxonomy (foundation 01) ---------- */
+
+/* Top band: site chip left, 46px action rail right. Everything clears the
+   notch / Dynamic Island via --safe-t; the band itself is click-through so
+   the camera below stays tappable. */
+.ar-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 6;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: calc(var(--safe-t) + 10px) 12px 0;
+  pointer-events: none;
+}
+
+.ar-top > * { pointer-events: auto; }
+
+/* the site chip: 40px tall, 15px label, chevron — reference anatomy */
+.ar-chip-site {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 58%;
+  height: 40px;
+  padding: 0 14px;
+  background: rgba(16, 24, 38, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ar-chip-site .txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* vertical rail — 46px squares, 8px apart, 10px radius */
+.ar-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: none;
+}
+
+.ar-rail-btn {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-sm);
+  background: rgba(16, 24, 38, 0.8);
+  color: #fff;
+  cursor: pointer;
+}
+
+.ar-rail-btn:hover { border-color: rgba(255, 255, 255, 0.3); }
+.ar-rail-btn.mic.live { background: var(--danger-500); border-color: transparent; }
+.ar-rail-btn.ai { background: var(--blue-500); border-color: transparent; }
+.ar-rail-btn.on { background: rgba(0, 89, 214, 0.32); border-color: rgba(120, 170, 255, 0.6); }
+
+/* ONE state chip, top centre, clear of both the chip and the rail */
+.ar-state-row {
+  position: absolute;
+  top: calc(var(--safe-t) + 58px);
+  left: 0;
+  right: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  padding: 0 78px;
+  pointer-events: none;
+}
+
+.ar-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-height: 30px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  background: rgba(16, 24, 38, 0.85);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.ar-state.verifying { background: rgba(84, 66, 201, 0.92); }
+.ar-state.locked { background: rgba(41, 160, 30, 0.92); }
+.ar-state.failed { background: rgba(182, 25, 25, 0.92); }
+
+.ar-state .txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.ar-state-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  flex: 0 0 7px;
+}
+
+.ar-state.verifying .ar-state-dot { background: #fff; animation: vsPulse 1.4s var(--ease-standard) infinite; }
+.ar-state.locked .ar-state-dot { background: #fff; }
+.ar-state.idle .ar-state-dot { background: rgba(255, 255, 255, 0.5); }
+.ar-state.failed .ar-state-dot { background: #fff; }
+
+/* kept for PlaceAssetsScreen's toolbar buttons (the AR stage now uses the rail) */
+.ar-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 8px;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.ar-toggle.on { background: rgba(0, 89, 214, 0.9); }
+
+/* Standpoint banner — context class, outranks floor and site */
+.ar-standpoint {
+  position: absolute;
+  top: calc(var(--safe-t) + 100px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  max-width: calc(100% - 156px);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 0 14px;
+  background: rgba(41, 160, 30, 0.94);
+  border: none;
+  border-radius: var(--radius-pill);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- marker family — visionOS Tier-1 nameplates ----------
+   Same language as the AR windows (visionGlass.css): dark translucent fill
+   (NOT blurred — the blur budget belongs to the windows), white .18 rim with
+   a top specular line, vibrancy-tiered text, and STATUS AS A GLOWING DOT
+   rather than an edge bar. */
+
+.ar-asset-tag {
+  position: absolute;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+  transition: transform var(--dur-base) var(--ease-standard), opacity var(--dur-base) var(--ease-standard);
+}
+
+/* THE ANCHOR: the status dot sits exactly on the projected point — the pixel
+   that was under the crosshair when this was placed. */
+.ar-asset-tag .edge {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.ar-asset-tag .edge.st-red { box-shadow: 0 0 0 3px rgba(255, 69, 58, 0.28); }
+.ar-asset-tag .edge.st-amber { box-shadow: 0 0 0 3px rgba(255, 214, 10, 0.28); }
+.ar-asset-tag .edge.st-green { box-shadow: 0 0 0 3px rgba(48, 209, 88, 0.28); }
+
+.ar-asset-tag .plate {
+  width: 100%;
+  display: flex;
+  background: rgba(16, 24, 38, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+.ar-asset-tag .body { flex: 1; padding: 10px 12px; display: flex; flex-direction: column; gap: 5px; min-height: 52px; }
+.ar-asset-tag .name { color: rgba(255, 255, 255, 0.96); font-size: 15px; font-weight: 600; line-height: 20px; }
+.ar-asset-tag .sub { color: rgba(255, 255, 255, 0.62); font-size: 13px; line-height: 17px; }
+.ar-asset-tag .counts { display: flex; gap: 6px; padding-top: 2px; }
+
+.ar-asset-tag.selected .plate {
+  border-color: rgba(46, 209, 255, 0.7);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 0 0 3px rgba(46, 209, 255, 0.22), 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+.ar-asset-tag.decaying { opacity: 0.5; }
+.ar-asset-tag.dragging {
+  transform: scale(1.04);
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.55);
+  background: rgba(16, 24, 38, 0.6);
+}
+
+/* status colours: the ONLY colour that varies across the family
+   (iOS dark system palette — calibrated for dark translucency) */
+.st-red { background: #ff453a; }
+.st-amber { background: #ffd60a; }
+.st-green { background: #30d158; }
+
+.ar-count {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.96);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+.ar-count::before { content: ''; width: 5px; height: 5px; border-radius: 50%; }
+.ar-count.open { background: rgba(255, 69, 58, 0.32); }
+.ar-count.open::before { background: #ff453a; }
+.ar-count.planned { background: rgba(255, 214, 10, 0.28); }
+.ar-count.planned::before { background: #ffd60a; }
+
+/* Note tag: same anchor-dot anatomy; amber lives in the dot and the icon. */
+.ar-note-tag {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  max-width: 210px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: rgba(255, 255, 255, 0.96);
+  font-size: 14px;
+  line-height: 19px;
+  text-align: left;
+  cursor: pointer;
+}
+.ar-note-tag .anchor {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(255, 214, 10, 0.28);
+}
+.ar-note-tag .plate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 13px;
+  background: rgba(16, 24, 38, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+.ar-note-tag .txt {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Work-order pin: badge floats above its stem anchor */
+.ar-wo-pin {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.ar-wo-pin .head {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: #fff;
+}
+
+.ar-wo-pin .head.st-amber { color: var(--ink-900); }
+.ar-wo-pin .stem { width: 1.5px; height: 16px; background: rgba(255, 255, 255, 0.6); }
+.ar-wo-pin .anchor { width: 6px; height: 6px; border-radius: var(--radius-pill); background: rgba(255, 255, 255, 0.85); }
+
+/* Survey standpoint: green, always. Ring pulses only while re-localizing. */
+.ar-standpoint-marker {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #fff;
+}
+
+.ar-standpoint-marker .head {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(41, 160, 30, 0.92);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: var(--radius-pill);
+}
+
+.ar-standpoint-marker.relocalizing .head::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid rgba(41, 160, 30, 0.7);
+  animation: vsRing 2s var(--ease-standard) infinite;
+}
+
+.ar-standpoint-marker .lbl {
+  height: 26px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  background: rgba(16, 24, 38, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.96);
+}
+
+/* Minimized dot: 14px status colour in a 28px glass halo, slow pulse ring —
+   visionOS Tier 0 (non-blurred fill: blur budget belongs to the windows). */
+.ar-min-dot {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.ar-min-dot .dot {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-pill);
+  outline: 7px solid rgba(30, 30, 34, 0.45);
+  outline-offset: 0;
+}
+.ar-min-dot .lbl {
+  color: rgba(255, 255, 255, 0.92);
+  font: 600 12px/1.2 var(--font-sans);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ar-min-dot .dot.st-green { box-shadow: 0 0 0 3px rgba(41, 160, 30, 0.28); }
+.ar-min-dot .dot.st-red { box-shadow: 0 0 0 3px rgba(182, 25, 25, 0.28); }
+.ar-min-dot .dot.st-amber { box-shadow: 0 0 0 3px rgba(255, 212, 5, 0.28); }
+
+.ar-min-dot .dot::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid currentColor;
+  animation: vsRing 2s var(--ease-standard) infinite;
+}
+
+.ar-min-dot .dot.st-green::after { color: var(--success-500); }
+.ar-min-dot .dot.st-red::after { color: var(--danger-500); }
+.ar-min-dot .dot.st-amber::after { color: var(--warning-500); }
+
+.ar-min-dot .lbl { color: rgba(255, 255, 255, 0.75); font-size: 13px; letter-spacing: 0.02em; }
+
+/* ---------- bottom band: candidates · toast · action row ----------
+   One flex column pinned to the bottom of the stage, immediately above the
+   app dock. Nothing here is position:fixed and nothing needs a magic offset:
+   the band grows upward as content appears. */
+
+.ar-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+/* embedded mode has no app dock below the stage — own the safe area here */
+.embedded .ar-bottom { padding-bottom: calc(12px + var(--safe-b)); }
+
+.ar-actions { display: flex; gap: 10px; }
+
+.ar-action {
+  flex: 1;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  color: #fff;
+  font: 600 15px/1.2 var(--font-sans);
+  cursor: pointer;
+}
+
+.ar-action-primary {
+  background: var(--blue-500);
+  box-shadow: 0 8px 22px rgba(0, 89, 214, 0.32);
+}
+
+.ar-action-primary:hover { background: var(--blue-600); border-color: transparent; }
+
+.ar-action-secondary {
+  background: rgba(16, 24, 38, 0.86);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.ar-action-secondary.active { background: rgba(255, 255, 255, 0.18); }
+
+.ar-candidates {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.ar-candidates::-webkit-scrollbar { display: none; }
+
+.ar-candidate {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-md);
+  background: rgba(16, 24, 38, 0.72);
+  color: #fff;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ar-candidate.top {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: transparent;
+  color: var(--ink-900);
+  font-weight: 500;
+}
+
+.ar-candidate .dot { width: 8px; height: 8px; border-radius: var(--radius-pill); }
+.ar-candidate .score { font-family: var(--font-mono); font-size: 13px; color: var(--ink-600); }
+.ar-candidate:not(.top) .score { color: rgba(255, 255, 255, 0.6); }
+
+.ar-dock-badge {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--blue-500);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ar-action-primary .ar-dock-badge { background: rgba(255, 255, 255, 0.24); }
+
+/* "markers need the compass" — sits under the standpoint banner, never over
+   the middle of the frame. */
+.ar-nocompass {
+  position: absolute;
+  top: 132px;
+  left: 12px;
+  right: 12px;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: rgba(20, 24, 33, 0.92);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.ar-nocompass .btn-quiet {
+  margin-left: auto;
+  flex: 0 0 auto;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+/* Walked off the standpoint: pins stay visible but stop claiming precision. */
+.ar-marker-layer { display: contents; }
+.ar-displaced .ar-asset-tag,
+.ar-displaced .ar-note-tag {
+  opacity: 0.4;
+  transition: opacity 300ms ease;
+}
+
+/* Reprojected-for-movement chip: informational, not alarming. */
+.ar-walkchip { background: rgba(23, 92, 211, 0.92); }

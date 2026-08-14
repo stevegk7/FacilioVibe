@@ -1,0 +1,7 @@
+{
+  "name": "Facilio Vision 3D",
+  "app": "facilio-vision-3d",
+  "build": {
+    "publish": "dist"
+  }
+}

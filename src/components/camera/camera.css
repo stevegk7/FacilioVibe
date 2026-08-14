@@ -1,0 +1,454 @@
+/* =========================================================
+   Camera surface + capture flow (WS-A, roadmap 3–4).
+   Reuses Facilio Atom tokens (tokens.css) and the dark-HUD
+   discipline from ar.css: scrims not blur, readable anywhere.
+   ========================================================= */
+
+/* ---------- camera surface ---------- */
+
+.fv-cam {
+  /* fills its host exactly — no min-height floor, no letterboxing, no scroll */
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--hud-bg);
+  color: #fff;
+}
+
+.fv-cam video,
+.fv-cam-still,
+.fv-cam-mirror {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Unavailable / starting states are centred CARDS inside the stage —
+   never a whole-screen error page. */
+.fv-cam-msg {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  text-align: center;
+  font: 500 15px/1.5 var(--font-sans);
+  color: #fff;
+  background: rgba(11, 18, 32, 0.55);
+}
+
+.fv-cam-unavailable {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  max-width: 340px;
+  padding: 22px 20px;
+  background: rgba(11, 18, 32, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 18px;
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.fv-cam-open-browser {
+  min-height: 52px;
+  min-width: 220px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 14px;
+  background: var(--blue-500);
+  color: #fff;
+  font: 600 15px/1.2 var(--font-sans);
+  cursor: pointer;
+}
+
+.fv-cam-resume {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  background: rgba(13, 13, 18, 0.55);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+}
+
+.fv-cam-resume-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 20px;
+  max-width: 340px;
+  background: rgba(11, 18, 32, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 18px;
+  font: 600 16px/1.4 var(--font-sans);
+}
+
+.fv-cam-resume-play {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-pill);
+  background: rgba(0, 89, 214, 0.95);
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+}
+
+.fv-cam-resume-alt {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font: 500 14px/1.3 var(--font-sans);
+  opacity: 0.9;
+  text-decoration: underline;
+}
+
+/* ---------- capture screen ---------- */
+
+.fv-capture {
+  position: relative;
+  /* the shell owns the dock; the stage fills what is left, exactly */
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fv-capture-cam {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.fv-shutter {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 6;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-pill);
+  border: 4px solid rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+}
+
+.fv-shutter:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.fv-hint-chip {
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  transform: translateX(-50%);
+  z-index: 6;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  background: rgba(16, 24, 38, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font: 500 12px/1 var(--font-sans);
+}
+
+.fv-qr-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 108px;
+  transform: translateX(-50%);
+  z-index: 6;
+  max-width: 90%;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  background: rgba(41, 160, 30, 0.94);
+  color: #fff;
+  font: 500 12.5px/1.4 var(--font-sans);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* panel stages (location, markers, saving) share the app surface look */
+.fv-capture-panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--bg-app);
+}
+
+.fv-capture-panel h3 {
+  margin: 0;
+}
+
+.fv-capture-preview {
+  max-width: 220px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-default);
+}
+
+.fv-field-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font: 500 12px/1 var(--font-sans);
+  color: var(--text-secondary);
+}
+
+.fv-field-label input {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font: 400 14px/1 var(--font-sans);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.fv-capture-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* ---------- shared buttons ---------- */
+
+.fv-btn-primary,
+.fv-btn-secondary {
+  height: 38px;
+  padding: 0 18px;
+  border-radius: var(--radius-md);
+  font: 500 13.5px/1 var(--font-sans);
+  cursor: pointer;
+}
+
+.fv-btn-primary {
+  border: none;
+  background: var(--blue-500);
+  color: #fff;
+}
+
+.fv-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.fv-btn-secondary {
+  border: 1px solid var(--border-strong);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.fv-btn-plain {
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  font: 500 13px/1 var(--font-sans);
+  cursor: pointer;
+}
+
+.fv-code {
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  background: var(--bg-surface-alt);
+  border-radius: var(--radius-sm);
+  padding: 2px 5px;
+  word-break: break-all;
+}
+
+/* ---------- sheets ---------- */
+
+.fv-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: end center;
+  background: var(--bg-overlay);
+}
+
+.fv-sheet {
+  width: min(480px, 100%);
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 18px 18px 24px;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fv-sheet h3 {
+  margin: 0;
+}
+
+.fv-sheet-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 6px;
+}
+
+.fv-sheet-actions-col {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* ---------- asset search ---------- */
+
+.fv-asset-search {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fv-asset-search input {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font: 400 14px/1 var(--font-sans);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.fv-asset-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fv-asset-results button {
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font: 400 13.5px/1.3 var(--font-sans);
+  cursor: pointer;
+}
+
+.fv-asset-results button:hover {
+  border-color: var(--border-focus);
+}
+
+/* ---------- marker editor ---------- */
+
+.fv-marker-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fv-marker-stage {
+  position: relative;
+  width: 100%;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--hud-bg);
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.fv-marker-stage img {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.fv-marker-box {
+  position: absolute;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+  cursor: move;
+}
+
+.fv-marker-box.selected {
+  border-color: var(--blue-300);
+  box-shadow: 0 0 0 3px rgba(0, 89, 214, 0.35);
+}
+
+.fv-marker-tag {
+  position: absolute;
+  top: -24px;
+  left: 0;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  background: rgba(16, 24, 38, 0.88);
+  color: #fff;
+  font: 500 11px/1.5 var(--font-sans);
+  white-space: nowrap;
+}
+
+.fv-marker-handle {
+  position: absolute;
+  right: -8px;
+  bottom: -8px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-pill);
+  background: var(--blue-400);
+  border: 2px solid #fff;
+  cursor: nwse-resize;
+}
+
+.fv-marker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fv-marker-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+}
+
+.fv-marker-list li.selected {
+  background: var(--blue-025);
+}
+
+.fv-marker-name {
+  flex: 1;
+  text-align: left;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font: 400 13.5px/1.4 var(--font-sans);
+  cursor: pointer;
+}

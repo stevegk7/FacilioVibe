@@ -1,0 +1,14 @@
+{
+  "name": "Facilio Vision 3D",
+  "short_name": "Vision 3D",
+  "description": "Camera-first AR field work on a 3D estate model, backed by Facilio CMMS",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B1220",
+  "theme_color": "#0B1220",
+  "icons": [
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

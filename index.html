@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover is REQUIRED for env(safe-area-inset-*) to be non-zero
+         on notched iPhones; without it every safe-area rule silently no-ops.
+         maximum-scale/user-scalable keep the camera surface from pinch-zooming. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no"
+    />
+    <!-- Hashed assets are immutable, but a cached index.html points at the OLD
+         hashes — which is how a phone keeps running a build from two deploys
+         ago. Never let the shell itself be cached. -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <!-- Add-to-Home-Screen runs as a STANDALONE web app. Without the Apple
+         meta AND a manifest with display:standalone, iOS letterboxes the page
+         instead of granting it the full screen — no CSS can reclaim space the
+         OS never gave the page (the "blank band under the dock" report). -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Vision 3D" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#0B1220" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- The 3D estate's four browser globals (estate-engine.js and friends) are
+         DELIBERATELY not <script> tags here. Estate Navigator loaded all four in
+         head — 104 KB of parser-blocking JS on every load, including the phone
+         that only ever opens the camera. src/estate/loadEngine.ts injects them,
+         with three.js, on first 3D use. -->
+    <title>Facilio Vision 3D</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

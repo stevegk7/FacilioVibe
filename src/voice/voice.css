@@ -1,0 +1,191 @@
+/* Voice sheet (roadmap 8). Reads Atom tokens from src/styles/tokens.css; owns
+   nothing outside .voice-*. Sized for one-handed use with gloves on: the PTT
+   target is the biggest thing on the sheet. */
+
+.voice-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  padding: 16px;
+}
+
+.voice-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.voice-head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.voice-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.voice-chip {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.voice-chip.muted {
+  color: var(--muted);
+  border-style: dashed;
+}
+
+.voice-log {
+  flex: 1;
+  min-height: 160px;
+  max-height: 45vh;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  background: var(--bg);
+}
+
+.voice-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.voice-line {
+  margin: 0 0 8px;
+  font-size: 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.voice-line:last-child {
+  margin-bottom: 0;
+}
+
+.voice-role {
+  display: inline-block;
+  margin-right: 8px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.voice-line.user {
+  font-weight: 600;
+}
+
+.voice-line.tool,
+.voice-line.system {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.voice-confirm {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.voice-confirm-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.voice-confirm ul {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.voice-candidate {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.voice-candidate:hover:not(:disabled) {
+  background: var(--ink-100, rgba(0, 0, 0, 0.04));
+}
+
+.voice-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.voice-ptt {
+  flex: 1 1 200px;
+  min-height: 56px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.voice-ptt.listening {
+  border-color: var(--danger-500, #d33);
+  color: var(--danger-500, #d33);
+}
+
+.voice-fallback {
+  flex: 1 1 240px;
+  display: flex;
+  gap: 8px;
+}
+
+.voice-input {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font: inherit;
+  background: transparent;
+  color: inherit;
+}
+
+.voice-send,
+.voice-secondary {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.voice-send:disabled,
+.voice-secondary:disabled,
+.voice-ptt:disabled,
+.voice-candidate:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* The default capture path — never shown, always clickable via the button. */
+.voice-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}

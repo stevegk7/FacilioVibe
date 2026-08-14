@@ -1,0 +1,21 @@
+{
+  "title": "fv_identify_verdict",
+  "type": "object",
+  "description": "Vision-confirm verdict for one live snap against a numbered candidate list. assetId is a candidate id copied verbatim from the prompt, or the sentinel string 'none' (schemas cannot union with null).",
+  "properties": {
+    "assetId": {
+      "type": "string",
+      "description": "The chosen candidate's numeric id, copied verbatim from the prompt and rendered as a string (e.g. \"12\"), or \"none\" when no candidate matches, the snap is unusable, or no images were supplied. Never an id absent from the candidate list."
+    },
+    "confidence": {
+      "type": "number",
+      "description": "How certain the match is. Bound restated because numeric min/max are not preserved server-side: 0 to 1 inclusive, never below 0, never above 1. Exactly 0 whenever assetId is \"none\"."
+    },
+    "reason": {
+      "type": "string",
+      "description": "One short sentence naming the concrete visual evidence for the verdict (label text, shape, mounting, surroundings). No preamble."
+    }
+  },
+  "required": ["assetId", "confidence", "reason"],
+  "additionalProperties": false
+}

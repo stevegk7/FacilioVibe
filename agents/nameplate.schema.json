@@ -1,0 +1,21 @@
+{
+  "title": "fv_nameplate",
+  "type": "object",
+  "description": "Verbatim transcription of an equipment nameplate photo. Every field is the sentinel string 'none' when it cannot be read with full confidence (schemas cannot union with null). Ratings — voltage, current, kW, HP, RPM, refrigerant charge, pressure, frequency, year — never appear in any field.",
+  "properties": {
+    "manufacturer": {
+      "type": "string",
+      "description": "Brand, logo or company name exactly as printed, or \"none\" if unreadable or absent."
+    },
+    "model": {
+      "type": "string",
+      "description": "Value printed against MODEL / TYPE / CAT NO / PART NO, copied character for character including case, hyphens, slashes and leading zeros, or \"none\" if unreadable, partial or absent."
+    },
+    "serial": {
+      "type": "string",
+      "description": "Value printed against SERIAL / SER NO / S/N, copied character for character, or \"none\" if unreadable, partial or absent. A partly legible serial is always \"none\"."
+    }
+  },
+  "required": ["manufacturer", "model", "serial"],
+  "additionalProperties": false
+}

@@ -1,0 +1,125 @@
+/* The 3D estate screen.
+ *
+ * Scoped under .estate-3d on purpose. Estate Navigator's ui.css set
+ * `html, body, #root { background; overflow:hidden; height:100% }` and a global
+ * body font — importing that here would override the app's background and type
+ * stack on every other screen, and fight the `#root { position:fixed; inset:0 }`
+ * doctrine in styles.css that exists because every height computation was caught
+ * lying. Nothing below escapes the screen.
+ *
+ * NO backdrop-filter anywhere in here. The chips and panels use opaque fills, as
+ * the design handoff authored them. A 3D canvas is exactly where someone reaches
+ * for glass, and the webview cannot afford it (see styles/ar.css).
+ */
+
+.estate-3d {
+  display: flex;
+  flex-direction: column;
+  /* --app-h, never 100vh: the source used 100vh, which is the measurement the
+     app's viewport machinery exists to replace on mobile browsers. */
+  height: var(--app-h, 100%);
+  min-height: 0;
+  font-family: var(--font-sans);
+  background: var(--estate-bg);
+  color: var(--ink-900);
+  overflow: hidden;
+}
+
+.estate-viewport {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+/* The engine observes THIS element with a ResizeObserver, exactly once, and
+   never re-observes — see estateHost.ts. It must fill the viewport and it must
+   be the canvas's parent for the life of the tab. */
+.estate-canvas-wrap {
+  position: absolute;
+  inset: 0;
+}
+
+.estate-canvas-wrap canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+}
+
+.estate-canvas-wrap canvas:active {
+  cursor: grabbing;
+}
+
+/* ---------- hover states (were `style-hover` in the design runtime) ---------- */
+
+.est-back:hover { background: rgba(0, 89, 214, 0.08); }
+.est-crumb:hover { color: var(--blue-500); }
+.est-row:hover { background: #f7f9fc; }
+.est-asset:hover { background: #f2f6fc !important; }
+.est-tool:hover { background: #f2f6fc; }
+.est-close:hover { background: #f2f6fc; }
+.est-primary:hover { background: var(--blue-600) !important; }
+.est-ghost:hover { background: rgba(0, 89, 214, 0.06); }
+.est-link:hover { color: var(--blue-500); }
+
+.est-input {
+  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+}
+.est-input:focus {
+  border-color: var(--blue-500);
+  box-shadow: var(--shadow-focus);
+}
+
+/* ---------- entrances ---------- */
+
+@keyframes estCardIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes estPanelIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes estFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.est-card-in { animation: estCardIn var(--dur-slow) var(--ease-standard); }
+.est-panel-in { animation: estPanelIn 200ms var(--ease-standard); }
+.est-fade-in { animation: estFadeIn 240ms var(--ease-standard); }
+
+@media (prefers-reduced-motion: reduce) {
+  .est-card-in,
+  .est-panel-in,
+  .est-fade-in { animation: none; }
+}
+
+/* ---------- phone ----------
+   The 264px navigator and 336px card are desk furniture; at 375px they would eat
+   the viewport they are annotating. Below the desktop breakpoint they dock to the
+   bottom instead, which is also where the engine's focus flight already shifts
+   its look-at to keep the selection clear. */
+@media (max-width: 1023px) {
+  .est-panel {
+    left: 8px !important;
+    right: 8px !important;
+    top: auto !important;
+    bottom: 8px !important;
+    width: auto !important;
+    max-height: 46% !important;
+  }
+
+  .est-card {
+    left: 8px !important;
+    right: 8px !important;
+    top: auto !important;
+    bottom: 8px !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: 62% !important;
+  }
+
+  /* With a sheet docked at the bottom, the legend has nowhere to sit. */
+  .est-legend { display: none !important; }
+}

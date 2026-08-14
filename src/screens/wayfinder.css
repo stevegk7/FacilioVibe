@@ -1,0 +1,125 @@
+/* Wayfinder — same frame discipline as Surveys: fixed head, one internal
+   scroller, nothing relying on page scroll. */
+
+.wf-screen {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.wf-head {
+  flex: none;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+}
+
+.wf-body {
+  flex: 1;
+  min-height: 0;
+  padding: 8px 16px 20px;
+}
+
+.wf-edit-btn { height: 36px; padding: 0 12px; }
+
+.wf-where {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.wf-where-label {
+  font-size: var(--fs-tiny);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.wf-where-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--ink-900);
+  font: 500 14px/1 var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+
+.wf-hint {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--info-050);
+  color: var(--blue-600);
+  font-size: 13.5px;
+  line-height: 19px;
+}
+
+.wf-route {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  padding: 14px;
+  margin-bottom: 8px;
+}
+
+.wf-route-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 15px;
+}
+
+.wf-total { color: var(--ink-500); font-size: 13px; }
+
+.wf-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+
+.wf-step { display: flex; align-items: flex-start; gap: 10px; }
+
+.wf-step-n {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--blue-500);
+  color: #fff;
+  font: 600 12px/1 var(--font-sans);
+}
+
+.wf-step-text { font-size: 14.5px; line-height: 20px; color: var(--ink-900); }
+
+.wf-arrived { margin: 0; font-size: 14px; color: var(--success-700); }
+
+.wf-last-leg {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 12.5px;
+  line-height: 18px;
+  color: var(--ink-500);
+}
+
+.row-card.selected { border-color: var(--blue-500); box-shadow: var(--shadow-focus); }
+.wf-row-caret { transform: rotate(180deg); color: var(--ink-400); flex: none; }
+
+.wf-outdoor { width: 100%; margin-top: 14px; }
+
+.wf-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 6px; }
+.wf-edge-row { margin-bottom: 8px; }
+.wf-picker-list { display: grid; gap: 8px; margin-top: 10px; }

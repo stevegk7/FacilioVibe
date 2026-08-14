@@ -1,0 +1,182 @@
+/* =========================================================
+   Rooms browser (WS-A, roadmap 4): captures grouped by space,
+   thumbnail grid, photo viewer overlay with marker bubbles.
+   ========================================================= */
+
+.fv-rooms {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.fv-room-group h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.fv-room-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.fv-room-thumb {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--bg-surface-alt);
+  cursor: pointer;
+}
+
+.fv-room-thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fv-room-thumb .fv-thumb-badge {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: rgba(16, 24, 38, 0.85);
+  color: #fff;
+  font: 500 11px/1 var(--font-sans);
+}
+
+.fv-thumb-pending {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 212, 5, 0.95);
+  color: var(--ink-900);
+  font: 500 10px/1.4 var(--font-sans);
+}
+
+.fv-photo-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  font: 500 11px/1.4 var(--font-sans);
+}
+
+/* ---------- viewer overlay ---------- */
+
+.fv-viewer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgba(11, 18, 32, 0.88);
+  padding: 18px;
+}
+
+.fv-viewer {
+  position: relative;
+  width: min(720px, 100%);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: #fff;
+  font-family: var(--font-sans);
+}
+
+.fv-viewer-photo {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--hud-bg);
+}
+
+.fv-viewer-photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.fv-viewer-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fv-viewer-head .title {
+  flex: 1;
+  font: 500 14px/1.4 var(--font-sans);
+}
+
+.fv-viewer-close {
+  border: none;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-pill);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.fv-viewer-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.fv-btn-danger {
+  height: 34px;
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--danger-500);
+  color: #fff;
+  font: 500 13px/1 var(--font-sans);
+  cursor: pointer;
+}
+
+/* marker bubble: dot anchored at the rect centre, name chip beside it */
+.fv-marker-bubble {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.fv-marker-bubble .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-pill);
+  background: var(--blue-400);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35);
+  flex: 0 0 12px;
+}
+
+.fv-marker-bubble .name {
+  padding: 3px 8px;
+  border-radius: var(--radius-md);
+  background: rgba(16, 24, 38, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font: 500 11.5px/1.4 var(--font-sans);
+  white-space: nowrap;
+}

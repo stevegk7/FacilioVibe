@@ -1,0 +1,34 @@
+[
+ {
+  "id": 2282069,
+  "name": "Lakeside Manufacturing Plant",
+  "description": "A heavy-industry manufacturing facility on the lakeside industrial corridor, with a production wing and an attached utility and warehouse block.",
+  "moduleState": "active",
+  "siteType": "Compound",
+  "sysCreatedTime": "2026-08-13T06:46:13Z",
+  "sysModifiedTime": "2026-08-13T06:46:13Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  },
+  "qrVal": "facilio_2282069"
+ },
+ {
+  "id": 2282068,
+  "name": "Greenfield Business Park",
+  "description": "A modern mixed-use office park with two office towers and a central admin block, serving as the primary corporate campus.",
+  "moduleState": "active",
+  "siteType": "Office",
+  "sysCreatedTime": "2026-08-13T06:46:02Z",
+  "sysModifiedTime": "2026-08-13T06:46:02Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  },
+  "qrVal": "facilio_2282068"
+ }
+]

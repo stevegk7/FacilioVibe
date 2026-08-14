@@ -1,0 +1,103 @@
+/* Rounds — walking order, the in-flight walk, and the floating chip. */
+
+.round-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.round-row .round-row-main { flex: 1; min-width: 0; }
+.round-row .round-row-main strong { display: block; }
+
+.round-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.round-editor-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 640px) {
+  .round-editor-cols { grid-template-columns: 1fr; }
+}
+
+.round-pick,
+.round-order {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.round-pick li,
+.round-order li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--ink-200, #d9dee7);
+  border-radius: 8px;
+  background: var(--bg-surface, #fff);
+}
+.round-pick li span,
+.round-order li .round-stop-name { flex: 1; min-width: 0; }
+
+.round-order li .round-stop-ord {
+  min-width: 20px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-500, #6b7280);
+}
+
+.round-order li.current {
+  border-color: var(--blue-500, #2563eb);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+.round-order li.done { opacity: 0.75; }
+
+.round-stop-evidence {
+  font-size: 12px;
+  color: var(--ink-500, #6b7280);
+}
+
+.round-prove {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+.round-prove input {
+  flex: 1 1 140px;
+  min-width: 120px;
+  padding: 6px 8px;
+  border: 1px solid var(--ink-200, #d9dee7);
+  border-radius: 6px;
+  background: var(--bg-surface, #fff);
+  color: inherit;
+  font: inherit;
+}
+
+.round-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--blue-500, #2563eb);
+  color: #fff;
+  font-size: 13px;
+}
+.round-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+}
+.round-chip-count { font-variant-numeric: tabular-nums; }
+.round-chip-next { opacity: 0.85; }
+
+.round-error { color: var(--red-600, #b91c1c); }

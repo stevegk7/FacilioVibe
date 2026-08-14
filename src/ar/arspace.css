@@ -1,0 +1,440 @@
+/* =========================================================
+   WS-B additions: AR space chrome (edge chevrons, guide),
+   sheets/panels over the stage, Place-Assets overlay and the
+   Surveys registry. Extends src/styles/ar.css (read-only) —
+   same scrim discipline, no backdrop-filter.
+   ========================================================= */
+
+/* Camera mount — the integrator replaces the backdrop with the live feed. */
+.ar-camera-slot {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: #0b1220;
+}
+
+/* ---------- edge chevrons (off-screen markers) ---------- */
+
+.vs-edge {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  padding: 0 12px;
+  background: rgba(16, 24, 38, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: var(--radius-pill);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.vs-edge-label {
+  max-width: 110px;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vs-edge-chev { opacity: 0.8; font-size: 15px; }
+
+/* ---------- wayfinder guide pill ---------- */
+
+.vs-guide {
+  position: absolute;
+  top: calc(var(--safe-t) + 142px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 9px 14px;
+  background: rgba(16, 24, 38, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-xl);
+  color: #fff;
+  pointer-events: auto;
+}
+
+.vs-guide-arrow {
+  font-size: 22px;
+  line-height: 1;
+  display: block;
+  transition: transform 90ms linear;
+}
+
+.vs-guide-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.vs-guide-name { font-size: 15px; font-weight: 600; max-width: 46vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vs-guide-dir { font-size: 13px; color: rgba(255, 255, 255, 0.75); }
+
+.vs-guide-x {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 15px;
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* ---------- mid-screen hint pills ----------
+   Dark translucent, centred, stacked. Tappable ones are ≥44px and read as
+   actions; the stack itself is click-through so the camera stays reachable. */
+
+.ar-hints {
+  /* directly under the top band, NOT over the middle of the camera */
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: calc(var(--safe-t) + 96px);
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.ar-pill {
+  pointer-events: auto;
+  margin: 0;
+  max-width: 100%;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  background: rgba(11, 18, 32, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-md);
+  color: #fff;
+  font: 500 12.5px/16px var(--font-sans);
+  text-align: center;
+}
+
+button.ar-pill { cursor: pointer; }
+
+.ar-pill-action {
+  font-weight: 600;
+  color: #cfe0ff;
+  border-color: rgba(120, 170, 255, 0.55);
+  background: rgba(11, 18, 32, 0.9);
+}
+
+/* transient toast — rides the bottom band, above the action row */
+.ar-toast {
+  align-self: center;
+  max-width: 100%;
+  padding: 10px 16px;
+  background: rgba(16, 24, 38, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  color: #fff;
+  font: 500 14px/19px var(--font-sans);
+  text-align: center;
+}
+
+/* legacy toast still used by the Place-Assets overlay */
+.ar-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 132px;
+  transform: translateX(-50%);
+  z-index: 11;
+  max-width: 86%;
+  padding: 10px 16px;
+  background: rgba(16, 24, 38, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  color: #fff;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* ---------- sheets over the stage ----------
+   The stage's sheets are the shared Sheet primitive (components/sheet.css);
+   only the in-sheet content classes live here. */
+
+.ar-sheet-note { margin: 0 0 10px; font-size: 14px; line-height: 20px; color: var(--ink-600, #607796); }
+
+.ar-code-row { display: flex; gap: 8px; align-items: center; }
+.ar-code-row input { flex: 1; }
+
+/* marker index rows — thumb-sized, 13px+ type */
+.mi-group { margin: 2px 0 8px; font-size: 13px; font-weight: 600; color: var(--ink-600, #607796); }
+
+.mi-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--ink-050, #f0f5fb);
+}
+
+.mi-row .lbl { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.mi-row .lbl .txt { font-size: 16px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mi-row .meta { display: flex; gap: 8px; font-size: 13px; color: var(--ink-500, #8095b0); }
+.mi-row .meta .deg { font-family: var(--font-mono, monospace); }
+.mi-row .btn-quiet { flex: none; min-height: 44px; padding: 0 16px; }
+
+/* ordered wayfinding legs */
+.leg-list { margin: 0; padding: 0 0 0 20px; display: flex; flex-direction: column; gap: 10px; }
+.leg-list li { font-size: 15px; line-height: 21px; }
+.leg-note { font-size: 13px; line-height: 19px; color: var(--ink-600, #607796); }
+
+/* sheet footers: buttons share the row */
+.btn-quiet.grow { flex: 1; }
+.sheet-footer .btn-cta { flex: 1; }
+
+/* ---------- focused-asset panel (bottom card over the stage) ---------- */
+
+.ar-side-panel {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 84px;
+  max-height: 64%;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface, #fff);
+  color: var(--ink-900, #283648);
+  border-radius: 18px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45);
+  padding: 12px 14px 14px;
+}
+
+.ar-side-panel-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex: none;
+}
+
+.ar-side-panel-hd h3 { margin: 0; font-size: 17px; font-weight: 700; }
+.ar-side-panel-bd { flex: 1; min-height: 0; }
+.ar-side-panel .row-actions { display: flex; gap: 10px; margin-bottom: 12px; }
+
+.ar-sheet-x {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--ink-600, #607796);
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* ---------- Place-Assets full-screen overlay ---------- */
+
+.pa-stage {
+  /* Stops exactly where the app dock begins — the dock stays visible (design)
+     AND the footer actions are reachable. Sized from --app-h rather than
+     bottom-anchored: the layout viewport ignores the keyboard, so a
+     `bottom:` offset left Save under the keys while the dock rode above
+     them. --app-h is the visible area, always. */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--app-h, 100dvh) - var(--nav-h) - var(--safe-b));
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  background: var(--hud-bg, #0b1220);
+  color: #fff;
+  font-family: var(--font-sans);
+}
+
+.pa-topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 12px;
+  background: rgba(16, 24, 38, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.pa-topbar h2 { margin: 0; font-size: 14px; font-weight: 600; flex: 1; }
+.pa-step { font-size: 11px; color: rgba(255, 255, 255, 0.65); }
+
+.pa-body { position: relative; flex: 1; overflow: hidden; }
+
+/* Floating action area over the camera — no solid bar, per the design. */
+.pa-foot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: linear-gradient(180deg, rgba(11, 18, 32, 0) 0%, rgba(11, 18, 32, 0.55) 60%);
+}
+
+.pa-tip {
+  align-self: center;
+  margin: 0;
+  max-width: 100%;
+  padding: 9px 14px;
+  background: rgba(11, 18, 32, 0.82);
+  border-radius: var(--radius-pill);
+  color: #fff;
+  font: 500 13.5px/18px var(--font-sans);
+  text-align: center;
+}
+
+.pa-actions { display: flex; gap: 10px; }
+
+.pa-btn {
+  flex: 1;
+  min-height: 46px;
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--radius-pill);
+  font: 600 14.5px/1 var(--font-sans);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pa-btn.dark {
+  background: rgba(11, 18, 32, 0.86);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.pa-btn.light { background: rgba(255, 255, 255, 0.94); color: var(--ink-900); }
+.pa-btn.primary {
+  background: linear-gradient(90deg, var(--brand-indigo-600) 0%, var(--blue-500) 100%);
+  color: #fff;
+}
+.pa-btn:disabled { opacity: 0.55; }
+
+/* top pills */
+.pa-badge {
+  position: absolute;
+  top: calc(var(--safe-t) + 12px);
+  right: 12px;
+  z-index: 9;
+  padding: 10px 16px;
+  border-radius: var(--radius-pill);
+  background: rgba(11, 18, 32, 0.86);
+  color: #fff;
+  font: 600 14px/1 var(--font-sans);
+}
+
+.pa-badge.sweep { background: var(--brand-indigo-600); }
+
+/* centered light card used for setup / QR / marker forms */
+.pa-sheet {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  width: min(420px, calc(100vw - 32px));
+  max-height: 76%;
+  overflow: auto;
+  background: var(--bg-surface, #fff);
+  color: var(--ink-900, #283648);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 5;
+}
+
+.pa-sheet h3 { margin: 0; font-size: 15px; }
+
+.pa-progress { display: flex; align-items: center; gap: 8px; }
+.pa-progress .bar { flex: 1; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.16); overflow: hidden; }
+.pa-progress .bar span { display: block; height: 100%; background: var(--blue-500, #0059d6); }
+.pa-progress .n { font-family: var(--font-mono, monospace); font-size: 12px; }
+
+.pa-hint { font-size: 12px; color: rgba(255, 255, 255, 0.72); text-align: center; padding: 0 16px; }
+
+.pa-marker-chips { position: absolute; left: 10px; right: 10px; bottom: 8px; display: flex; gap: 6px; flex-wrap: wrap; z-index: 4; }
+.pa-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  background: rgba(16, 24, 38, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-pill);
+  color: #fff;
+  font-size: 11px;
+}
+.pa-chip button { background: none; border: none; color: rgba(255, 255, 255, 0.7); cursor: pointer; font-size: 12px; padding: 0 2px; }
+
+
+/* ---------- Surveys registry (light screen) ---------- */
+
+.sv-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.sv-toolbar h2 { margin: 0; flex: 1; }
+
+.sv-badges { display: inline-flex; gap: 6px; margin-left: 8px; vertical-align: middle; }
+
+.sv-meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--ink-600, #607796); }
+
+.sv-detail-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.sv-detail-head h2 { margin: 0; flex: 1; font-size: 18px; }
+
+.sv-qr-block { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+.sv-standpoint-photo { max-width: 240px; border-radius: var(--radius-lg); display: block; }
+
+.sv-marker-table { width: 100%; border-collapse: collapse; }
+.sv-marker-table th { text-align: left; font-size: 11px; color: var(--ink-600, #607796); font-weight: 500; padding: 6px 8px; border-bottom: 1px solid var(--ink-100, #e3ebf5); }
+.sv-marker-table td { font-size: 13px; padding: 8px; border-bottom: 1px solid var(--ink-050, #f0f5fb); }
+.sv-marker-table .deg { font-family: var(--font-mono, monospace); font-size: 12px; }
+
+.sv-danger { color: var(--danger-500, #b61919); }
+
+/* "Pin here" module picker */
+.ar-pin-kinds { display: grid; gap: 8px; }
+
+.ar-pin-kind {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  color: var(--ink-900);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ar-pin-kind:active { background: var(--ink-050); }
+.ar-pin-kind svg { flex: none; color: var(--blue-500); }
+.ar-pin-kind-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ar-pin-kind-label { font-size: 15px; font-weight: 600; }
+.ar-pin-kind-hint { font-size: 12.5px; color: var(--ink-500); }
+
+
+/* Screen-docked ArWindow (asset focused with no marker to anchor to). */
+.ar-window-dock {
+  position: absolute;
+  left: 50%;
+  bottom: 108px;
+  transform: translateX(-50%);
+  z-index: 12;
+}

@@ -1,0 +1,358 @@
+/* Effi — Vision AR Voice Agent, evolved to the visionOS AI language:
+   - the orb is a GLASS SPHERE that glows from within (blurred four-colour
+     swirl under a specular highlight), not a disc with a hard ring;
+   - invoking it lights the Apple-Intelligence EDGE GLOW: an animated
+     four-colour gradient hugging the screen perimeter while Effi listens
+     and thinks (conic angle via @property; hue-drift fallback);
+   - the panel is the same glass material as the AR windows.
+   Anatomy still follows the design file (status row, live words, waveform,
+   reply-as-card, toast); wordmark colours carry the identity. */
+
+
+@keyframes efSpin { to { transform: rotate(360deg); } }
+@keyframes efRipple { 0% { opacity: 0.5; transform: scale(0.85); } 100% { opacity: 0; transform: scale(1.9); } }
+@keyframes efBreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+@keyframes efBarA { 0%, 100% { transform: scaleY(0.18); } 50% { transform: scaleY(1); } }
+@keyframes efBarB { 0%, 100% { transform: scaleY(0.5); } 40% { transform: scaleY(0.22); } 70% { transform: scaleY(0.86); } }
+@keyframes efBarC { 0%, 100% { transform: scaleY(0.32); } 30% { transform: scaleY(0.95); } 65% { transform: scaleY(0.4); } }
+@keyframes efDot { 0%, 100% { opacity: 0.25; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
+@keyframes efRise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes efFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes efCaret { 0%, 45% { opacity: 1; } 50%, 95% { opacity: 0; } }
+@keyframes efPin { 0%, 100% { opacity: 0.9; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.8); } }
+
+/* ---- the orb ---- */
+.ef-orb-slot {
+  position: absolute;
+  right: 18px;
+  bottom: 128px;
+  z-index: 14;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.ef-hint {
+  height: 26px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  background: rgba(16, 24, 38, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+}
+.ef-orb {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ef-core {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  overflow: hidden;
+  isolation: isolate;
+  background: rgba(140, 140, 145, 0.24);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  backdrop-filter: blur(14px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+    0 10px 26px rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: efBreathe 3200ms cubic-bezier(0.2, 0, 0, 1) infinite;
+}
+/* the intelligence lives INSIDE the glass: a soft four-colour swirl */
+.ef-swirl {
+  position: absolute;
+  inset: -8px;
+  border-radius: 999px;
+  background: conic-gradient(from 0deg, #2ed1ff, #0059d6, #3c229d, #ff3b7f, #ffd60a, #2ed1ff);
+  filter: blur(12px) saturate(170%);
+  opacity: 0.55;
+  animation: efSpin 6s linear infinite;
+}
+.ef-orb:active .ef-swirl { opacity: 0.9; }
+/* the top-light catch that sells the sphere */
+.ef-specular {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: radial-gradient(80% 55% at 50% 12%, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0) 60%);
+  pointer-events: none;
+}
+.ef-core svg { position: relative; z-index: 1; filter: drop-shadow(0 1px 4px rgba(11, 18, 32, 0.5)); }
+
+/* ---- dim + panel ---- */
+.ef-dim {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  background: rgba(11, 18, 32, 0.55);
+  transition: opacity 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+.ef-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 16;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 16px calc(18px + var(--safe-b, 0px));
+  background: linear-gradient(rgba(10, 12, 16, 0.4), rgba(10, 12, 16, 0.4)), rgba(140, 140, 145, 0.22);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border-radius: 26px 26px 0 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 -12px 40px rgba(0, 0, 0, 0.35);
+  animation: efRise 180ms cubic-bezier(0.2, 0, 0, 1) both;
+  color: #fff;
+  font-family: var(--font-sans);
+}
+
+.ef-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ef-status-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ef-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  animation: efPin 1400ms cubic-bezier(0.2, 0, 0, 1) infinite;
+}
+.ef-x {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 0;
+  border-radius: 999px;
+  color: #fff;
+  cursor: pointer;
+}
+.ef-x:active { background: rgba(255, 255, 255, 0.2); }
+
+.ef-heard {
+  margin: 0;
+  color: #fff;
+  font-size: 19px;
+  line-height: 27px;
+  font-weight: 400;
+  min-height: 54px;
+  text-wrap: pretty;
+}
+.ef-pending { color: rgba(255, 255, 255, 0.42); }
+.ef-caret {
+  margin-left: 2px;
+  color: #2ed1ff;
+  animation: efCaret 900ms steps(1) infinite;
+}
+
+/* ---- visual-intelligence menu ---- */
+.ef-menu { display: flex; flex-direction: column; gap: 12px; }
+.ef-menu-lead { margin: 0; color: rgba(255, 255, 255, 0.72); font-size: 14px; line-height: 20px; }
+.ef-vi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ef-vi {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 14px;
+  color: rgba(255, 255, 255, 0.96);
+  font: 600 13px/1.2 var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+.ef-vi:active { background: rgba(255, 255, 255, 0.2); }
+.ef-vi svg { flex: none; color: #9be0ff; }
+.ef-vi-ask { background: rgba(0, 89, 214, 0.55); }
+.ef-vi-ask svg { color: #fff; }
+
+/* ---- waveform ---- */
+.ef-wave { display: flex; align-items: center; gap: 5px; height: 34px; }
+.ef-bar {
+  width: 4px;
+  height: 34px;
+  border-radius: 999px;
+  transform-origin: 50% 50%;
+}
+.ef-bar.b0 { background: #2ed1ff; animation: efBarA 620ms cubic-bezier(0.2, 0, 0, 1) infinite; }
+.ef-bar.b1 { background: #4f8df0; animation: efBarB 700ms cubic-bezier(0.2, 0, 0, 1) infinite; }
+.ef-bar.b2 { background: #7d63dc; animation: efBarC 540ms cubic-bezier(0.2, 0, 0, 1) infinite; }
+.ef-bar:nth-child(5) { background: #ff3b7f; }
+.ef-bar:nth-child(4) { background: #0059d6; }
+.ef-wave-hint { margin-left: auto; color: rgba(255, 255, 255, 0.5); font-size: 12px; }
+
+/* ---- typed fallback (no speech engine) ---- */
+.ef-typed { display: flex; gap: 8px; }
+.ef-typed input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #fff;
+  font: 400 16px/1 var(--font-sans);
+  outline: none;
+}
+.ef-typed input::placeholder { color: rgba(255, 255, 255, 0.42); }
+.ef-typed button {
+  height: 44px;
+  padding: 0 16px;
+  background: #0059d6;
+  border: 0;
+  border-radius: 6px;
+  color: #fff;
+  font: 500 13px/1 var(--font-sans);
+  cursor: pointer;
+}
+.ef-typed button:disabled { opacity: 0.5; }
+
+/* ---- thinking ---- */
+.ef-think {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 34px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 13px;
+}
+.ef-think-dots { display: flex; gap: 5px; }
+.ef-think-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #7d63dc;
+  animation: efDot 900ms cubic-bezier(0.2, 0, 0, 1) infinite;
+}
+
+/* ---- reply: avatar + line + THE CARD + suggestions ---- */
+.ef-reply { display: flex; flex-direction: column; gap: 12px; animation: efFade 180ms cubic-bezier(0.2, 0, 0, 1) both; }
+.ef-reply-row { display: flex; gap: 10px; align-items: flex-start; }
+.ef-avatar {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: #3c229d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ef-reply-text { margin: 0; color: #fff; font-size: 15px; line-height: 22px; text-wrap: pretty; }
+
+.ef-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+  border: none;
+  border-radius: 14px;
+}
+.ef-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ef-card-title { color: #fff; font-size: 14px; font-weight: 600; }
+.ef-card-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 14px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.ef-card-cell { display: contents; }
+.ef-card-cell .k { color: rgba(255, 255, 255, 0.68); }
+.ef-card-cell .v { color: #fff; }
+.ef-card-actions { display: flex; gap: 8px; padding-top: 2px; }
+.ef-btn-primary {
+  height: 34px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  background: #0059d6;
+  border: 0;
+  border-radius: 4px;
+  color: #fff;
+  font: 500 13px/1 var(--font-sans);
+  text-decoration: none;
+  cursor: pointer;
+}
+.ef-btn-primary:active { background: #0047ab; }
+.ef-btn-quiet {
+  height: 34px;
+  padding: 0 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: #fff;
+  font: 500 13px/1 var(--font-sans);
+  cursor: pointer;
+}
+.ef-btn-quiet:active { background: rgba(255, 255, 255, 0.16); }
+
+.ef-suggest { display: flex; gap: 8px; flex-wrap: wrap; }
+.ef-chip {
+  height: 30px;
+  padding: 0 12px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.86);
+  font: 400 12px/1 var(--font-sans);
+  cursor: pointer;
+}
+.ef-chip:active { background: rgba(255, 255, 255, 0.1); }
+
+/* ---- toast ---- */
+.ef-toast {
+  position: absolute;
+  top: 96px;
+  left: 16px;
+  right: 16px;
+  z-index: 17;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(41, 160, 30, 0.94);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  animation: efFade 180ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+.ef-file { display: none; }

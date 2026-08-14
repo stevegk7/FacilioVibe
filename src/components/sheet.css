@@ -1,0 +1,235 @@
+/* Bottom sheet — anatomy matched to the reference app:
+   grab handle, title, internally-scrolling body, sticky footer. */
+
+.sheet-root {
+  /* Sized by --app-h, NOT `inset: 0`: the layout viewport does not shrink for
+     the keyboard, so bottom-anchored sheets kept their footers UNDER it.
+     --app-h tracks the visible area, so the footer rides above the keys. */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--app-h, 100dvh);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  background: rgba(11, 18, 32, 0.42);
+  animation: sheetFade var(--dur-base) var(--ease-standard);
+}
+
+.sheet-panel {
+  position: relative;
+  background: var(--bg-surface);
+  border-radius: 14px 14px 0 0;
+  box-shadow: 0 -12px 40px rgba(40, 54, 72, 0.22);
+  max-height: 88%;
+  display: flex;
+  flex-direction: column;
+  animation: sheetUp var(--dur-slow) var(--ease-standard);
+  transition: transform var(--dur-fast) var(--ease-standard);
+  padding-bottom: var(--safe-b);
+}
+
+.sheet-panel.tall { height: 88%; }
+
+.sheet-grip {
+  width: 44px;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--ink-200);
+  margin: 10px auto 4px;
+  flex: none;
+}
+
+.sheet-title {
+  margin: 0;
+  padding: 6px 20px 12px;
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 700;
+  color: var(--ink-900);
+  flex: none;
+}
+
+.sheet-body {
+  flex: 1;
+  min-height: 0;
+  padding: 0 20px 16px;
+}
+
+.sheet-footer {
+  flex: none;
+  padding: 12px 20px calc(12px + var(--safe-b));
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  display: flex;
+  gap: 10px;
+}
+
+@keyframes sheetUp {
+  from { transform: translateY(14%); opacity: 0.6; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes sheetFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-panel, .sheet-backdrop { animation: none; }
+}
+
+/* ---- mobile-native primitives shared by the screens ---- */
+
+/* ---- DSM buttons ----
+   Facilio Atom spec: 32px / 4px radius / 13px-500 / FLAT --blue-500 (no
+   gradients). Mobile gets 40px for the touch target and 14px type; that is the
+   only deviation, and it keeps the DSM proportions. */
+.btn-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--blue-500);
+  color: #fff;
+  font: 500 14px/1 var(--font-sans);
+  cursor: pointer;
+}
+
+.btn-cta:active { background: var(--blue-600); }
+.btn-cta:disabled { opacity: 0.5; }
+
+.btn-quiet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--ink-900);
+  font: 500 14px/1 var(--font-sans);
+  cursor: pointer;
+}
+
+.btn-quiet:active { background: var(--ink-050); }
+
+.btn-danger-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 40px;
+  border: 1px solid var(--danger-500);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--danger-500);
+  font: 500 14px/1 var(--font-sans);
+  cursor: pointer;
+}
+
+/* Section label + action row: "ROUNDS (0)   [New round]" */
+.section-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0 8px;
+}
+
+.section-label {
+  font-size: var(--fs-tiny);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+  font-weight: 600;
+}
+
+/* Explanatory empty card, centred grey copy like the reference */
+.empty-card {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 18px 16px;
+  text-align: center;
+  color: var(--ink-500);
+  font-size: 14px;
+  line-height: 21px;
+  background: var(--bg-surface);
+}
+
+/* List row card: title + meta line, optional trailing badge */
+.row-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  padding: 11px 14px;
+  cursor: pointer;
+  min-height: 52px;
+}
+
+.row-card:active { background: var(--ink-050); }
+.row-card-title { font-size: 15px; font-weight: 600; color: var(--ink-900); }
+.row-card-meta { font-size: 12.5px; color: var(--ink-500); margin-top: 3px; }
+
+.row-badge {
+  flex: none;
+  padding: 0 8px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--ink-100);
+  color: var(--ink-600);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.row-badge.ok { background: var(--success-050); color: var(--success-700); }
+
+/* Info table: Location / Surveyed / Sweep */
+.info-table {
+  width: 100%;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border-collapse: collapse;
+}
+
+.info-table tr + tr { border-top: 1px solid var(--border-subtle); }
+.info-table th {
+  text-align: left;
+  padding: 11px 14px;
+  color: var(--ink-500);
+  font-weight: 400;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.info-table td {
+  padding: 11px 14px;
+  color: var(--ink-900);
+  font-size: 14px;
+  text-align: right;
+}

@@ -1,0 +1,795 @@
+@import './styles/tokens.css';
+
+/* Legacy aliases — earlier shell classes read these; they now resolve to
+   Facilio Atom tokens. The app is light-surface by design (AR screens go
+   dark by component, not by media query — camera UI has its own language). */
+:root {
+  color-scheme: light;
+  --fg: var(--ink-900);
+  --muted: var(--ink-600);
+  --bg: var(--bg-app);
+  --line: var(--ink-200);
+  --error: var(--danger-500);
+}
+
+* { box-sizing: border-box; }
+
+/* ---------------------------------------------------------------------------
+   Mobile viewport discipline.
+
+   100vh on iOS Safari is the LARGE viewport — it excludes the browser chrome,
+   so a 100vh app is taller than what you can see: the bottom nav lands under
+   the fold and the whole page scrolls. 100dvh tracks the visible area live.
+   --app-h is the single source of height for every full-screen surface.
+
+   The page itself NEVER scrolls; panes scroll internally. That is what makes
+   it feel native instead of like a web page in a browser.
+   --------------------------------------------------------------------------- */
+:root {
+  /* --app-h-px is the JS measurement (src/shell/viewportHeight). The engine's
+     dynamic viewport is the baseline truth; the measurement only RAISES it
+     (iPad shell under-report) — except under the keyboard, where the smaller
+     measured height must win (see html.kb-open below). */
+  --app-h: max(100vh, var(--app-h-px, 0px)); /* fallback for old engines */
+  --nav-h: 56px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+}
+
+@supports (height: 100dvh) {
+  :root { --app-h: max(100dvh, var(--app-h-px, 0px)); }
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none; /* kill rubber-band / pull-to-refresh */
+}
+
+/* THE root is FIXED to the viewport box. Every sizing approach that computes
+   a height (vh, dvh, JS measurements) has now been caught lying in some
+   browser state — Safari toolbar collapse, the Facilio in-app browser's
+   chrome, keyboard transitions. `position: fixed; inset: 0` is not a
+   computation: the engine keeps a fixed box glued to the initial containing
+   block itself, in every state, with no event needed. Bands are impossible. */
+#root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font: 400 var(--fs-body) / var(--lh-body) var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Any scrollable pane opts in — momentum + contained overscroll. */
+.scroll-y {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Touch targets: the reference app never goes below 44px on tappables. */
+button, .tap { touch-action: manipulation; }
+
+.shell {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 16px;
+}
+
+.bar h1 { font-size: 20px; margin: 0; }
+
+.session { display: flex; align-items: center; gap: 12px; }
+
+.muted { color: var(--muted); }
+
+.error { color: var(--error); }
+
+button {
+  font: inherit;
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+button:hover { border-color: var(--muted); }
+
+.placeholder {
+  margin-top: 32px;
+  padding: 32px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+}
+
+/* ---- keyboard (set by src/shell/viewportHeight.ts) ----
+   While typing, the tab dock is dead weight: hiding it hands its 56px to the
+   form above the keys, instead of letting it ride up over the content. */
+html.kb-open { --app-h: var(--app-h-px, 100vh); }
+html.kb-open .as-dock { display: none; }
+html.kb-open .pa-stage { height: var(--app-h); }
+/* If iOS pans the page to reveal a focused input, glue the app back to the
+   visible area — otherwise the top chrome slides off-screen. */
+html.kb-open #root { transform: translateY(var(--vv-top, 0px)); }
+
+/* ---- app frame ---- */
+
+.app {
+  /* direct child of the FIXED root: 100% here is the true viewport box,
+     no unit or measurement in the chain at all */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Compact layout when running inside the Facilio host (iframe or native webview) */
+.app.embedded .shell { padding: 12px 16px; }
+.app.embedded .tab-bar { padding: 4px 16px; }
+.app.embedded h1 { font-size: 16px; }
+
+.small { font-size: 12px; }
+.row { display: flex; gap: 8px; }
+
+.auth-screen { display: grid; place-items: start center; padding-top: 12vh; text-align: center; }
+.auth-stack { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+
+/* ---- tabs ---- */
+
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  padding: 8px 20px 0;
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+
+.tab {
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 10px 14px;
+  color: var(--muted);
+}
+
+.tab:hover { border-bottom-color: var(--line); }
+
+.tab.active {
+  color: var(--fg);
+  border-bottom-color: var(--fg);
+  font-weight: 600;
+}
+
+.screen {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* ---- errors ---- */
+
+.error-panel {
+  max-width: 720px;
+  margin: 32px auto;
+  padding: 20px 24px;
+  border: 1px solid var(--error);
+  border-radius: 8px;
+}
+
+.error-panel h2 { margin-top: 0; font-size: 17px; }
+.error-panel pre {
+  overflow-x: auto;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.global-error-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  background: color-mix(in srgb, var(--error) 12%, var(--bg));
+  color: var(--error);
+  border-bottom: 1px solid var(--error);
+}
+
+.global-error-banner button {
+  border: none;
+  color: inherit;
+  font-size: 18px;
+  padding: 0 6px;
+}
+
+.demo-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 16px;
+  background: var(--brand-indigo);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.demo-banner button {
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
+.notice-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: var(--info-050);
+  color: var(--blue-600);
+  border-bottom: 1px solid var(--blue-100);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.offline-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 20px;
+  background: var(--warning-050);
+  color: var(--warning-700);
+  border-bottom: 1px solid var(--warning-500);
+  font-size: var(--fs-small);
+}
+
+.offline-banner button {
+  border: 1px solid var(--warning-700);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font-size: var(--fs-small);
+  padding: 3px 10px;
+}
+
+/* ---- cards / lists ---- */
+
+.card-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.card p { margin: 6px 0 0; }
+
+.pill {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---- portfolio ---- */
+
+.location-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  margin: 16px 0;
+}
+
+/* ---- work order panel ---- */
+
+.wo-panel { display: flex; flex-direction: column; gap: 10px; margin-top: var(--space-6); }
+.wo-panel-head { display: flex; align-items: baseline; gap: 10px; }
+.wo-panel-head h3 { margin: 0; font-size: var(--fs-h4); font-weight: 600; }
+
+.wo-row-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.wo-row-head:hover { background: var(--ink-050); border: none; }
+.wo-subject { font-size: 13px; font-weight: 500; color: var(--ink-900); }
+.wo-row-body { border-top: 1px solid var(--border-subtle); }
+
+.wo-meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 16px;
+  margin: 10px 0;
+  font-size: var(--fs-small);
+}
+
+.wo-meta dt { color: var(--text-muted); }
+.wo-meta dd { margin: 0; color: var(--ink-900); }
+
+.wo-section {
+  margin: 14px 0 6px;
+  font-size: var(--fs-tiny);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.wo-create { display: flex; flex-direction: column; gap: 12px; }
+
+.search-box {
+  font: inherit;
+  width: 100%;
+  padding: 9px 12px;
+  margin-top: 4px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: inherit;
+}
+
+.card-btn {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.link-btn {
+  border: none;
+  padding: 4px 0;
+  color: var(--muted);
+  text-decoration: underline;
+}
+
+.link-btn:hover { color: var(--fg); border: none; }
+
+/* ---- Facilio Atom kit (web_dashboard patterns from the design project) ---- */
+
+.ds-select { position: relative; display: flex; flex-direction: column; gap: 4px; min-width: 180px; }
+
+.ds-select-label {
+  font-size: var(--fs-tiny);
+  line-height: var(--lh-tiny);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.ds-select-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 36px;
+  padding: 0 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font: 500 13px/1 var(--font-sans);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-standard);
+}
+
+.ds-select-btn:hover:not(:disabled) { border-color: var(--border-strong); }
+.ds-select-btn.open,
+.ds-select-btn:focus-visible {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus);
+  outline: none;
+}
+.ds-select-btn:disabled { opacity: 0.5; cursor: default; }
+
+.ds-select-value.placeholder { color: var(--text-muted); font-weight: 400; }
+.ds-select-caret { flex: none; color: var(--ink-500); }
+
+.ds-select-pop {
+  /* fixed so no ancestor scroller/overflow can clip it */
+  position: fixed;
+  z-index: 90;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  max-height: min(50vh, 280px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.ds-select-opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  font: 400 14px/1.3 var(--font-sans);
+  color: var(--ink-800, var(--ink-900));
+  cursor: pointer;
+}
+
+.ds-select-opt-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ds-select-opt.active { background: var(--ink-050); }
+.ds-select-opt.selected { color: var(--blue-600); font-weight: 500; }
+.ds-select-tick { flex: none; color: var(--blue-500); }
+.ds-select-empty { padding: 10px; font-size: 14px; color: var(--text-muted); }
+
+/* ---- touch presentation: INLINE expansion ----
+   No second layer. A popover inside a sheet has nowhere to go, and a sheet on
+   top of a sheet reads as broken and gets clipped by the app dock. Expanding
+   in the flow cannot be clipped by anything. */
+.ds-select-inline {
+  margin: 6px 0 0;
+  padding: 4px;
+  /* Self-defending: a capped box that cannot scroll BLEEDS its options over
+     whatever sits below it (that shipped once — the Place-asset sheet). */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  list-style: none;
+  width: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  max-height: 232px;
+  animation: dsExpand var(--dur-base) var(--ease-standard);
+}
+
+.ds-select-inline .ds-select-opt {
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 15px;
+  border-radius: var(--radius-sm);
+}
+
+.ds-select-inline .ds-select-opt + .ds-select-opt {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.ds-select-inline .ds-select-opt.selected { background: var(--blue-025); }
+
+/* the open trigger reads as the head of the expanded list */
+.ds-select-btn.open {
+  border-color: var(--blue-500);
+  box-shadow: var(--shadow-focus);
+}
+
+.ds-select-btn.open .ds-select-caret { transform: rotate(180deg); }
+.ds-select-caret { transition: transform var(--dur-fast) var(--ease-standard); }
+
+@keyframes dsExpand {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-select-inline { animation: none; }
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  font: 500 13px/1 var(--font-sans);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background var(--dur-base) var(--ease-standard);
+  white-space: nowrap;
+}
+
+.btn-primary { background: var(--blue-500); color: #fff; }
+.btn-primary:hover { background: var(--blue-600); border-color: transparent; }
+.btn-primary:disabled { opacity: 0.5; cursor: default; }
+.btn-secondary { background: var(--bg-surface); color: var(--ink-900); border-color: var(--ink-200); }
+.btn-secondary:hover { background: var(--ink-050); }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  font: 500 var(--fs-tiny) / 1 var(--font-sans);
+}
+
+.badge .dot { width: 6px; height: 6px; border-radius: var(--radius-pill); }
+.b-open { background: var(--info-050); color: var(--blue-600); }
+.b-open .dot { background: var(--blue-500); }
+.b-prog { background: var(--warning-050); color: #7a5e00; }
+.b-prog .dot { background: var(--warning-500); }
+.b-done { background: var(--success-050); color: var(--success-700); }
+.b-done .dot { background: var(--success-500); }
+.b-over { background: var(--danger-050); color: var(--danger-700); }
+.b-over .dot { background: var(--danger-500); }
+.b-draft { background: var(--ink-100); color: var(--ink-700); }
+.b-draft .dot { background: var(--ink-500); }
+
+.kit-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.kit-card-hd {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.kit-card-hd h3 { margin: 0; font-size: 14px; font-weight: 600; color: var(--ink-900); }
+.kit-card-bd { padding: 16px; }
+
+.task-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 13px;
+  color: var(--ink-900);
+}
+
+.task-row:last-child { border-bottom: none; }
+.task-row.closed span { text-decoration: line-through; color: var(--text-muted); }
+
+.task-check {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: #fff;
+  cursor: pointer;
+  padding: 0;
+}
+
+.task-check.on { background: var(--success-500); border-color: var(--success-500); }
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field > span {
+  font-size: var(--fs-tiny);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.field input,
+.field textarea {
+  font: 400 13px/1.4 var(--font-sans);
+  padding: 8px 10px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.field input:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+/* ---- diagnostics ---- */
+
+.diag-table { border-collapse: collapse; margin-top: 12px; width: 100%; }
+.diag-table th {
+  text-align: left;
+  padding: 6px 16px 6px 0;
+  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
+  vertical-align: top;
+}
+.diag-table td { padding: 6px 0; word-break: break-all; }
+
+/* ---- AssetSelect: the asset dropdown (DsSelect skin + a filter row) ---- */
+/* The pin sheet's picker column: select, then CTA, properly spaced. */
+.ar-pin-asset {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 2px 0 6px;
+}
+/* Touch: DSM mobile control height — a 36px desktop trigger next to 48px
+   sheet inputs read as broken, and sub-16px inputs make iOS zoom the page. */
+@media (pointer: coarse), (max-width: 767px) {
+  .ds-select-btn { height: 40px; font-size: 14px; }
+  .as-asset-filter input { font-size: 16px; }
+}
+.as-asset-list { padding-top: 0; }
+.as-asset-filter {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--ink-100);
+  color: var(--ink-500);
+}
+.as-asset-filter input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: 400 15px/1.3 var(--font-sans);
+  color: var(--text-primary);
+}
+.as-asset-opt {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+}
+.as-asset-opt-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.as-asset-opt-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- LocationPicker: native field rows + a full-height searchable page ---- */
+.lp { display: flex; flex-direction: column; gap: 8px; min-height: 100%; }
+.lp-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--ink-050);
+  font: inherit;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.lp-row:active { background: var(--ink-100); }
+.lp-row-label { font-size: 13px; font-weight: 600; color: var(--text-muted); width: 72px; flex: none; }
+.lp-row-value {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lp-row-chev { color: var(--ink-400); flex: none; }
+
+.lp-page { gap: 10px; height: 100%; }
+.lp-page-head { display: flex; align-items: center; gap: 8px; }
+.lp-page-head h3 { margin: 0; font-size: 17px; font-weight: 600; }
+.lp-back {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--ink-050);
+  color: var(--ink-700);
+  cursor: pointer;
+  padding: 0;
+}
+.lp-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  background: var(--ink-050);
+  color: var(--ink-500);
+  flex: none;
+}
+.lp-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: 400 16px/1.3 var(--font-sans); /* 16px: iOS must not zoom the page */
+  color: var(--text-primary);
+}
+.lp-list { flex: 1; min-height: 200px; display: flex; flex-direction: column; gap: 2px; }
+.lp-opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font: 500 15px/1.3 var(--font-sans);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.lp-opt:active { background: var(--ink-050); }
+.lp-opt.selected { color: var(--blue-600); }
+.lp-opt-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

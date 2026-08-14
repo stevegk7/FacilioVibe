@@ -1,0 +1,1234 @@
+[
+ {
+  "id": 2282232,
+  "localId": 60,
+  "name": "Warehouse Distribution Panel UW-EDP-02",
+  "description": "Distribution panel for the warehouse and admin block.",
+  "tagNumber": "UW-EDP-02",
+  "category": "Utility Meter",
+  "space": {
+   "id": 2282231,
+   "name": "Electrical Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Schneider Electric",
+  "model": "PowerLogic PM5000",
+  "sysCreatedTime": "2026-08-13T07:14:28Z",
+  "sysModifiedTime": "2026-08-13T07:14:28Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282179,
+  "localId": 41,
+  "name": "Sub Distribution Panel TB-EDP-02",
+  "description": "Tower B sub distribution panel.",
+  "tagNumber": "TB-EDP-02",
+  "category": "Utility Meter",
+  "space": {
+   "id": 2282178,
+   "name": "Electrical Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Schneider Electric",
+  "model": "PowerLogic PM5000",
+  "sysCreatedTime": "2026-08-13T07:10:10Z",
+  "sysModifiedTime": "2026-08-13T07:10:10Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282228,
+  "localId": 57,
+  "name": "Standby Generator UW-GEN-01",
+  "description": "Diesel standby generator for critical loads.",
+  "tagNumber": "UW-GEN-01",
+  "category": "Utility Meter",
+  "space": {
+   "id": 2282223,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Cummins",
+  "model": "DG-150KVA",
+  "sysCreatedTime": "2026-08-13T07:13:50Z",
+  "sysModifiedTime": "2026-08-13T07:13:50Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282175,
+  "localId": 38,
+  "name": "Standby Generator TB-GEN-01",
+  "description": "Diesel standby generator for critical loads.",
+  "tagNumber": "TB-GEN-01",
+  "category": "Utility Meter",
+  "space": {
+   "id": 2282170,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Cummins",
+  "model": "DG-150KVA",
+  "sysCreatedTime": "2026-08-13T07:09:37Z",
+  "sysModifiedTime": "2026-08-13T07:09:37Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282146,
+  "localId": 28,
+  "name": "Standby Generator TA-GEN-01",
+  "description": "Diesel standby generator for critical loads.",
+  "tagNumber": "TA-GEN-01",
+  "category": "Utility Meter",
+  "space": {
+   "id": 2282141,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Cummins",
+  "model": "DG-150KVA",
+  "sysCreatedTime": "2026-08-13T06:57:30Z",
+  "sysModifiedTime": "2026-08-13T06:57:30Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282201,
+  "localId": 47,
+  "name": "Standby Generator PW-GEN-01",
+  "description": "Diesel standby generator for critical loads.",
+  "tagNumber": "PW-GEN-01",
+  "category": "Utility Meter",
+  "space": {
+   "id": 2282196,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Cummins",
+  "model": "DG-150KVA",
+  "sysCreatedTime": "2026-08-13T07:11:42Z",
+  "sysModifiedTime": "2026-08-13T07:11:42Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282165,
+  "localId": 33,
+  "name": "Server Room Cooling Unit TB-PAC-01",
+  "description": "Precision cooling unit for the Tower B IT server room.",
+  "tagNumber": "TB-PAC-01",
+  "category": "HVAC",
+  "space": {
+   "id": 2282164,
+   "name": "IT Server Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Liebert",
+  "model": "PAC-3.0T",
+  "sysCreatedTime": "2026-08-13T07:08:50Z",
+  "sysModifiedTime": "2026-08-13T07:08:50Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282227,
+  "localId": 56,
+  "name": "Secondary Chilled Water Pump UW-P-02",
+  "description": "Secondary loop circulation pump, variable-speed drive.",
+  "tagNumber": "UW-P-02",
+  "category": "Secondary Pump",
+  "space": {
+   "id": 2282223,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Grundfos",
+  "model": "PWP-25HP",
+  "sysCreatedTime": "2026-08-13T07:13:45Z",
+  "sysModifiedTime": "2026-08-13T07:13:45Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282174,
+  "localId": 37,
+  "name": "Secondary Chilled Water Pump TB-P-02",
+  "description": "Secondary loop circulation pump, variable-speed drive.",
+  "tagNumber": "TB-P-02",
+  "category": "Secondary Pump",
+  "space": {
+   "id": 2282170,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Grundfos",
+  "model": "PWP-25HP",
+  "sysCreatedTime": "2026-08-13T07:09:33Z",
+  "sysModifiedTime": "2026-08-13T07:09:33Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282145,
+  "localId": 27,
+  "name": "Secondary Chilled Water Pump TA-P-02",
+  "description": "Secondary loop circulation pump, variable-speed drive.",
+  "tagNumber": "TA-P-02",
+  "category": "Secondary Pump",
+  "space": {
+   "id": 2282141,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Grundfos",
+  "model": "PWP-25HP",
+  "sysCreatedTime": "2026-08-13T06:57:26Z",
+  "sysModifiedTime": "2026-08-13T06:57:26Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282200,
+  "localId": 46,
+  "name": "Secondary Chilled Water Pump PW-P-02",
+  "description": "Secondary loop circulation pump, variable-speed drive.",
+  "tagNumber": "PW-P-02",
+  "category": "Secondary Pump",
+  "space": {
+   "id": 2282196,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Grundfos",
+  "model": "PWP-25HP",
+  "sysCreatedTime": "2026-08-13T07:11:38Z",
+  "sysModifiedTime": "2026-08-13T07:11:38Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282207,
+  "localId": 51,
+  "name": "Process Water Pump PW-P-03",
+  "description": "Process cooling water circulation pump for production equipment.",
+  "tagNumber": "PW-P-03",
+  "category": "Primary Pump",
+  "space": {
+   "id": 2282206,
+   "name": "Pump Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Grundfos",
+  "model": "PWP-50HP",
+  "sysCreatedTime": "2026-08-13T07:12:25Z",
+  "sysModifiedTime": "2026-08-13T07:12:25Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282226,
+  "localId": 55,
+  "name": "Primary Chilled Water Pump UW-P-01",
+  "description": "Primary loop circulation pump. Reported making an unusual grinding noise.",
+  "tagNumber": "UW-P-01",
+  "category": "Primary Pump",
+  "space": {
+   "id": 2282223,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Grundfos",
+  "model": "PWP-40HP",
+  "sysCreatedTime": "2026-08-13T07:13:41Z",
+  "sysModifiedTime": "2026-08-13T07:13:41Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282173,
+  "localId": 36,
+  "name": "Primary Chilled Water Pump TB-P-01",
+  "description": "Primary loop circulation pump. Reported making an unusual grinding noise.",
+  "tagNumber": "TB-P-01",
+  "category": "Primary Pump",
+  "space": {
+   "id": 2282170,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Grundfos",
+  "model": "PWP-40HP",
+  "sysCreatedTime": "2026-08-13T07:09:28Z",
+  "sysModifiedTime": "2026-08-13T07:09:28Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282144,
+  "localId": 26,
+  "name": "Primary Chilled Water Pump TA-P-01",
+  "description": "Primary loop circulation pump. Reported making an unusual grinding noise.",
+  "tagNumber": "TA-P-01",
+  "category": "Primary Pump",
+  "space": {
+   "id": 2282141,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Grundfos",
+  "model": "PWP-40HP",
+  "sysCreatedTime": "2026-08-13T06:57:23Z",
+  "sysModifiedTime": "2026-08-13T06:57:23Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282199,
+  "localId": 45,
+  "name": "Primary Chilled Water Pump PW-P-01",
+  "description": "Primary loop circulation pump. Reported making an unusual grinding noise.",
+  "tagNumber": "PW-P-01",
+  "category": "Primary Pump",
+  "space": {
+   "id": 2282196,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Grundfos",
+  "model": "PWP-40HP",
+  "sysCreatedTime": "2026-08-13T07:11:34Z",
+  "sysModifiedTime": "2026-08-13T07:11:34Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282131,
+  "localId": 23,
+  "name": "Precision AC Unit TA-PAC-01",
+  "description": "Dedicated precision cooling unit for the IT server room.",
+  "tagNumber": "TA-PAC-01",
+  "category": "HVAC",
+  "space": {
+   "id": 2282130,
+   "name": "Server Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Liebert",
+  "model": "PAC-3.5T",
+  "sysCreatedTime": "2026-08-13T06:56:33Z",
+  "sysModifiedTime": "2026-08-13T06:56:33Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282209,
+  "localId": 52,
+  "name": "Plant Air Compressor PW-AC-01",
+  "description": "Compressed air supply for pneumatic tools and process equipment.",
+  "tagNumber": "PW-AC-01",
+  "category": "Utility Meter",
+  "space": {
+   "id": 2282208,
+   "name": "Compressor Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Atlas Copco",
+  "model": "GA-90VSD",
+  "sysCreatedTime": "2026-08-13T07:12:34Z",
+  "sysModifiedTime": "2026-08-13T07:12:34Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282081,
+  "localId": 1,
+  "name": "OBSOLETE (CLI test artifact - safe to delete)",
+  "description": "Dedicated precision cooling unit for the IT server room.",
+  "tagNumber": "TA-PAC-01",
+  "category": "HVAC",
+  "space": {
+   "id": 2282080,
+   "name": "OBSOLETE-2282080"
+  },
+  "moduleState": "Retired",
+  "manufacturer": "Liebert",
+  "model": "PAC-3.5T",
+  "sysCreatedTime": "2026-08-13T06:48:54Z",
+  "sysModifiedTime": "2026-08-13T06:48:54Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282092,
+  "localId": 2,
+  "name": "OBSOLETE (CLI test artifact - safe to delete)",
+  "description": "Primary chiller serving the building HVAC loop. Currently flagged down \u2014 insufficient cooling output reported.",
+  "tagNumber": "TA-CH-01",
+  "category": "Chiller",
+  "space": {
+   "id": 2282091,
+   "name": "OBSOLETE-2282091"
+  },
+  "moduleState": "Retired",
+  "manufacturer": "Carrier",
+  "model": "CH-500XR",
+  "sysCreatedTime": "2026-08-13T06:49:36Z",
+  "sysModifiedTime": "2026-08-13T06:49:36Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282093,
+  "localId": 3,
+  "name": "OBSOLETE (CLI test artifact - safe to delete)",
+  "description": "Main air handling unit for the mechanical floor zone.",
+  "tagNumber": "TA-AHU-01",
+  "category": "AHU",
+  "space": {
+   "id": 2282091,
+   "name": "OBSOLETE-2282091"
+  },
+  "moduleState": "Retired",
+  "manufacturer": "Trane",
+  "model": "AHU-2200",
+  "sysCreatedTime": "2026-08-13T06:49:39Z",
+  "sysModifiedTime": "2026-08-13T06:49:39Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282094,
+  "localId": 4,
+  "name": "OBSOLETE (CLI test artifact - safe to delete)",
+  "description": "Primary loop circulation pump. Reported making an unusual grinding noise.",
+  "tagNumber": "TA-P-01",
+  "category": "Primary Pump",
+  "space": {
+   "id": 2282091,
+   "name": "OBSOLETE-2282091"
+  },
+  "moduleState": "Retired",
+  "manufacturer": "Grundfos",
+  "model": "PWP-40HP",
+  "sysCreatedTime": "2026-08-13T06:49:43Z",
+  "sysModifiedTime": "2026-08-13T06:49:43Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282095,
+  "localId": 5,
+  "name": "OBSOLETE (CLI test artifact - safe to delete)",
+  "description": "Secondary loop circulation pump, variable-speed drive.",
+  "tagNumber": "TA-P-02",
+  "category": "Secondary Pump",
+  "space": {
+   "id": 2282091,
+   "name": "OBSOLETE-2282091"
+  },
+  "moduleState": "Retired",
+  "manufacturer": "Grundfos",
+  "model": "PWP-25HP",
+  "sysCreatedTime": "2026-08-13T06:49:47Z",
+  "sysModifiedTime": "2026-08-13T06:49:47Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282102,
+  "localId": 12,
+  "name": "OBSOLETE (CLI test artifact - safe to delete)",
+  "description": "Created during data-seeding script debugging on 2026-08-13. Not part of the Facilio Vision demo dataset. Safe to delete from the Facilio UI.",
+  "category": "Chiller",
+  "space": {
+   "id": 2282068,
+   "name": "Greenfield Business Park"
+  },
+  "moduleState": "Retired",
+  "sysCreatedTime": "2026-08-13T06:51:07Z",
+  "sysModifiedTime": "2026-08-13T06:51:07Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282103,
+  "localId": 13,
+  "name": "OBSOLETE (CLI test artifact - safe to delete)",
+  "description": "Created during data-seeding script debugging on 2026-08-13. Not part of the Facilio Vision demo dataset. Safe to delete from the Facilio UI.",
+  "category": "Energy Meter",
+  "space": {
+   "id": 2282068,
+   "name": "Greenfield Business Park"
+  },
+  "moduleState": "Retired",
+  "sysCreatedTime": "2026-08-13T06:51:24Z",
+  "sysModifiedTime": "2026-08-13T06:51:24Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282104,
+  "localId": 14,
+  "name": "OBSOLETE (CLI test artifact - safe to delete)",
+  "description": "Created during data-seeding script debugging on 2026-08-13. Not part of the Facilio Vision demo dataset. Safe to delete from the Facilio UI.",
+  "category": "Utility Meter",
+  "space": {
+   "id": 2282068,
+   "name": "Greenfield Business Park"
+  },
+  "moduleState": "Retired",
+  "sysCreatedTime": "2026-08-13T06:51:28Z",
+  "sysModifiedTime": "2026-08-13T06:51:28Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282105,
+  "localId": 15,
+  "name": "OBSOLETE (CLI test artifact - safe to delete)",
+  "description": "Created during data-seeding script debugging on 2026-08-13. Not part of the Facilio Vision demo dataset. Safe to delete from the Facilio UI.",
+  "category": "Water Meter",
+  "space": {
+   "id": 2282068,
+   "name": "Greenfield Business Park"
+  },
+  "moduleState": "Retired",
+  "sysCreatedTime": "2026-08-13T06:51:32Z",
+  "sysModifiedTime": "2026-08-13T06:51:32Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282106,
+  "localId": 16,
+  "name": "OBSOLETE (CLI test artifact - safe to delete)",
+  "description": "Created during data-seeding script debugging on 2026-08-13. Not part of the Facilio Vision demo dataset. Safe to delete from the Facilio UI.",
+  "category": "FCU",
+  "space": {
+   "id": 2282068,
+   "name": "Greenfield Business Park"
+  },
+  "moduleState": "Retired",
+  "sysCreatedTime": "2026-08-13T06:51:35Z",
+  "sysModifiedTime": "2026-08-13T06:51:35Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282107,
+  "localId": 17,
+  "name": "OBSOLETE (CLI test artifact - safe to delete)",
+  "description": "Created during data-seeding script debugging on 2026-08-13. Not part of the Facilio Vision demo dataset. Safe to delete from the Facilio UI.",
+  "category": "refrigeration",
+  "space": {
+   "id": 2282068,
+   "name": "Greenfield Business Park"
+  },
+  "moduleState": "Retired",
+  "sysCreatedTime": "2026-08-13T06:51:39Z",
+  "sysModifiedTime": "2026-08-13T06:51:39Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282108,
+  "localId": 18,
+  "name": "OBSOLETE (CLI test artifact - safe to delete)",
+  "description": "Created during data-seeding script debugging on 2026-08-13. Not part of the Facilio Vision demo dataset. Safe to delete from the Facilio UI.",
+  "category": "FAHU",
+  "space": {
+   "id": 2282068,
+   "name": "Greenfield Business Park"
+  },
+  "moduleState": "Retired",
+  "sysCreatedTime": "2026-08-13T06:51:43Z",
+  "sysModifiedTime": "2026-08-13T06:51:43Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282109,
+  "localId": 19,
+  "name": "OBSOLETE (CLI test artifact - safe to delete)",
+  "description": "Created during data-seeding script debugging on 2026-08-13. Not part of the Facilio Vision demo dataset. Safe to delete from the Facilio UI.",
+  "category": "Cooling Tower",
+  "space": {
+   "id": 2282068,
+   "name": "Greenfield Business Park"
+  },
+  "moduleState": "Retired",
+  "sysCreatedTime": "2026-08-13T06:51:46Z",
+  "sysModifiedTime": "2026-08-13T06:51:46Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282110,
+  "localId": 20,
+  "name": "OBSOLETE (CLI test artifact - safe to delete)",
+  "description": "Created during data-seeding script debugging on 2026-08-13. Not part of the Facilio Vision demo dataset. Safe to delete from the Facilio UI.",
+  "category": "Heat Pump",
+  "space": {
+   "id": 2282068,
+   "name": "Greenfield Business Park"
+  },
+  "moduleState": "Retired",
+  "sysCreatedTime": "2026-08-13T06:51:51Z",
+  "sysModifiedTime": "2026-08-13T06:51:51Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282111,
+  "localId": 21,
+  "name": "OBSOLETE (CLI test artifact - safe to delete)",
+  "description": "Created during data-seeding script debugging on 2026-08-13. Not part of the Facilio Vision demo dataset. Safe to delete from the Facilio UI.",
+  "category": "Chiller Plant Manager",
+  "space": {
+   "id": 2282068,
+   "name": "Greenfield Business Park"
+  },
+  "moduleState": "Retired",
+  "sysCreatedTime": "2026-08-13T06:51:55Z",
+  "sysModifiedTime": "2026-08-13T06:51:55Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282112,
+  "localId": 22,
+  "name": "OBSOLETE (CLI test artifact - safe to delete)",
+  "description": "Created during data-seeding script debugging on 2026-08-13. Not part of the Facilio Vision demo dataset. Safe to delete from the Facilio UI.",
+  "category": "Condenser Pump",
+  "space": {
+   "id": 2282068,
+   "name": "Greenfield Business Park"
+  },
+  "moduleState": "Retired",
+  "sysCreatedTime": "2026-08-13T06:51:58Z",
+  "sysModifiedTime": "2026-08-13T06:51:58Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282205,
+  "localId": 50,
+  "name": "Main LT Panel PW-EDP-02",
+  "description": "Main low-tension panel feeding the production floor.",
+  "tagNumber": "PW-EDP-02",
+  "category": "Utility Meter",
+  "space": {
+   "id": 2282204,
+   "name": "Electrical Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Schneider Electric",
+  "model": "PowerLogic PM8000",
+  "sysCreatedTime": "2026-08-13T07:12:17Z",
+  "sysModifiedTime": "2026-08-13T07:12:17Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282151,
+  "localId": 31,
+  "name": "Main Distribution Panel TA-EDP-02",
+  "description": "Building main LV distribution panel, separate from plant room panel.",
+  "tagNumber": "TA-EDP-02",
+  "category": "Utility Meter",
+  "space": {
+   "id": 2282150,
+   "name": "Electrical Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Schneider Electric",
+  "model": "PowerLogic PM5000",
+  "sysCreatedTime": "2026-08-13T07:07:40Z",
+  "sysModifiedTime": "2026-08-13T07:07:40Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282234,
+  "localId": 61,
+  "name": "Fire Hydrant Booster Pump UW-BP-02",
+  "description": "Fire hydrant system booster pump.",
+  "tagNumber": "UW-BP-02",
+  "category": "Secondary Pump",
+  "space": {
+   "id": 2282233,
+   "name": "Pump Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Grundfos",
+  "model": "BP-30HP",
+  "sysCreatedTime": "2026-08-13T07:14:37Z",
+  "sysModifiedTime": "2026-08-13T07:14:37Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282230,
+  "localId": 59,
+  "name": "Energy Meter UW-EM-01",
+  "description": "Sub-meter tracking plant room energy consumption.",
+  "tagNumber": "UW-EM-01",
+  "category": "Energy Meter",
+  "space": {
+   "id": 2282223,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Schneider Electric",
+  "model": "ION7650",
+  "sysCreatedTime": "2026-08-13T07:14:05Z",
+  "sysModifiedTime": "2026-08-13T07:14:05Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282177,
+  "localId": 40,
+  "name": "Energy Meter TB-EM-01",
+  "description": "Sub-meter tracking plant room energy consumption.",
+  "tagNumber": "TB-EM-01",
+  "category": "Energy Meter",
+  "space": {
+   "id": 2282170,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Schneider Electric",
+  "model": "ION7650",
+  "sysCreatedTime": "2026-08-13T07:09:47Z",
+  "sysModifiedTime": "2026-08-13T07:09:47Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282148,
+  "localId": 30,
+  "name": "Energy Meter TA-EM-01",
+  "description": "Sub-meter tracking plant room energy consumption.",
+  "tagNumber": "TA-EM-01",
+  "category": "Energy Meter",
+  "space": {
+   "id": 2282141,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Schneider Electric",
+  "model": "ION7650",
+  "sysCreatedTime": "2026-08-13T06:57:37Z",
+  "sysModifiedTime": "2026-08-13T06:57:37Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282203,
+  "localId": 49,
+  "name": "Energy Meter PW-EM-01",
+  "description": "Sub-meter tracking plant room energy consumption.",
+  "tagNumber": "PW-EM-01",
+  "category": "Energy Meter",
+  "space": {
+   "id": 2282196,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Schneider Electric",
+  "model": "ION7650",
+  "sysCreatedTime": "2026-08-13T07:11:51Z",
+  "sysModifiedTime": "2026-08-13T07:11:51Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282229,
+  "localId": 58,
+  "name": "Electrical Distribution Panel UW-EDP-01",
+  "description": "Main low-voltage distribution panel for the plant room.",
+  "tagNumber": "UW-EDP-01",
+  "category": "Utility Meter",
+  "space": {
+   "id": 2282223,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Schneider Electric",
+  "model": "PowerLogic PM8000",
+  "sysCreatedTime": "2026-08-13T07:14:01Z",
+  "sysModifiedTime": "2026-08-13T07:14:01Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282176,
+  "localId": 39,
+  "name": "Electrical Distribution Panel TB-EDP-01",
+  "description": "Main low-voltage distribution panel for the plant room.",
+  "tagNumber": "TB-EDP-01",
+  "category": "Utility Meter",
+  "space": {
+   "id": 2282170,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Schneider Electric",
+  "model": "PowerLogic PM8000",
+  "sysCreatedTime": "2026-08-13T07:09:43Z",
+  "sysModifiedTime": "2026-08-13T07:09:43Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282147,
+  "localId": 29,
+  "name": "Electrical Distribution Panel TA-EDP-01",
+  "description": "Main low-voltage distribution panel for the plant room.",
+  "tagNumber": "TA-EDP-01",
+  "category": "Utility Meter",
+  "space": {
+   "id": 2282141,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Schneider Electric",
+  "model": "PowerLogic PM8000",
+  "sysCreatedTime": "2026-08-13T06:57:34Z",
+  "sysModifiedTime": "2026-08-13T06:57:34Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282202,
+  "localId": 48,
+  "name": "Electrical Distribution Panel PW-EDP-01",
+  "description": "Main low-voltage distribution panel for the plant room.",
+  "tagNumber": "PW-EDP-01",
+  "category": "Utility Meter",
+  "space": {
+   "id": 2282196,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Schneider Electric",
+  "model": "PowerLogic PM8000",
+  "sysCreatedTime": "2026-08-13T07:11:47Z",
+  "sysModifiedTime": "2026-08-13T07:11:47Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282181,
+  "localId": 42,
+  "name": "Domestic Water Booster Pump TB-BP-01",
+  "description": "Domestic water booster pump, Tower B.",
+  "tagNumber": "TB-BP-01",
+  "category": "Secondary Pump",
+  "space": {
+   "id": 2282180,
+   "name": "Pump Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Grundfos",
+  "model": "BP-15HP",
+  "sysCreatedTime": "2026-08-13T07:10:19Z",
+  "sysModifiedTime": "2026-08-13T07:10:19Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282153,
+  "localId": 32,
+  "name": "Domestic Water Booster Pump TA-BP-01",
+  "description": "Domestic water booster pump for upper floors.",
+  "tagNumber": "TA-BP-01",
+  "category": "Secondary Pump",
+  "space": {
+   "id": 2282152,
+   "name": "Pump Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Grundfos",
+  "model": "BP-15HP",
+  "sysCreatedTime": "2026-08-13T07:07:49Z",
+  "sysModifiedTime": "2026-08-13T07:07:49Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282224,
+  "localId": 53,
+  "name": "Chiller UW-CH-01",
+  "description": "Primary chiller serving the building HVAC loop. Currently flagged down \u2014 insufficient cooling output reported.",
+  "tagNumber": "UW-CH-01",
+  "category": "Chiller",
+  "space": {
+   "id": 2282223,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Carrier",
+  "model": "CH-500XR",
+  "sysCreatedTime": "2026-08-13T07:13:33Z",
+  "sysModifiedTime": "2026-08-13T07:13:33Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282171,
+  "localId": 34,
+  "name": "Chiller TB-CH-01",
+  "description": "Primary chiller serving the building HVAC loop. Currently flagged down \u2014 insufficient cooling output reported.",
+  "tagNumber": "TB-CH-01",
+  "category": "Chiller",
+  "space": {
+   "id": 2282170,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Carrier",
+  "model": "CH-500XR",
+  "sysCreatedTime": "2026-08-13T07:09:18Z",
+  "sysModifiedTime": "2026-08-13T07:09:18Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282142,
+  "localId": 24,
+  "name": "Chiller TA-CH-01",
+  "description": "Primary chiller serving the building HVAC loop. Currently flagged down \u2014 insufficient cooling output reported.",
+  "tagNumber": "TA-CH-01",
+  "category": "Chiller",
+  "space": {
+   "id": 2282141,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Carrier",
+  "model": "CH-500XR",
+  "sysCreatedTime": "2026-08-13T06:57:15Z",
+  "sysModifiedTime": "2026-08-13T06:57:15Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282197,
+  "localId": 43,
+  "name": "Chiller PW-CH-01",
+  "description": "Primary chiller serving the building HVAC loop. Currently flagged down \u2014 insufficient cooling output reported.",
+  "tagNumber": "PW-CH-01",
+  "category": "Chiller",
+  "space": {
+   "id": 2282196,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Carrier",
+  "model": "CH-500XR",
+  "sysCreatedTime": "2026-08-13T07:11:25Z",
+  "sysModifiedTime": "2026-08-13T07:11:25Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282225,
+  "localId": 54,
+  "name": "Air Handling Unit UW-AHU-01",
+  "description": "Main air handling unit for the mechanical floor zone.",
+  "tagNumber": "UW-AHU-01",
+  "category": "AHU",
+  "space": {
+   "id": 2282223,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Trane",
+  "model": "AHU-2200",
+  "sysCreatedTime": "2026-08-13T07:13:37Z",
+  "sysModifiedTime": "2026-08-13T07:13:37Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282172,
+  "localId": 35,
+  "name": "Air Handling Unit TB-AHU-01",
+  "description": "Main air handling unit for the mechanical floor zone.",
+  "tagNumber": "TB-AHU-01",
+  "category": "AHU",
+  "space": {
+   "id": 2282170,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Trane",
+  "model": "AHU-2200",
+  "sysCreatedTime": "2026-08-13T07:09:24Z",
+  "sysModifiedTime": "2026-08-13T07:09:24Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282143,
+  "localId": 25,
+  "name": "Air Handling Unit TA-AHU-01",
+  "description": "Main air handling unit for the mechanical floor zone.",
+  "tagNumber": "TA-AHU-01",
+  "category": "AHU",
+  "space": {
+   "id": 2282141,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Trane",
+  "model": "AHU-2200",
+  "sysCreatedTime": "2026-08-13T06:57:19Z",
+  "sysModifiedTime": "2026-08-13T06:57:19Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282198,
+  "localId": 44,
+  "name": "Air Handling Unit PW-AHU-01",
+  "description": "Main air handling unit for the mechanical floor zone.",
+  "tagNumber": "PW-AHU-01",
+  "category": "AHU",
+  "space": {
+   "id": 2282196,
+   "name": "Plant Room"
+  },
+  "moduleState": "Active",
+  "manufacturer": "Trane",
+  "model": "AHU-2200",
+  "sysCreatedTime": "2026-08-13T07:11:30Z",
+  "sysModifiedTime": "2026-08-13T07:11:30Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ }
+]

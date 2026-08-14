@@ -1,0 +1,163 @@
+[
+ {
+  "id": 2282211,
+  "name": "Utility & Warehouse Block",
+  "description": "Attached warehouse and administrative block at Lakeside Manufacturing Plant, housing the site's secondary plant room.",
+  "site": {
+   "id": 2282069,
+   "name": "Lakeside Manufacturing Plant",
+   "description": "A heavy-industry manufacturing facility on the lakeside industrial corridor, with a production wing and an attached utility and warehouse block.",
+   "moduleState": {
+    "id": 183339
+   },
+   "siteType": "Compound",
+   "sysCreatedTime": "2026-08-13T06:46:13Z",
+   "sysModifiedTime": "2026-08-13T06:46:13Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282069"
+  },
+  "sysCreatedTime": "2026-08-13T07:12:41Z",
+  "sysModifiedTime": "2026-08-13T07:12:41Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  },
+  "qrVal": "facilio_2282211"
+ },
+ {
+  "id": 2282156,
+  "name": "Tower B",
+  "description": "South office tower at Greenfield Business Park, mirrored layout to Tower A with its own dedicated plant room.",
+  "site": {
+   "id": 2282068,
+   "name": "Greenfield Business Park",
+   "description": "A modern mixed-use office park with two office towers and a central admin block, serving as the primary corporate campus.",
+   "moduleState": {
+    "id": 183339
+   },
+   "siteType": "Office",
+   "sysCreatedTime": "2026-08-13T06:46:02Z",
+   "sysModifiedTime": "2026-08-13T06:46:02Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282068"
+  },
+  "sysCreatedTime": "2026-08-13T07:08:12Z",
+  "sysModifiedTime": "2026-08-13T07:08:12Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  },
+  "qrVal": "facilio_2282156"
+ },
+ {
+  "id": 2282113,
+  "name": "Tower A",
+  "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+  "site": {
+   "id": 2282068,
+   "name": "Greenfield Business Park",
+   "description": "A modern mixed-use office park with two office towers and a central admin block, serving as the primary corporate campus.",
+   "moduleState": {
+    "id": 183339
+   },
+   "siteType": "Office",
+   "sysCreatedTime": "2026-08-13T06:46:02Z",
+   "sysModifiedTime": "2026-08-13T06:46:02Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282068"
+  },
+  "sysCreatedTime": "2026-08-13T06:55:54Z",
+  "sysModifiedTime": "2026-08-13T06:55:54Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  },
+  "qrVal": "facilio_2282113"
+ },
+ {
+  "id": 2282183,
+  "name": "Production Wing",
+  "description": "Main manufacturing hall at Lakeside Manufacturing Plant, with a dedicated plant room floor serving the production process.",
+  "site": {
+   "id": 2282069,
+   "name": "Lakeside Manufacturing Plant",
+   "description": "A heavy-industry manufacturing facility on the lakeside industrial corridor, with a production wing and an attached utility and warehouse block.",
+   "moduleState": {
+    "id": 183339
+   },
+   "siteType": "Compound",
+   "sysCreatedTime": "2026-08-13T06:46:13Z",
+   "sysModifiedTime": "2026-08-13T06:46:13Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282069"
+  },
+  "sysCreatedTime": "2026-08-13T07:10:27Z",
+  "sysModifiedTime": "2026-08-13T07:10:27Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  },
+  "qrVal": "facilio_2282183"
+ },
+ {
+  "id": 2282070,
+  "name": "OBSOLETE - Tower A (test artifact, safe to delete)",
+  "description": "Created during data-seeding script debugging on 2026-08-13. Superseded by the real Tower A. Safe to delete from the Facilio UI.",
+  "site": {
+   "id": 2282068,
+   "name": "Greenfield Business Park",
+   "description": "A modern mixed-use office park with two office towers and a central admin block, serving as the primary corporate campus.",
+   "moduleState": {
+    "id": 183339
+   },
+   "siteType": "Office",
+   "sysCreatedTime": "2026-08-13T06:46:02Z",
+   "sysModifiedTime": "2026-08-13T06:46:02Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282068"
+  },
+  "area": 0,
+  "sysCreatedTime": "2026-08-13T06:48:10Z",
+  "sysModifiedTime": "2026-08-13T06:48:10Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  },
+  "qrVal": "facilio_2282070"
+ }
+]

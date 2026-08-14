@@ -1,0 +1,359 @@
+/* =========================================================
+   Surveys workstream — mobile-native layer.
+
+   Built ON the f31640a foundation: --app-h / --safe-* own the height,
+   the PAGE never scrolls, and every primitive here composes with the
+   shared ones in components/sheet.css (.btn-cta, .btn-quiet,
+   .btn-danger-outline, .section-row, .section-label, .empty-card,
+   .row-card, .row-badge, .info-table, .scroll-y).
+
+   Nothing in src/styles.css, src/components/**, src/ar/** or
+   src/vision/** is edited by this workstream — the overrides at the
+   bottom are scoped to the screens this file owns.
+   ========================================================= */
+
+/* ---------- screen frame: fills the pane, list scrolls inside ---------- */
+
+.sv-screen {
+  /* flex:1 for the flex shells (embedded/app), height:100% for the mobile
+     dock pane and the desktop main — the screen is never taller than its
+     pane, so the page cannot scroll and nothing lands under the dock. */
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-app);
+}
+
+/* Embedded host chrome (.tab-shell) is not a flex column, so percentage height
+   has nothing to resolve against — size off the app height minus the tab bar. */
+.tab-shell .sv-screen { height: calc(var(--app-h) - 44px); }
+
+.sv-head {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: calc(12px + var(--safe-t)) 16px 12px;
+  background: var(--bg-app);
+}
+
+.sv-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sv-h1 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 30px;
+  font-weight: 700;
+  color: var(--ink-900);
+}
+
+/* site chip — "EDGE HQ · 3 ⌄" */
+.sv-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 60%;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--ink-700);
+  font: 600 15px/1 var(--font-sans);
+  cursor: pointer;
+}
+
+.sv-chip > .sv-chip-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sv-chip.static { cursor: default; }
+
+.sv-cta-row { display: flex; gap: 10px; align-items: stretch; }
+.sv-cta-row .btn-cta { flex: 1; }
+
+/* ---------- the one internal scroller ---------- */
+
+.sv-list {
+  flex: 1;
+  min-height: 0;
+  padding: 0 16px calc(20px + var(--safe-b));
+  display: flex;
+  flex-direction: column;
+}
+
+.sv-rows { display: flex; flex-direction: column; gap: 10px; }
+
+/* .row-card's title/meta are spans inside a stacked main column */
+.sv-row-main { min-width: 0; }
+.sv-row-main .row-card-title,
+.sv-row-main .row-card-meta {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sv-row-main .row-card-meta { font-size: 14px; }
+
+.sv-status { font-size: 15px; color: var(--ink-500); margin: 12px 0; }
+.sv-status.error { color: var(--danger-500); }
+
+/* ---------- survey detail (inside <Sheet>) ---------- */
+
+.sv-photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 14px;
+  background: var(--ink-050);
+  margin-bottom: 14px;
+}
+
+.sv-card {
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  background: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.sv-card-copy {
+  margin: 0;
+  font-size: 15px;
+  line-height: 23px;
+  color: var(--ink-600);
+}
+
+.sv-qr-art { display: grid; place-items: center; }
+.sv-qr-art svg { width: 152px; height: 152px; }
+
+.sv-hint {
+  margin: 12px 0 0;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--ink-600);
+}
+
+.sv-marker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sv-marker:last-of-type { border-bottom: none; }
+.sv-marker-icon { font-size: 20px; line-height: 1; flex: none; width: 26px; text-align: center; }
+.sv-marker-main { min-width: 0; }
+.sv-marker-name {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink-900);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sv-marker-meta { display: block; margin-top: 2px; font-size: 14px; color: var(--ink-500); }
+
+.sv-delete { margin: 24px 0 4px; }
+
+/* ---------- authoring: camera + sheet ---------- */
+
+/* dark pill floating over the live camera */
+.pa-exit {
+  position: absolute;
+  z-index: 8;
+  top: calc(12px + var(--safe-t));
+  left: 12px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: var(--radius-pill);
+  background: rgba(16, 24, 38, 0.82);
+  color: #fff;
+  font: 600 15px/1 var(--font-sans);
+  cursor: pointer;
+}
+
+.pa-exit:hover { border-color: rgba(255, 255, 255, 0.4); }
+
+.sv-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px; }
+
+.sv-field-label {
+  font-size: var(--fs-tiny);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+  font-weight: 600;
+}
+
+.sv-input {
+  font: 400 16px/1.4 var(--font-sans); /* <16px makes iOS zoom the page in */
+  min-height: 48px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  background: var(--bg-surface);
+  color: var(--ink-900);
+}
+
+.sv-input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+.sv-help {
+  margin: 12px 0 0;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--ink-500);
+}
+
+/* compact labelled selects that HUG their content (never full width) */
+.sv-selects { margin: 16px 0 18px; }
+
+.sv-selects .location-picker {
+  margin: 0;
+  gap: 10px 12px;
+  align-items: flex-start;
+}
+
+.sv-selects .ds-select { min-width: 0; flex: 1 1 46%; gap: 6px; }
+/* an expanded select takes the full row so its list is readable */
+.sv-selects .ds-select:has(.ds-select-inline) { flex: 1 1 100%; }
+
+.sv-selects .ds-select-label {
+  font-size: var(--fs-tiny);
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  color: var(--ink-500);
+}
+
+.sv-selects .ds-select-btn {
+  height: 40px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  max-width: 100%;
+}
+
+.sv-selects .ds-select-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sv-selects .link-btn { align-self: center; min-height: 44px; font-size: 15px; }
+
+/* ---------- generous typography / tap targets on the later steps ----------
+   (steps 2-4 keep their AR chrome from src/ar/arspace.css — read-only for
+   this workstream — so the mobile minimums are applied from here.) */
+
+.pa-stage .pa-sheet { gap: 14px; padding: 18px; }
+.pa-stage .pa-sheet h3 { font-size: 18px; }
+.pa-stage .pa-sheet .small,
+.pa-stage .pa-sheet p { font-size: 15px; line-height: 22px; }
+.pa-stage .pa-sheet .btn,
+.pa-stage .pa-foot .btn { min-height: 48px; height: auto; font-size: 15px; padding: 0 16px; }
+.pa-stage .pa-sheet .field input,
+.pa-stage .ar-code-row input { font-size: 16px; min-height: 48px; padding: 10px 12px; }
+.pa-stage .ar-toggle { min-height: 44px; }
+.pa-stage .pa-chip { height: 34px; font-size: 13px; }
+.pa-stage .pa-chip button { min-width: 28px; min-height: 28px; }
+.pa-stage .pa-topbar { height: calc(48px + var(--safe-t)); padding-top: var(--safe-t); }
+.pa-stage .pa-topbar h2 { font-size: 15px; }
+
+/* ---------- rooms ---------- */
+
+.sv-screen.fv-rooms { padding: 0; gap: 0; }
+
+.fv-room-group { margin-bottom: 22px; }
+.sv-screen .fv-room-group h3 { font-size: 16px; font-weight: 600; margin: 0 0 10px; }
+.sv-screen .fv-room-grid { gap: 12px; }
+
+.sv-screen .fv-viewer {
+  padding: 16px;
+  padding-bottom: calc(16px + var(--safe-b));
+  max-height: calc(var(--app-h) - 24px);
+  overflow-y: auto;
+}
+
+.sv-screen .fv-viewer-head .title { font-size: 15px; }
+.sv-screen .fv-viewer-close { width: 44px; height: 44px; font-size: 22px; }
+.sv-screen .fv-btn-danger,
+.sv-screen .fv-btn-plain { min-height: 48px; height: auto; font-size: 15px; padding: 0 16px; }
+
+
+/* org attribution — records are per-org; make it visible, never implicit */
+.sv-title-wrap { display: flex; flex-direction: column; gap: 1px; }
+.sv-org {
+  font-size: 11px;
+  color: var(--ink-500);
+  letter-spacing: 0.02em;
+}
+
+/* --- QR-origin step: a corner reticle over the live feed --- */
+.pa-scanframe {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  width: min(58vw, 240px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 4;
+}
+.pa-scanframe span {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  border-radius: 2px;
+}
+.pa-scanframe .tl { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+.pa-scanframe .tr { top: 0; right: 0; border-left: 0; border-bottom: 0; }
+.pa-scanframe .bl { bottom: 0; left: 0; border-right: 0; border-top: 0; }
+.pa-scanframe .br { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+
+/* --- sweep pace + coverage --- */
+.pa-tip-warn {
+  color: #fff;
+  background: var(--red-500, #d92d20);
+  border-radius: 4px;
+}
+.pa-sweep-dots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  padding: 2px 0 6px;
+}
+.pa-sweep-dots .dot {
+  width: 14px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.28);
+}
+.pa-sweep-dots .dot.on {
+  background: var(--blue-400, #578aef);
+}

@@ -1,0 +1,44 @@
+{
+  "name": "facilio-vision-3d",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint",
+    "check": "node smoke-adapter.mjs",
+    "check:3d": "node smoke-plan3d.mjs",
+    "check:bundle": "node check-bundle.mjs",
+    "verify": "npm run build && npm run test && npm run check && npm run check:3d && npm run check:bundle",
+    "deploy": "npm run build && facilio vibe deploy"
+  },
+  "dependencies": {
+    "@facilio/vibe-sdk": "^0.3.1",
+    "@tanstack/react-query": "^5.101.4",
+    "@tensorflow-models/mobilenet": "^2.1.1",
+    "@tensorflow/tfjs": "^4.22.0",
+    "jsqr": "^1.4.0",
+    "qrcode-generator": "^2.0.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "0.128.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.4",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^4.1.10",
+    "jsdom": "^29.1.1",
+    "oxlint": "^1.75.0",
+    "typescript": "^7.0.2",
+    "vite": "^6.0.7",
+    "vitest": "^4.1.10"
+  }
+}

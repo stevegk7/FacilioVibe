@@ -1,0 +1,14 @@
+{
+  "title": "fv_tasks",
+  "type": "object",
+  "description": "Checklist proposals for one existing work order. Text only — the app owns ids and the write.",
+  "properties": {
+    "tasks": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "3 to 6 short imperative steps, ordered make-safe first, each at most 60 characters, no duplicates of existing tasks, no filler."
+    }
+  },
+  "required": ["tasks"],
+  "additionalProperties": false
+}

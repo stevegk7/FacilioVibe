@@ -1,0 +1,409 @@
+/* visionOS glass system for AR windows over a live camera feed.
+   Built from the HIG (Materials / Ornaments / Buttons / Typography for
+   visionOS) + WWDC23 10076, translated to mobile-Safari CSS:
+   - ONE backdrop-filter per window (nested backdrop-filters don't compose in
+     Safari — which conveniently enforces Apple's no-glass-on-glass rule);
+     nested tiers are flat fills: thin 0.10 (interactive), regular 0.06
+     (groups), thick black 0.22 (recessed wells).
+   - Neutral-gray glass tint (glass "limits the range of background color"),
+     plus a dark dimming layer for legibility over live video.
+   - Vibrancy tiers, not grey hexes: white at 0.96 / 0.62 / 0.38.
+   - Color NEVER on text — status lives in a chip FILL (iOS dark system
+     palette, calibrated for glass) with a solid leading dot.
+   - Concentric radii: inner + padding = outer (window 26, pad 12, row 14).
+   - Animate transform/opacity only — animating blur drops to 30fps on video. */
+
+:root {
+  --vg-blur: 20px;
+  --vg-sat: 180%;
+  --vg-tint: rgba(140, 140, 145, 0.22);
+  --vg-dim: rgba(10, 12, 16, 0.35);
+  --vg-fill-thin: rgba(255, 255, 255, 0.1);
+  --vg-fill-regular: rgba(255, 255, 255, 0.06);
+  --vg-fill-thick: rgba(0, 0, 0, 0.22);
+  --vg-rim: rgba(255, 255, 255, 0.3);
+  --vg-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  --vg-r-window: 26px;
+  --vg-pad: 12px;
+  --vg-r-row: calc(var(--vg-r-window) - var(--vg-pad));
+  --vg-text-1: rgba(255, 255, 255, 0.96);
+  --vg-text-2: rgba(255, 255, 255, 0.62);
+  --vg-text-3: rgba(255, 255, 255, 0.38);
+  /* SwiftUI 'snappy' spring sampled to linear(); fallback below for <17.2 */
+  --vg-spring: linear(0, 0.0662, 0.2099, 0.3755, 0.5322, 0.666, 0.7724, 0.8525, 0.9101, 0.9495, 0.9751, 0.9909, 0.9999, 1.004, 1.006, 1.006, 1.005, 1.004, 1.003, 1);
+  --vg-spring-ms: 650ms;
+  /* iOS dark-appearance system colors — pre-calibrated for glass */
+  --vg-red: #ff453a;
+  --vg-orange: #ff9f0a;
+  --vg-yellow: #ffd60a;
+  --vg-green: #30d158;
+  --vg-blue: #0a84ff;
+  --vg-cyan: #64d2ff;
+}
+
+@supports not (transition-timing-function: linear(0, 1)) {
+  :root {
+    --vg-spring: cubic-bezier(0.34, 1.25, 0.64, 1);
+    --vg-spring-ms: 500ms;
+  }
+}
+
+.vg-anchor {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+/* ---- the window: the ONE glass surface ---- */
+.vg-window {
+  position: relative;
+  width: min(340px, 86vw);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(var(--vg-dim), var(--vg-dim)), var(--vg-tint);
+  -webkit-backdrop-filter: blur(var(--vg-blur)) saturate(var(--vg-sat));
+  backdrop-filter: blur(var(--vg-blur)) saturate(var(--vg-sat));
+  border-radius: var(--vg-r-window);
+  /* top specular rim + inner glow + cast shadow */
+  box-shadow:
+    inset 0 1px 0 var(--vg-rim),
+    inset 0 0 2px 2px rgba(255, 255, 255, 0.08),
+    var(--vg-shadow);
+  color: var(--vg-text-1);
+  font-family: -apple-system, 'SF Pro Text', var(--font-sans), system-ui;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  animation: vgIn var(--vg-spring-ms) var(--vg-spring);
+  overflow: hidden;
+  isolation: isolate; /* Safari: clip the blur to the rounded shape */
+}
+
+.vg-window::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.05) 40%, rgba(255, 255, 255, 0.12));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+@keyframes vgIn {
+  from { transform: scale(0.94) translateY(10px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vg-window { animation: none; }
+}
+
+.vg-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px var(--vg-pad) 6px 16px;
+  flex: none;
+}
+.vg-title {
+  flex: 1;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* circular icon buttons; press = the hover-highlight analog (soft white
+   overlay clipped to the shape) + a gentle scale */
+.vg-icon-btn,
+.vg-row,
+.vg-action {
+  position: relative;
+  border: none;
+  cursor: pointer;
+  transition: transform 180ms var(--vg-spring);
+}
+.vg-icon-btn::after,
+.vg-row::after,
+.vg-action::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #fff;
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+  pointer-events: none;
+}
+.vg-icon-btn:active::after,
+.vg-row:active::after,
+.vg-action:active::after {
+  opacity: 0.12;
+}
+.vg-icon-btn:active,
+.vg-action:active {
+  transform: scale(0.96);
+}
+
+.vg-icon-btn {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--vg-fill-thin);
+  color: var(--vg-text-2);
+  padding: 0;
+}
+.vg-minus {
+  width: 12px;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+  display: block;
+}
+
+.vg-body {
+  padding: 4px var(--vg-pad) 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 60px;
+  /* content fades under the bar instead of clipping hard */
+  mask-image: linear-gradient(transparent 0, #000 10px, #000 100%);
+  -webkit-mask-image: linear-gradient(transparent 0, #000 10px, #000 100%);
+}
+
+/* ---- chips: color as FILL behind white text, solid leading dot ---- */
+.vg-chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.vg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--vg-fill-thin);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--vg-text-1);
+  white-space: nowrap;
+}
+.vg-chip::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+}
+.vg-chip.t-open { background: color-mix(in srgb, var(--vg-yellow) 32%, transparent); }
+.vg-chip.t-open::before { background: var(--vg-yellow); }
+.vg-chip.t-prog { background: color-mix(in srgb, var(--vg-cyan) 30%, transparent); }
+.vg-chip.t-prog::before { background: var(--vg-cyan); }
+.vg-chip.t-done { background: color-mix(in srgb, var(--vg-green) 30%, transparent); }
+.vg-chip.t-done::before { background: var(--vg-green); }
+.vg-chip.t-hold { background: color-mix(in srgb, var(--vg-orange) 32%, transparent); }
+.vg-chip.t-hold::before { background: var(--vg-orange); }
+.vg-chip.t-plain { color: var(--vg-text-2); font-weight: 500; }
+.vg-chip.t-plain::before { display: none; }
+
+/* ---- rows: the surface IS the press highlight; gaps, no separators ---- */
+.vg-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 12px;
+  border-radius: var(--vg-r-row);
+  background: var(--vg-fill-thin);
+  color: var(--vg-text-1);
+  font: inherit;
+  text-align: left;
+}
+.vg-row-primary { font-weight: 600; }
+.vg-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.vg-row-title {
+  font-size: 15px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vg-row-sub { font-size: 13px; color: var(--vg-text-2); }
+.vg-row-meta { font-size: 13px; color: var(--vg-text-2); font-weight: 600; }
+.vg-row-chev { color: var(--vg-text-3); flex: none; }
+
+.vg-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; }
+.vg-dot.t-open { background: var(--vg-yellow); }
+.vg-dot.t-prog { background: var(--vg-cyan); }
+.vg-dot.t-done { background: var(--vg-green); }
+.vg-dot.t-hold { background: var(--vg-orange); }
+
+/* ---- action grid ---- */
+.vg-action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.vg-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  border-radius: var(--vg-r-row);
+  background: var(--vg-fill-thin);
+  color: var(--vg-text-1);
+  font: 600 13px/1 inherit;
+  font-family: inherit;
+}
+.vg-action:disabled { opacity: 0.5; }
+.vg-action svg { color: var(--vg-text-2); }
+
+.vg-brief {
+  padding: 10px 12px;
+  border-radius: var(--vg-r-row);
+  background: color-mix(in srgb, var(--vg-cyan) 16%, transparent);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--vg-text-1);
+}
+
+/* ---- detail ---- */
+.vg-detail { display: flex; flex-direction: column; gap: 8px; }
+.vg-detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.vg-detail-head .vg-row-title { white-space: normal; font-weight: 600; }
+.vg-dim { margin: 0; font-size: 13px; line-height: 18px; color: var(--vg-text-2); }
+.vg-err { margin: 0; font-size: 12.5px; color: var(--vg-red); }
+.vg-meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+.vg-meta dt { color: var(--vg-text-3); }
+.vg-meta dd { margin: 0; color: var(--vg-text-2); }
+.vg-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--vg-text-3);
+}
+.vg-task {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 4px 10px;
+  border-radius: var(--vg-r-row);
+  background: var(--vg-fill-regular);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  font-size: 13.5px;
+}
+.vg-task.closed span:last-child { text-decoration: line-through; color: var(--vg-text-3); }
+
+/* the DSM select adapts to glass inside a window (recessed = thick fill) */
+.vg-detail .ds-select-label { color: var(--vg-text-3); }
+.vg-detail .ds-select-btn {
+  background: var(--vg-fill-thick);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: var(--vg-text-1);
+}
+.vg-detail .ds-select-inline {
+  background: rgba(28, 32, 40, 0.94);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: var(--vg-text-1);
+}
+.vg-detail .ds-select-inline .ds-select-opt { color: var(--vg-text-1); }
+.vg-detail .ds-select-empty { color: var(--vg-text-2); }
+
+/* ---- grabber: drag to expand ---- */
+.vg-grabber {
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: 6px 0 9px;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.vg-grabber span {
+  width: 36px;
+  height: 5px;
+  border-radius: 2.5px;
+  background: rgba(255, 255, 255, 0.32);
+}
+.vg-grabber:active span { background: rgba(255, 255, 255, 0.55); }
+
+/* ---- ornament: its OWN glass capsule, floating in front of the window
+   (a sibling, never a child — it needs its own backdrop root) ---- */
+.vg-ornament {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--vg-tint);
+  -webkit-backdrop-filter: blur(var(--vg-blur)) saturate(var(--vg-sat));
+  backdrop-filter: blur(var(--vg-blur)) saturate(var(--vg-sat));
+  box-shadow:
+    inset 0 1px 0 var(--vg-rim),
+    0 16px 32px rgba(0, 0, 0, 0.45);
+  color: var(--vg-text-1);
+  font: 600 12px/1 -apple-system, var(--font-sans), system-ui;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.vg-ornament svg { color: var(--vg-text-2); }
+.vg-ornament:active { transform: scale(0.97); }
+
+/* full-width action in the grid */
+.vg-action-wide { grid-column: 1 / -1; }
+
+/* status transitions as capsules — one tap per state, no floating list */
+.vg-status-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.vg-status-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--vg-fill-thin);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+  color: var(--vg-text-1);
+  font: 600 13px/1 inherit;
+  font-family: inherit;
+  cursor: pointer;
+}
+.vg-status-btn:active { background: rgba(255, 255, 255, 0.2); }
+.vg-status-btn:disabled { opacity: 0.5; }
+
+/* the title bar doubles as the window's move handle */
+.vg-bar-grab { cursor: grab; touch-action: none; }
+.vg-bar-grab:active { cursor: grabbing; }
+
+/* the window's anchor: the point the asset was placed at */
+.vg-anchor-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #64d2ff;
+  box-shadow: 0 0 0 3px rgba(100, 210, 255, 0.28);
+}
+
+button.vg-ornament { border: none; cursor: pointer; }

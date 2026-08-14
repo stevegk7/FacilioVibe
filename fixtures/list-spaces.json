@@ -1,0 +1,4435 @@
+[
+ {
+  "id": 2282213,
+  "name": "Warehouse Storage",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282211,
+   "name": "Utility & Warehouse Block",
+   "description": "Attached warehouse and administrative block at Lakeside Manufacturing Plant, housing the site's secondary plant room.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:12:41Z",
+   "sysModifiedTime": "2026-08-13T07:12:41Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282211"
+  },
+  "floor": {
+   "id": 2282212,
+   "name": "Ground Floor",
+   "building": {
+    "id": 2282211
+   },
+   "site": {
+    "id": 2282069
+   },
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282212",
+   "sysCreatedTime": "2026-08-13T07:12:45Z",
+   "sysModifiedTime": "2026-08-13T07:12:45Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Utility",
+  "moduleState": "active",
+  "qrVal": "facilio_2282213",
+  "sysCreatedTime": "2026-08-13T07:12:49Z",
+  "sysModifiedTime": "2026-08-13T07:12:49Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282187,
+  "name": "Tool Crib",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282183,
+   "name": "Production Wing",
+   "description": "Main manufacturing hall at Lakeside Manufacturing Plant, with a dedicated plant room floor serving the production process.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:10:27Z",
+   "sysModifiedTime": "2026-08-13T07:10:27Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282183"
+  },
+  "floor": {
+   "id": 2282184,
+   "name": "Ground Floor \u2014 Shop Floor",
+   "building": {
+    "id": 2282183
+   },
+   "site": {
+    "id": 2282069
+   },
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282184",
+   "sysCreatedTime": "2026-08-13T07:10:32Z",
+   "sysModifiedTime": "2026-08-13T07:10:32Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "moduleState": "active",
+  "qrVal": "facilio_2282187",
+  "sysCreatedTime": "2026-08-13T07:10:44Z",
+  "sysModifiedTime": "2026-08-13T07:10:44Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282191,
+  "name": "Supervisor Office",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282183,
+   "name": "Production Wing",
+   "description": "Main manufacturing hall at Lakeside Manufacturing Plant, with a dedicated plant room floor serving the production process.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:10:27Z",
+   "sysModifiedTime": "2026-08-13T07:10:27Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282183"
+  },
+  "floor": {
+   "id": 2282190,
+   "name": "Mezzanine",
+   "building": {
+    "id": 2282183
+   },
+   "site": {
+    "id": 2282069
+   },
+   "floorlevel": 1,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282190",
+   "sysCreatedTime": "2026-08-13T07:10:56Z",
+   "sysModifiedTime": "2026-08-13T07:10:56Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Office",
+  "moduleState": "active",
+  "qrVal": "facilio_2282191",
+  "sysCreatedTime": "2026-08-13T07:11:00Z",
+  "sysModifiedTime": "2026-08-13T07:11:00Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282137,
+  "name": "Storage Room \u2014 Floor 2",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282113,
+   "name": "Tower A",
+   "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T06:55:54Z",
+   "sysModifiedTime": "2026-08-13T06:55:54Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282113"
+  },
+  "floor": {
+   "id": 2282134,
+   "name": "Floor 2",
+   "building": {
+    "id": 2282113
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 2,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282134",
+   "sysCreatedTime": "2026-08-13T06:56:43Z",
+   "sysModifiedTime": "2026-08-13T06:56:43Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "moduleState": "active",
+  "qrVal": "facilio_2282137",
+  "sysCreatedTime": "2026-08-13T06:56:55Z",
+  "sysModifiedTime": "2026-08-13T06:56:55Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282210,
+  "name": "Storage \u2014 Plant Room Floor",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282183,
+   "name": "Production Wing",
+   "description": "Main manufacturing hall at Lakeside Manufacturing Plant, with a dedicated plant room floor serving the production process.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:10:27Z",
+   "sysModifiedTime": "2026-08-13T07:10:27Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282183"
+  },
+  "floor": {
+   "id": 2282195,
+   "name": "Plant Room Floor",
+   "building": {
+    "id": 2282183
+   },
+   "site": {
+    "id": 2282069
+   },
+   "floorlevel": 2,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282195",
+   "sysCreatedTime": "2026-08-13T07:11:17Z",
+   "sysModifiedTime": "2026-08-13T07:11:17Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "moduleState": "active",
+  "qrVal": "facilio_2282210",
+  "sysCreatedTime": "2026-08-13T07:12:38Z",
+  "sysModifiedTime": "2026-08-13T07:12:38Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282193,
+  "name": "Storage \u2014 Mezzanine",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282183,
+   "name": "Production Wing",
+   "description": "Main manufacturing hall at Lakeside Manufacturing Plant, with a dedicated plant room floor serving the production process.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:10:27Z",
+   "sysModifiedTime": "2026-08-13T07:10:27Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282183"
+  },
+  "floor": {
+   "id": 2282190,
+   "name": "Mezzanine",
+   "building": {
+    "id": 2282183
+   },
+   "site": {
+    "id": 2282069
+   },
+   "floorlevel": 1,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282190",
+   "sysCreatedTime": "2026-08-13T07:10:56Z",
+   "sysModifiedTime": "2026-08-13T07:10:56Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "moduleState": "active",
+  "qrVal": "facilio_2282193",
+  "sysCreatedTime": "2026-08-13T07:11:09Z",
+  "sysModifiedTime": "2026-08-13T07:11:09Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282235,
+  "name": "Storage \u2014 Mechanical Floor (UW)",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282211,
+   "name": "Utility & Warehouse Block",
+   "description": "Attached warehouse and administrative block at Lakeside Manufacturing Plant, housing the site's secondary plant room.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:12:41Z",
+   "sysModifiedTime": "2026-08-13T07:12:41Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282211"
+  },
+  "floor": {
+   "id": 2282222,
+   "name": "Mechanical Floor",
+   "building": {
+    "id": 2282211
+   },
+   "site": {
+    "id": 2282069
+   },
+   "floorlevel": 2,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282222",
+   "sysCreatedTime": "2026-08-13T07:13:24Z",
+   "sysModifiedTime": "2026-08-13T07:13:24Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "moduleState": "active",
+  "qrVal": "facilio_2282235",
+  "sysCreatedTime": "2026-08-13T07:14:41Z",
+  "sysModifiedTime": "2026-08-13T07:14:41Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282182,
+  "name": "Storage \u2014 Mechanical Floor (B)",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282156,
+   "name": "Tower B",
+   "description": "South office tower at Greenfield Business Park, mirrored layout to Tower A with its own dedicated plant room.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T07:08:12Z",
+   "sysModifiedTime": "2026-08-13T07:08:12Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282156"
+  },
+  "floor": {
+   "id": 2282169,
+   "name": "Mechanical Floor",
+   "building": {
+    "id": 2282156
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 2,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282169",
+   "sysCreatedTime": "2026-08-13T07:09:09Z",
+   "sysModifiedTime": "2026-08-13T07:09:09Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "moduleState": "active",
+  "qrVal": "facilio_2282182",
+  "sysCreatedTime": "2026-08-13T07:10:23Z",
+  "sysModifiedTime": "2026-08-13T07:10:23Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282154,
+  "name": "Storage \u2014 Mechanical Floor",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282113,
+   "name": "Tower A",
+   "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T06:55:54Z",
+   "sysModifiedTime": "2026-08-13T06:55:54Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282113"
+  },
+  "floor": {
+   "id": 2282140,
+   "name": "Mechanical Floor",
+   "building": {
+    "id": 2282113
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 3,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282140",
+   "sysCreatedTime": "2026-08-13T06:57:07Z",
+   "sysModifiedTime": "2026-08-13T06:57:07Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "moduleState": "active",
+  "qrVal": "facilio_2282154",
+  "sysCreatedTime": "2026-08-13T07:07:54Z",
+  "sysModifiedTime": "2026-08-13T07:07:54Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282220,
+  "name": "Storage \u2014 Floor 1",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282211,
+   "name": "Utility & Warehouse Block",
+   "description": "Attached warehouse and administrative block at Lakeside Manufacturing Plant, housing the site's secondary plant room.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:12:41Z",
+   "sysModifiedTime": "2026-08-13T07:12:41Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282211"
+  },
+  "floor": {
+   "id": 2282217,
+   "name": "Floor 1",
+   "building": {
+    "id": 2282211
+   },
+   "site": {
+    "id": 2282069
+   },
+   "floorlevel": 1,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282217",
+   "sysCreatedTime": "2026-08-13T07:13:04Z",
+   "sysModifiedTime": "2026-08-13T07:13:04Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "moduleState": "active",
+  "qrVal": "facilio_2282220",
+  "sysCreatedTime": "2026-08-13T07:13:16Z",
+  "sysModifiedTime": "2026-08-13T07:13:16Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282130,
+  "name": "Server Room",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282113,
+   "name": "Tower A",
+   "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T06:55:54Z",
+   "sysModifiedTime": "2026-08-13T06:55:54Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282113"
+  },
+  "floor": {
+   "id": 2282123,
+   "name": "Floor 1",
+   "building": {
+    "id": 2282113
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 1,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282123",
+   "sysCreatedTime": "2026-08-13T06:56:18Z",
+   "sysModifiedTime": "2026-08-13T06:56:18Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Utility",
+  "moduleState": "active",
+  "qrVal": "facilio_2282130",
+  "sysCreatedTime": "2026-08-13T06:56:29Z",
+  "sysModifiedTime": "2026-08-13T06:56:29Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282216,
+  "name": "Restroom \u2014 Warehouse Ground",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282211,
+   "name": "Utility & Warehouse Block",
+   "description": "Attached warehouse and administrative block at Lakeside Manufacturing Plant, housing the site's secondary plant room.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:12:41Z",
+   "sysModifiedTime": "2026-08-13T07:12:41Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282211"
+  },
+  "floor": {
+   "id": 2282212,
+   "name": "Ground Floor",
+   "building": {
+    "id": 2282211
+   },
+   "site": {
+    "id": 2282069
+   },
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282212",
+   "sysCreatedTime": "2026-08-13T07:12:45Z",
+   "sysModifiedTime": "2026-08-13T07:12:45Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Common Area",
+  "moduleState": "active",
+  "qrVal": "facilio_2282216",
+  "sysCreatedTime": "2026-08-13T07:13:00Z",
+  "sysModifiedTime": "2026-08-13T07:13:00Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282194,
+  "name": "Restroom \u2014 Mezzanine",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282183,
+   "name": "Production Wing",
+   "description": "Main manufacturing hall at Lakeside Manufacturing Plant, with a dedicated plant room floor serving the production process.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:10:27Z",
+   "sysModifiedTime": "2026-08-13T07:10:27Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282183"
+  },
+  "floor": {
+   "id": 2282190,
+   "name": "Mezzanine",
+   "building": {
+    "id": 2282183
+   },
+   "site": {
+    "id": 2282069
+   },
+   "floorlevel": 1,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282190",
+   "sysCreatedTime": "2026-08-13T07:10:56Z",
+   "sysModifiedTime": "2026-08-13T07:10:56Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Common Area",
+  "moduleState": "active",
+  "qrVal": "facilio_2282194",
+  "sysCreatedTime": "2026-08-13T07:11:13Z",
+  "sysModifiedTime": "2026-08-13T07:11:13Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282160,
+  "name": "Restroom \u2014 Ground (B)",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282156,
+   "name": "Tower B",
+   "description": "South office tower at Greenfield Business Park, mirrored layout to Tower A with its own dedicated plant room.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T07:08:12Z",
+   "sysModifiedTime": "2026-08-13T07:08:12Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282156"
+  },
+  "floor": {
+   "id": 2282157,
+   "name": "Ground Floor",
+   "building": {
+    "id": 2282156
+   },
+   "site": {
+    "id": 2282068
+   },
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282157",
+   "sysCreatedTime": "2026-08-13T07:08:16Z",
+   "sysModifiedTime": "2026-08-13T07:08:16Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Common Area",
+  "moduleState": "active",
+  "qrVal": "facilio_2282160",
+  "sysCreatedTime": "2026-08-13T07:08:29Z",
+  "sysModifiedTime": "2026-08-13T07:08:29Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282121,
+  "name": "Restroom \u2014 Ground",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282113,
+   "name": "Tower A",
+   "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T06:55:54Z",
+   "sysModifiedTime": "2026-08-13T06:55:54Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282113"
+  },
+  "floor": {
+   "id": 2282115,
+   "name": "Ground Floor",
+   "building": {
+    "id": 2282113
+   },
+   "site": {
+    "id": 2282068
+   },
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282115",
+   "sysCreatedTime": "2026-08-13T06:55:57Z",
+   "sysModifiedTime": "2026-08-13T06:55:57Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Common Area",
+  "moduleState": "active",
+  "qrVal": "facilio_2282121",
+  "sysCreatedTime": "2026-08-13T06:56:11Z",
+  "sysModifiedTime": "2026-08-13T06:56:11Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282138,
+  "name": "Restroom \u2014 Floor 2",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282113,
+   "name": "Tower A",
+   "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T06:55:54Z",
+   "sysModifiedTime": "2026-08-13T06:55:54Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282113"
+  },
+  "floor": {
+   "id": 2282134,
+   "name": "Floor 2",
+   "building": {
+    "id": 2282113
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 2,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282134",
+   "sysCreatedTime": "2026-08-13T06:56:43Z",
+   "sysModifiedTime": "2026-08-13T06:56:43Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Common Area",
+  "moduleState": "active",
+  "qrVal": "facilio_2282138",
+  "sysCreatedTime": "2026-08-13T06:56:59Z",
+  "sysModifiedTime": "2026-08-13T06:56:59Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282221,
+  "name": "Restroom \u2014 Floor 1 (Warehouse)",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282211,
+   "name": "Utility & Warehouse Block",
+   "description": "Attached warehouse and administrative block at Lakeside Manufacturing Plant, housing the site's secondary plant room.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:12:41Z",
+   "sysModifiedTime": "2026-08-13T07:12:41Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282211"
+  },
+  "floor": {
+   "id": 2282217,
+   "name": "Floor 1",
+   "building": {
+    "id": 2282211
+   },
+   "site": {
+    "id": 2282069
+   },
+   "floorlevel": 1,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282217",
+   "sysCreatedTime": "2026-08-13T07:13:04Z",
+   "sysModifiedTime": "2026-08-13T07:13:04Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Common Area",
+  "moduleState": "active",
+  "qrVal": "facilio_2282221",
+  "sysCreatedTime": "2026-08-13T07:13:20Z",
+  "sysModifiedTime": "2026-08-13T07:13:20Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282168,
+  "name": "Restroom \u2014 Floor 1 (B)",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282156,
+   "name": "Tower B",
+   "description": "South office tower at Greenfield Business Park, mirrored layout to Tower A with its own dedicated plant room.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T07:08:12Z",
+   "sysModifiedTime": "2026-08-13T07:08:12Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282156"
+  },
+  "floor": {
+   "id": 2282162,
+   "name": "Floor 1",
+   "building": {
+    "id": 2282156
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 1,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282162",
+   "sysCreatedTime": "2026-08-13T07:08:37Z",
+   "sysModifiedTime": "2026-08-13T07:08:37Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Common Area",
+  "moduleState": "active",
+  "qrVal": "facilio_2282168",
+  "sysCreatedTime": "2026-08-13T07:09:04Z",
+  "sysModifiedTime": "2026-08-13T07:09:04Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282133,
+  "name": "Restroom \u2014 Floor 1",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282113,
+   "name": "Tower A",
+   "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T06:55:54Z",
+   "sysModifiedTime": "2026-08-13T06:55:54Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282113"
+  },
+  "floor": {
+   "id": 2282123,
+   "name": "Floor 1",
+   "building": {
+    "id": 2282113
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 1,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282123",
+   "sysCreatedTime": "2026-08-13T06:56:18Z",
+   "sysModifiedTime": "2026-08-13T06:56:18Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Common Area",
+  "moduleState": "active",
+  "qrVal": "facilio_2282133",
+  "sysCreatedTime": "2026-08-13T06:56:40Z",
+  "sysModifiedTime": "2026-08-13T06:56:40Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282186,
+  "name": "Quality Control Room",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282183,
+   "name": "Production Wing",
+   "description": "Main manufacturing hall at Lakeside Manufacturing Plant, with a dedicated plant room floor serving the production process.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:10:27Z",
+   "sysModifiedTime": "2026-08-13T07:10:27Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282183"
+  },
+  "floor": {
+   "id": 2282184,
+   "name": "Ground Floor \u2014 Shop Floor",
+   "building": {
+    "id": 2282183
+   },
+   "site": {
+    "id": 2282069
+   },
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282184",
+   "sysCreatedTime": "2026-08-13T07:10:32Z",
+   "sysModifiedTime": "2026-08-13T07:10:32Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "moduleState": "active",
+  "qrVal": "facilio_2282186",
+  "sysCreatedTime": "2026-08-13T07:10:40Z",
+  "sysModifiedTime": "2026-08-13T07:10:40Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282152,
+  "name": "Pump Room",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282113,
+   "name": "Tower A",
+   "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T06:55:54Z",
+   "sysModifiedTime": "2026-08-13T06:55:54Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282113"
+  },
+  "floor": {
+   "id": 2282140,
+   "name": "Mechanical Floor",
+   "building": {
+    "id": 2282113
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 3,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282140",
+   "sysCreatedTime": "2026-08-13T06:57:07Z",
+   "sysModifiedTime": "2026-08-13T06:57:07Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Utility",
+  "moduleState": "active",
+  "qrVal": "facilio_2282152",
+  "sysCreatedTime": "2026-08-13T07:07:45Z",
+  "sysModifiedTime": "2026-08-13T07:07:45Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282180,
+  "name": "Pump Room",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282156,
+   "name": "Tower B",
+   "description": "South office tower at Greenfield Business Park, mirrored layout to Tower A with its own dedicated plant room.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T07:08:12Z",
+   "sysModifiedTime": "2026-08-13T07:08:12Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282156"
+  },
+  "floor": {
+   "id": 2282169,
+   "name": "Mechanical Floor",
+   "building": {
+    "id": 2282156
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 2,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282169",
+   "sysCreatedTime": "2026-08-13T07:09:09Z",
+   "sysModifiedTime": "2026-08-13T07:09:09Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Utility",
+  "moduleState": "active",
+  "qrVal": "facilio_2282180",
+  "sysCreatedTime": "2026-08-13T07:10:14Z",
+  "sysModifiedTime": "2026-08-13T07:10:14Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282206,
+  "name": "Pump Room",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282183,
+   "name": "Production Wing",
+   "description": "Main manufacturing hall at Lakeside Manufacturing Plant, with a dedicated plant room floor serving the production process.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:10:27Z",
+   "sysModifiedTime": "2026-08-13T07:10:27Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282183"
+  },
+  "floor": {
+   "id": 2282195,
+   "name": "Plant Room Floor",
+   "building": {
+    "id": 2282183
+   },
+   "site": {
+    "id": 2282069
+   },
+   "floorlevel": 2,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282195",
+   "sysCreatedTime": "2026-08-13T07:11:17Z",
+   "sysModifiedTime": "2026-08-13T07:11:17Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Utility",
+  "moduleState": "active",
+  "qrVal": "facilio_2282206",
+  "sysCreatedTime": "2026-08-13T07:12:21Z",
+  "sysModifiedTime": "2026-08-13T07:12:21Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282233,
+  "name": "Pump Room",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282211,
+   "name": "Utility & Warehouse Block",
+   "description": "Attached warehouse and administrative block at Lakeside Manufacturing Plant, housing the site's secondary plant room.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:12:41Z",
+   "sysModifiedTime": "2026-08-13T07:12:41Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282211"
+  },
+  "floor": {
+   "id": 2282222,
+   "name": "Mechanical Floor",
+   "building": {
+    "id": 2282211
+   },
+   "site": {
+    "id": 2282069
+   },
+   "floorlevel": 2,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282222",
+   "sysCreatedTime": "2026-08-13T07:13:24Z",
+   "sysModifiedTime": "2026-08-13T07:13:24Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Utility",
+  "moduleState": "active",
+  "qrVal": "facilio_2282233",
+  "sysCreatedTime": "2026-08-13T07:14:32Z",
+  "sysModifiedTime": "2026-08-13T07:14:32Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282141,
+  "name": "Plant Room",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282113,
+   "name": "Tower A",
+   "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T06:55:54Z",
+   "sysModifiedTime": "2026-08-13T06:55:54Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282113"
+  },
+  "floor": {
+   "id": 2282140,
+   "name": "Mechanical Floor",
+   "building": {
+    "id": 2282113
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 3,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282140",
+   "sysCreatedTime": "2026-08-13T06:57:07Z",
+   "sysModifiedTime": "2026-08-13T06:57:07Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Utility",
+  "moduleState": "active",
+  "qrVal": "facilio_2282141",
+  "sysCreatedTime": "2026-08-13T06:57:11Z",
+  "sysModifiedTime": "2026-08-13T06:57:11Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282170,
+  "name": "Plant Room",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282156,
+   "name": "Tower B",
+   "description": "South office tower at Greenfield Business Park, mirrored layout to Tower A with its own dedicated plant room.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T07:08:12Z",
+   "sysModifiedTime": "2026-08-13T07:08:12Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282156"
+  },
+  "floor": {
+   "id": 2282169,
+   "name": "Mechanical Floor",
+   "building": {
+    "id": 2282156
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 2,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282169",
+   "sysCreatedTime": "2026-08-13T07:09:09Z",
+   "sysModifiedTime": "2026-08-13T07:09:09Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Utility",
+  "moduleState": "active",
+  "qrVal": "facilio_2282170",
+  "sysCreatedTime": "2026-08-13T07:09:14Z",
+  "sysModifiedTime": "2026-08-13T07:09:14Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282196,
+  "name": "Plant Room",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282183,
+   "name": "Production Wing",
+   "description": "Main manufacturing hall at Lakeside Manufacturing Plant, with a dedicated plant room floor serving the production process.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:10:27Z",
+   "sysModifiedTime": "2026-08-13T07:10:27Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282183"
+  },
+  "floor": {
+   "id": 2282195,
+   "name": "Plant Room Floor",
+   "building": {
+    "id": 2282183
+   },
+   "site": {
+    "id": 2282069
+   },
+   "floorlevel": 2,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282195",
+   "sysCreatedTime": "2026-08-13T07:11:17Z",
+   "sysModifiedTime": "2026-08-13T07:11:17Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Utility",
+  "moduleState": "active",
+  "qrVal": "facilio_2282196",
+  "sysCreatedTime": "2026-08-13T07:11:21Z",
+  "sysModifiedTime": "2026-08-13T07:11:21Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282223,
+  "name": "Plant Room",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282211,
+   "name": "Utility & Warehouse Block",
+   "description": "Attached warehouse and administrative block at Lakeside Manufacturing Plant, housing the site's secondary plant room.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:12:41Z",
+   "sysModifiedTime": "2026-08-13T07:12:41Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282211"
+  },
+  "floor": {
+   "id": 2282222,
+   "name": "Mechanical Floor",
+   "building": {
+    "id": 2282211
+   },
+   "site": {
+    "id": 2282069
+   },
+   "floorlevel": 2,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282222",
+   "sysCreatedTime": "2026-08-13T07:13:24Z",
+   "sysModifiedTime": "2026-08-13T07:13:24Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Utility",
+  "moduleState": "active",
+  "qrVal": "facilio_2282223",
+  "sysCreatedTime": "2026-08-13T07:13:28Z",
+  "sysModifiedTime": "2026-08-13T07:13:28Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282163,
+  "name": "Open Office \u2014 Tower B",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282156,
+   "name": "Tower B",
+   "description": "South office tower at Greenfield Business Park, mirrored layout to Tower A with its own dedicated plant room.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T07:08:12Z",
+   "sysModifiedTime": "2026-08-13T07:08:12Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282156"
+  },
+  "floor": {
+   "id": 2282162,
+   "name": "Floor 1",
+   "building": {
+    "id": 2282156
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 1,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282162",
+   "sysCreatedTime": "2026-08-13T07:08:37Z",
+   "sysModifiedTime": "2026-08-13T07:08:37Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Office",
+  "moduleState": "active",
+  "qrVal": "facilio_2282163",
+  "sysCreatedTime": "2026-08-13T07:08:41Z",
+  "sysModifiedTime": "2026-08-13T07:08:41Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282125,
+  "name": "Open Office \u2014 South",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282113,
+   "name": "Tower A",
+   "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T06:55:54Z",
+   "sysModifiedTime": "2026-08-13T06:55:54Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282113"
+  },
+  "floor": {
+   "id": 2282123,
+   "name": "Floor 1",
+   "building": {
+    "id": 2282113
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 1,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282123",
+   "sysCreatedTime": "2026-08-13T06:56:18Z",
+   "sysModifiedTime": "2026-08-13T06:56:18Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Office",
+  "moduleState": "active",
+  "qrVal": "facilio_2282125",
+  "sysCreatedTime": "2026-08-13T06:56:26Z",
+  "sysModifiedTime": "2026-08-13T06:56:26Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282124,
+  "name": "Open Office \u2014 North",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282113,
+   "name": "Tower A",
+   "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T06:55:54Z",
+   "sysModifiedTime": "2026-08-13T06:55:54Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282113"
+  },
+  "floor": {
+   "id": 2282123,
+   "name": "Floor 1",
+   "building": {
+    "id": 2282113
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 1,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282123",
+   "sysCreatedTime": "2026-08-13T06:56:18Z",
+   "sysModifiedTime": "2026-08-13T06:56:18Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Office",
+  "moduleState": "active",
+  "qrVal": "facilio_2282124",
+  "sysCreatedTime": "2026-08-13T06:56:22Z",
+  "sysModifiedTime": "2026-08-13T06:56:22Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282215,
+  "name": "Office Area \u2014 Warehouse",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282211,
+   "name": "Utility & Warehouse Block",
+   "description": "Attached warehouse and administrative block at Lakeside Manufacturing Plant, housing the site's secondary plant room.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:12:41Z",
+   "sysModifiedTime": "2026-08-13T07:12:41Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282211"
+  },
+  "floor": {
+   "id": 2282212,
+   "name": "Ground Floor",
+   "building": {
+    "id": 2282211
+   },
+   "site": {
+    "id": 2282069
+   },
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282212",
+   "sysCreatedTime": "2026-08-13T07:12:45Z",
+   "sysModifiedTime": "2026-08-13T07:12:45Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Office",
+  "moduleState": "active",
+  "qrVal": "facilio_2282215",
+  "sysCreatedTime": "2026-08-13T07:12:56Z",
+  "sysModifiedTime": "2026-08-13T07:12:56Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282120,
+  "name": "Office Area \u2014 Ground",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282113,
+   "name": "Tower A",
+   "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T06:55:54Z",
+   "sysModifiedTime": "2026-08-13T06:55:54Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282113"
+  },
+  "floor": {
+   "id": 2282115,
+   "name": "Ground Floor",
+   "building": {
+    "id": 2282113
+   },
+   "site": {
+    "id": 2282068
+   },
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282115",
+   "sysCreatedTime": "2026-08-13T06:55:57Z",
+   "sysModifiedTime": "2026-08-13T06:55:57Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Office",
+  "moduleState": "active",
+  "qrVal": "facilio_2282120",
+  "sysCreatedTime": "2026-08-13T06:56:07Z",
+  "sysModifiedTime": "2026-08-13T06:56:07Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282135,
+  "name": "Office Area \u2014 Floor 2",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282113,
+   "name": "Tower A",
+   "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T06:55:54Z",
+   "sysModifiedTime": "2026-08-13T06:55:54Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282113"
+  },
+  "floor": {
+   "id": 2282134,
+   "name": "Floor 2",
+   "building": {
+    "id": 2282113
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 2,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282134",
+   "sysCreatedTime": "2026-08-13T06:56:43Z",
+   "sysModifiedTime": "2026-08-13T06:56:43Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Office",
+  "moduleState": "active",
+  "qrVal": "facilio_2282135",
+  "sysCreatedTime": "2026-08-13T06:56:47Z",
+  "sysModifiedTime": "2026-08-13T06:56:47Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282091,
+  "name": "OBSOLETE-2282091",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282070,
+   "name": "OBSOLETE - Tower A (test artifact, safe to delete)",
+   "description": "Created during data-seeding script debugging on 2026-08-13. Superseded by the real Tower A. Safe to delete from the Facilio UI.",
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "sysCreatedTime": "2026-08-13T06:48:10Z",
+   "sysModifiedTime": "2026-08-13T06:48:10Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282070"
+  },
+  "floor": {
+   "id": 2282090,
+   "name": "OBSOLETE - 2282090",
+   "building": {
+    "id": 2282070
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 3,
+   "area": 0,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282090",
+   "sysCreatedTime": "2026-08-13T06:49:28Z",
+   "sysModifiedTime": "2026-08-13T06:49:28Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Utility",
+  "area": 0,
+  "moduleState": "active",
+  "qrVal": "facilio_2282091",
+  "sysCreatedTime": "2026-08-13T06:49:32Z",
+  "sysModifiedTime": "2026-08-13T06:49:32Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282089,
+  "name": "OBSOLETE-2282089",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282070,
+   "name": "OBSOLETE - Tower A (test artifact, safe to delete)",
+   "description": "Created during data-seeding script debugging on 2026-08-13. Superseded by the real Tower A. Safe to delete from the Facilio UI.",
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "sysCreatedTime": "2026-08-13T06:48:10Z",
+   "sysModifiedTime": "2026-08-13T06:48:10Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282070"
+  },
+  "floor": {
+   "id": 2282084,
+   "name": "OBSOLETE - 2282084",
+   "building": {
+    "id": 2282070
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 2,
+   "area": 0,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282084",
+   "sysCreatedTime": "2026-08-13T06:49:06Z",
+   "sysModifiedTime": "2026-08-13T06:49:06Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Hallway",
+  "area": 0,
+  "moduleState": "active",
+  "qrVal": "facilio_2282089",
+  "sysCreatedTime": "2026-08-13T06:49:25Z",
+  "sysModifiedTime": "2026-08-13T06:49:25Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282088,
+  "name": "OBSOLETE-2282088",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282070,
+   "name": "OBSOLETE - Tower A (test artifact, safe to delete)",
+   "description": "Created during data-seeding script debugging on 2026-08-13. Superseded by the real Tower A. Safe to delete from the Facilio UI.",
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "sysCreatedTime": "2026-08-13T06:48:10Z",
+   "sysModifiedTime": "2026-08-13T06:48:10Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282070"
+  },
+  "floor": {
+   "id": 2282084,
+   "name": "OBSOLETE - 2282084",
+   "building": {
+    "id": 2282070
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 2,
+   "area": 0,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282084",
+   "sysCreatedTime": "2026-08-13T06:49:06Z",
+   "sysModifiedTime": "2026-08-13T06:49:06Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Common Area",
+  "area": 0,
+  "moduleState": "active",
+  "qrVal": "facilio_2282088",
+  "sysCreatedTime": "2026-08-13T06:49:21Z",
+  "sysModifiedTime": "2026-08-13T06:49:21Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282087,
+  "name": "OBSOLETE-2282087",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282070,
+   "name": "OBSOLETE - Tower A (test artifact, safe to delete)",
+   "description": "Created during data-seeding script debugging on 2026-08-13. Superseded by the real Tower A. Safe to delete from the Facilio UI.",
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "sysCreatedTime": "2026-08-13T06:48:10Z",
+   "sysModifiedTime": "2026-08-13T06:48:10Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282070"
+  },
+  "floor": {
+   "id": 2282084,
+   "name": "OBSOLETE - 2282084",
+   "building": {
+    "id": 2282070
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 2,
+   "area": 0,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282084",
+   "sysCreatedTime": "2026-08-13T06:49:06Z",
+   "sysModifiedTime": "2026-08-13T06:49:06Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "area": 0,
+  "moduleState": "active",
+  "qrVal": "facilio_2282087",
+  "sysCreatedTime": "2026-08-13T06:49:17Z",
+  "sysModifiedTime": "2026-08-13T06:49:17Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282086,
+  "name": "OBSOLETE-2282086",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282070,
+   "name": "OBSOLETE - Tower A (test artifact, safe to delete)",
+   "description": "Created during data-seeding script debugging on 2026-08-13. Superseded by the real Tower A. Safe to delete from the Facilio UI.",
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "sysCreatedTime": "2026-08-13T06:48:10Z",
+   "sysModifiedTime": "2026-08-13T06:48:10Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282070"
+  },
+  "floor": {
+   "id": 2282084,
+   "name": "OBSOLETE - 2282084",
+   "building": {
+    "id": 2282070
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 2,
+   "area": 0,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282084",
+   "sysCreatedTime": "2026-08-13T06:49:06Z",
+   "sysModifiedTime": "2026-08-13T06:49:06Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "area": 0,
+  "moduleState": "active",
+  "qrVal": "facilio_2282086",
+  "sysCreatedTime": "2026-08-13T06:49:13Z",
+  "sysModifiedTime": "2026-08-13T06:49:13Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282085,
+  "name": "OBSOLETE-2282085",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282070,
+   "name": "OBSOLETE - Tower A (test artifact, safe to delete)",
+   "description": "Created during data-seeding script debugging on 2026-08-13. Superseded by the real Tower A. Safe to delete from the Facilio UI.",
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "sysCreatedTime": "2026-08-13T06:48:10Z",
+   "sysModifiedTime": "2026-08-13T06:48:10Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282070"
+  },
+  "floor": {
+   "id": 2282084,
+   "name": "OBSOLETE - 2282084",
+   "building": {
+    "id": 2282070
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 2,
+   "area": 0,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282084",
+   "sysCreatedTime": "2026-08-13T06:49:06Z",
+   "sysModifiedTime": "2026-08-13T06:49:06Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Office",
+  "area": 0,
+  "moduleState": "active",
+  "qrVal": "facilio_2282085",
+  "sysCreatedTime": "2026-08-13T06:49:09Z",
+  "sysModifiedTime": "2026-08-13T06:49:09Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282083,
+  "name": "OBSOLETE-2282083",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282070,
+   "name": "OBSOLETE - Tower A (test artifact, safe to delete)",
+   "description": "Created during data-seeding script debugging on 2026-08-13. Superseded by the real Tower A. Safe to delete from the Facilio UI.",
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "sysCreatedTime": "2026-08-13T06:48:10Z",
+   "sysModifiedTime": "2026-08-13T06:48:10Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282070"
+  },
+  "floor": {
+   "id": 2282077,
+   "name": "OBSOLETE - 2282077",
+   "building": {
+    "id": 2282070
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 1,
+   "area": 0,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282077",
+   "sysCreatedTime": "2026-08-13T06:48:38Z",
+   "sysModifiedTime": "2026-08-13T06:48:38Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Common Area",
+  "area": 0,
+  "moduleState": "active",
+  "qrVal": "facilio_2282083",
+  "sysCreatedTime": "2026-08-13T06:49:02Z",
+  "sysModifiedTime": "2026-08-13T06:49:02Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282082,
+  "name": "OBSOLETE-2282082",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282070,
+   "name": "OBSOLETE - Tower A (test artifact, safe to delete)",
+   "description": "Created during data-seeding script debugging on 2026-08-13. Superseded by the real Tower A. Safe to delete from the Facilio UI.",
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "sysCreatedTime": "2026-08-13T06:48:10Z",
+   "sysModifiedTime": "2026-08-13T06:48:10Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282070"
+  },
+  "floor": {
+   "id": 2282077,
+   "name": "OBSOLETE - 2282077",
+   "building": {
+    "id": 2282070
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 1,
+   "area": 0,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282077",
+   "sysCreatedTime": "2026-08-13T06:48:38Z",
+   "sysModifiedTime": "2026-08-13T06:48:38Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "area": 0,
+  "moduleState": "active",
+  "qrVal": "facilio_2282082",
+  "sysCreatedTime": "2026-08-13T06:48:58Z",
+  "sysModifiedTime": "2026-08-13T06:48:58Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282080,
+  "name": "OBSOLETE-2282080",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282070,
+   "name": "OBSOLETE - Tower A (test artifact, safe to delete)",
+   "description": "Created during data-seeding script debugging on 2026-08-13. Superseded by the real Tower A. Safe to delete from the Facilio UI.",
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "sysCreatedTime": "2026-08-13T06:48:10Z",
+   "sysModifiedTime": "2026-08-13T06:48:10Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282070"
+  },
+  "floor": {
+   "id": 2282077,
+   "name": "OBSOLETE - 2282077",
+   "building": {
+    "id": 2282070
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 1,
+   "area": 0,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282077",
+   "sysCreatedTime": "2026-08-13T06:48:38Z",
+   "sysModifiedTime": "2026-08-13T06:48:38Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Utility",
+  "area": 0,
+  "moduleState": "active",
+  "qrVal": "facilio_2282080",
+  "sysCreatedTime": "2026-08-13T06:48:49Z",
+  "sysModifiedTime": "2026-08-13T06:48:49Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282079,
+  "name": "OBSOLETE-2282079",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282070,
+   "name": "OBSOLETE - Tower A (test artifact, safe to delete)",
+   "description": "Created during data-seeding script debugging on 2026-08-13. Superseded by the real Tower A. Safe to delete from the Facilio UI.",
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "sysCreatedTime": "2026-08-13T06:48:10Z",
+   "sysModifiedTime": "2026-08-13T06:48:10Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282070"
+  },
+  "floor": {
+   "id": 2282077,
+   "name": "OBSOLETE - 2282077",
+   "building": {
+    "id": 2282070
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 1,
+   "area": 0,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282077",
+   "sysCreatedTime": "2026-08-13T06:48:38Z",
+   "sysModifiedTime": "2026-08-13T06:48:38Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Office",
+  "area": 0,
+  "moduleState": "active",
+  "qrVal": "facilio_2282079",
+  "sysCreatedTime": "2026-08-13T06:48:46Z",
+  "sysModifiedTime": "2026-08-13T06:48:46Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282078,
+  "name": "OBSOLETE-2282078",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282070,
+   "name": "OBSOLETE - Tower A (test artifact, safe to delete)",
+   "description": "Created during data-seeding script debugging on 2026-08-13. Superseded by the real Tower A. Safe to delete from the Facilio UI.",
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "sysCreatedTime": "2026-08-13T06:48:10Z",
+   "sysModifiedTime": "2026-08-13T06:48:10Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282070"
+  },
+  "floor": {
+   "id": 2282077,
+   "name": "OBSOLETE - 2282077",
+   "building": {
+    "id": 2282070
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 1,
+   "area": 0,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282077",
+   "sysCreatedTime": "2026-08-13T06:48:38Z",
+   "sysModifiedTime": "2026-08-13T06:48:38Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Office",
+  "area": 0,
+  "moduleState": "active",
+  "qrVal": "facilio_2282078",
+  "sysCreatedTime": "2026-08-13T06:48:42Z",
+  "sysModifiedTime": "2026-08-13T06:48:42Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282076,
+  "name": "OBSOLETE-2282076",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282070,
+   "name": "OBSOLETE - Tower A (test artifact, safe to delete)",
+   "description": "Created during data-seeding script debugging on 2026-08-13. Superseded by the real Tower A. Safe to delete from the Facilio UI.",
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "sysCreatedTime": "2026-08-13T06:48:10Z",
+   "sysModifiedTime": "2026-08-13T06:48:10Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282070"
+  },
+  "floor": {
+   "id": 2282071,
+   "name": "OBSOLETE - 2282071",
+   "building": {
+    "id": 2282070
+   },
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282071",
+   "sysCreatedTime": "2026-08-13T06:48:15Z",
+   "sysModifiedTime": "2026-08-13T06:48:15Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Hallway",
+  "area": 0,
+  "moduleState": "active",
+  "qrVal": "facilio_2282076",
+  "sysCreatedTime": "2026-08-13T06:48:34Z",
+  "sysModifiedTime": "2026-08-13T06:48:34Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282075,
+  "name": "OBSOLETE-2282075",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282070,
+   "name": "OBSOLETE - Tower A (test artifact, safe to delete)",
+   "description": "Created during data-seeding script debugging on 2026-08-13. Superseded by the real Tower A. Safe to delete from the Facilio UI.",
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "sysCreatedTime": "2026-08-13T06:48:10Z",
+   "sysModifiedTime": "2026-08-13T06:48:10Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282070"
+  },
+  "floor": {
+   "id": 2282071,
+   "name": "OBSOLETE - 2282071",
+   "building": {
+    "id": 2282070
+   },
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282071",
+   "sysCreatedTime": "2026-08-13T06:48:15Z",
+   "sysModifiedTime": "2026-08-13T06:48:15Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Common Area",
+  "area": 0,
+  "moduleState": "active",
+  "qrVal": "facilio_2282075",
+  "sysCreatedTime": "2026-08-13T06:48:30Z",
+  "sysModifiedTime": "2026-08-13T06:48:30Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282074,
+  "name": "OBSOLETE-2282074",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282070,
+   "name": "OBSOLETE - Tower A (test artifact, safe to delete)",
+   "description": "Created during data-seeding script debugging on 2026-08-13. Superseded by the real Tower A. Safe to delete from the Facilio UI.",
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "sysCreatedTime": "2026-08-13T06:48:10Z",
+   "sysModifiedTime": "2026-08-13T06:48:10Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282070"
+  },
+  "floor": {
+   "id": 2282071,
+   "name": "OBSOLETE - 2282071",
+   "building": {
+    "id": 2282070
+   },
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282071",
+   "sysCreatedTime": "2026-08-13T06:48:15Z",
+   "sysModifiedTime": "2026-08-13T06:48:15Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Office",
+  "area": 0,
+  "moduleState": "active",
+  "qrVal": "facilio_2282074",
+  "sysCreatedTime": "2026-08-13T06:48:26Z",
+  "sysModifiedTime": "2026-08-13T06:48:27Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282073,
+  "name": "OBSOLETE-2282073",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282070,
+   "name": "OBSOLETE - Tower A (test artifact, safe to delete)",
+   "description": "Created during data-seeding script debugging on 2026-08-13. Superseded by the real Tower A. Safe to delete from the Facilio UI.",
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "sysCreatedTime": "2026-08-13T06:48:10Z",
+   "sysModifiedTime": "2026-08-13T06:48:10Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282070"
+  },
+  "floor": {
+   "id": 2282071,
+   "name": "OBSOLETE - 2282071",
+   "building": {
+    "id": 2282070
+   },
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282071",
+   "sysCreatedTime": "2026-08-13T06:48:15Z",
+   "sysModifiedTime": "2026-08-13T06:48:15Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "area": 0,
+  "moduleState": "active",
+  "qrVal": "facilio_2282073",
+  "sysCreatedTime": "2026-08-13T06:48:23Z",
+  "sysModifiedTime": "2026-08-13T06:48:23Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282072,
+  "name": "OBSOLETE-2282072",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282070,
+   "name": "OBSOLETE - Tower A (test artifact, safe to delete)",
+   "description": "Created during data-seeding script debugging on 2026-08-13. Superseded by the real Tower A. Safe to delete from the Facilio UI.",
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "sysCreatedTime": "2026-08-13T06:48:10Z",
+   "sysModifiedTime": "2026-08-13T06:48:10Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282070"
+  },
+  "floor": {
+   "id": 2282071,
+   "name": "OBSOLETE - 2282071",
+   "building": {
+    "id": 2282070
+   },
+   "site": {
+    "id": 2282068
+   },
+   "area": 0,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282071",
+   "sysCreatedTime": "2026-08-13T06:48:15Z",
+   "sysModifiedTime": "2026-08-13T06:48:15Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Common Area",
+  "area": 0,
+  "moduleState": "active",
+  "qrVal": "facilio_2282072",
+  "sysCreatedTime": "2026-08-13T06:48:19Z",
+  "sysModifiedTime": "2026-08-13T06:48:19Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282166,
+  "name": "Meeting Room 2B",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282156,
+   "name": "Tower B",
+   "description": "South office tower at Greenfield Business Park, mirrored layout to Tower A with its own dedicated plant room.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T07:08:12Z",
+   "sysModifiedTime": "2026-08-13T07:08:12Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282156"
+  },
+  "floor": {
+   "id": 2282162,
+   "name": "Floor 1",
+   "building": {
+    "id": 2282156
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 1,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282162",
+   "sysCreatedTime": "2026-08-13T07:08:37Z",
+   "sysModifiedTime": "2026-08-13T07:08:37Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "moduleState": "active",
+  "qrVal": "facilio_2282166",
+  "sysCreatedTime": "2026-08-13T07:08:54Z",
+  "sysModifiedTime": "2026-08-13T07:08:54Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282159,
+  "name": "Meeting Room 1B",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282156,
+   "name": "Tower B",
+   "description": "South office tower at Greenfield Business Park, mirrored layout to Tower A with its own dedicated plant room.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T07:08:12Z",
+   "sysModifiedTime": "2026-08-13T07:08:12Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282156"
+  },
+  "floor": {
+   "id": 2282157,
+   "name": "Ground Floor",
+   "building": {
+    "id": 2282156
+   },
+   "site": {
+    "id": 2282068
+   },
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282157",
+   "sysCreatedTime": "2026-08-13T07:08:16Z",
+   "sysModifiedTime": "2026-08-13T07:08:16Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "moduleState": "active",
+  "qrVal": "facilio_2282159",
+  "sysCreatedTime": "2026-08-13T07:08:25Z",
+  "sysModifiedTime": "2026-08-13T07:08:25Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282219,
+  "name": "Meeting Room \u2014 Warehouse",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282211,
+   "name": "Utility & Warehouse Block",
+   "description": "Attached warehouse and administrative block at Lakeside Manufacturing Plant, housing the site's secondary plant room.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:12:41Z",
+   "sysModifiedTime": "2026-08-13T07:12:41Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282211"
+  },
+  "floor": {
+   "id": 2282217,
+   "name": "Floor 1",
+   "building": {
+    "id": 2282211
+   },
+   "site": {
+    "id": 2282069
+   },
+   "floorlevel": 1,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282217",
+   "sysCreatedTime": "2026-08-13T07:13:04Z",
+   "sysModifiedTime": "2026-08-13T07:13:04Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "moduleState": "active",
+  "qrVal": "facilio_2282219",
+  "sysCreatedTime": "2026-08-13T07:13:12Z",
+  "sysModifiedTime": "2026-08-13T07:13:12Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282158,
+  "name": "Lobby \u2014 Tower B",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282156,
+   "name": "Tower B",
+   "description": "South office tower at Greenfield Business Park, mirrored layout to Tower A with its own dedicated plant room.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T07:08:12Z",
+   "sysModifiedTime": "2026-08-13T07:08:12Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282156"
+  },
+  "floor": {
+   "id": 2282157,
+   "name": "Ground Floor",
+   "building": {
+    "id": 2282156
+   },
+   "site": {
+    "id": 2282068
+   },
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282157",
+   "sysCreatedTime": "2026-08-13T07:08:16Z",
+   "sysModifiedTime": "2026-08-13T07:08:16Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Common Area",
+  "moduleState": "active",
+  "qrVal": "facilio_2282158",
+  "sysCreatedTime": "2026-08-13T07:08:20Z",
+  "sysModifiedTime": "2026-08-13T07:08:20Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282116,
+  "name": "Lobby",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282113,
+   "name": "Tower A",
+   "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T06:55:54Z",
+   "sysModifiedTime": "2026-08-13T06:55:54Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282113"
+  },
+  "floor": {
+   "id": 2282115,
+   "name": "Ground Floor",
+   "building": {
+    "id": 2282113
+   },
+   "site": {
+    "id": 2282068
+   },
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282115",
+   "sysCreatedTime": "2026-08-13T06:55:57Z",
+   "sysModifiedTime": "2026-08-13T06:55:57Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Common Area",
+  "moduleState": "active",
+  "qrVal": "facilio_2282116",
+  "sysCreatedTime": "2026-08-13T06:56:00Z",
+  "sysModifiedTime": "2026-08-13T06:56:01Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282214,
+  "name": "Loading Dock \u2014 Warehouse",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282211,
+   "name": "Utility & Warehouse Block",
+   "description": "Attached warehouse and administrative block at Lakeside Manufacturing Plant, housing the site's secondary plant room.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:12:41Z",
+   "sysModifiedTime": "2026-08-13T07:12:41Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282211"
+  },
+  "floor": {
+   "id": 2282212,
+   "name": "Ground Floor",
+   "building": {
+    "id": 2282211
+   },
+   "site": {
+    "id": 2282069
+   },
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282212",
+   "sysCreatedTime": "2026-08-13T07:12:45Z",
+   "sysModifiedTime": "2026-08-13T07:12:45Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Utility",
+  "moduleState": "active",
+  "qrVal": "facilio_2282214",
+  "sysCreatedTime": "2026-08-13T07:12:53Z",
+  "sysModifiedTime": "2026-08-13T07:12:53Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282188,
+  "name": "Loading Dock",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282183,
+   "name": "Production Wing",
+   "description": "Main manufacturing hall at Lakeside Manufacturing Plant, with a dedicated plant room floor serving the production process.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:10:27Z",
+   "sysModifiedTime": "2026-08-13T07:10:27Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282183"
+  },
+  "floor": {
+   "id": 2282184,
+   "name": "Ground Floor \u2014 Shop Floor",
+   "building": {
+    "id": 2282183
+   },
+   "site": {
+    "id": 2282069
+   },
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282184",
+   "sysCreatedTime": "2026-08-13T07:10:32Z",
+   "sysModifiedTime": "2026-08-13T07:10:32Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Utility",
+  "moduleState": "active",
+  "qrVal": "facilio_2282188",
+  "sysCreatedTime": "2026-08-13T07:10:48Z",
+  "sysModifiedTime": "2026-08-13T07:10:48Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282164,
+  "name": "IT Server Room",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282156,
+   "name": "Tower B",
+   "description": "South office tower at Greenfield Business Park, mirrored layout to Tower A with its own dedicated plant room.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T07:08:12Z",
+   "sysModifiedTime": "2026-08-13T07:08:12Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282156"
+  },
+  "floor": {
+   "id": 2282162,
+   "name": "Floor 1",
+   "building": {
+    "id": 2282156
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 1,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282162",
+   "sysCreatedTime": "2026-08-13T07:08:37Z",
+   "sysModifiedTime": "2026-08-13T07:08:37Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Utility",
+  "moduleState": "active",
+  "qrVal": "facilio_2282164",
+  "sysCreatedTime": "2026-08-13T07:08:46Z",
+  "sysModifiedTime": "2026-08-13T07:08:46Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282150,
+  "name": "Electrical Room",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282113,
+   "name": "Tower A",
+   "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T06:55:54Z",
+   "sysModifiedTime": "2026-08-13T06:55:54Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282113"
+  },
+  "floor": {
+   "id": 2282140,
+   "name": "Mechanical Floor",
+   "building": {
+    "id": 2282113
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 3,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282140",
+   "sysCreatedTime": "2026-08-13T06:57:07Z",
+   "sysModifiedTime": "2026-08-13T06:57:07Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Utility",
+  "moduleState": "active",
+  "qrVal": "facilio_2282150",
+  "sysCreatedTime": "2026-08-13T07:07:34Z",
+  "sysModifiedTime": "2026-08-13T07:07:34Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282178,
+  "name": "Electrical Room",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282156,
+   "name": "Tower B",
+   "description": "South office tower at Greenfield Business Park, mirrored layout to Tower A with its own dedicated plant room.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T07:08:12Z",
+   "sysModifiedTime": "2026-08-13T07:08:12Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282156"
+  },
+  "floor": {
+   "id": 2282169,
+   "name": "Mechanical Floor",
+   "building": {
+    "id": 2282156
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 2,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282169",
+   "sysCreatedTime": "2026-08-13T07:09:09Z",
+   "sysModifiedTime": "2026-08-13T07:09:09Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Utility",
+  "moduleState": "active",
+  "qrVal": "facilio_2282178",
+  "sysCreatedTime": "2026-08-13T07:10:06Z",
+  "sysModifiedTime": "2026-08-13T07:10:06Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282204,
+  "name": "Electrical Room",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282183,
+   "name": "Production Wing",
+   "description": "Main manufacturing hall at Lakeside Manufacturing Plant, with a dedicated plant room floor serving the production process.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:10:27Z",
+   "sysModifiedTime": "2026-08-13T07:10:27Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282183"
+  },
+  "floor": {
+   "id": 2282195,
+   "name": "Plant Room Floor",
+   "building": {
+    "id": 2282183
+   },
+   "site": {
+    "id": 2282069
+   },
+   "floorlevel": 2,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282195",
+   "sysCreatedTime": "2026-08-13T07:11:17Z",
+   "sysModifiedTime": "2026-08-13T07:11:17Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Utility",
+  "moduleState": "active",
+  "qrVal": "facilio_2282204",
+  "sysCreatedTime": "2026-08-13T07:12:13Z",
+  "sysModifiedTime": "2026-08-13T07:12:13Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282231,
+  "name": "Electrical Room",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282211,
+   "name": "Utility & Warehouse Block",
+   "description": "Attached warehouse and administrative block at Lakeside Manufacturing Plant, housing the site's secondary plant room.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:12:41Z",
+   "sysModifiedTime": "2026-08-13T07:12:41Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282211"
+  },
+  "floor": {
+   "id": 2282222,
+   "name": "Mechanical Floor",
+   "building": {
+    "id": 2282211
+   },
+   "site": {
+    "id": 2282069
+   },
+   "floorlevel": 2,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282222",
+   "sysCreatedTime": "2026-08-13T07:13:24Z",
+   "sysModifiedTime": "2026-08-13T07:13:24Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Utility",
+  "moduleState": "active",
+  "qrVal": "facilio_2282231",
+  "sysCreatedTime": "2026-08-13T07:14:23Z",
+  "sysModifiedTime": "2026-08-13T07:14:23Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282189,
+  "name": "Corridor \u2014 Shop Floor",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282183,
+   "name": "Production Wing",
+   "description": "Main manufacturing hall at Lakeside Manufacturing Plant, with a dedicated plant room floor serving the production process.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:10:27Z",
+   "sysModifiedTime": "2026-08-13T07:10:27Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282183"
+  },
+  "floor": {
+   "id": 2282184,
+   "name": "Ground Floor \u2014 Shop Floor",
+   "building": {
+    "id": 2282183
+   },
+   "site": {
+    "id": 2282069
+   },
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282184",
+   "sysCreatedTime": "2026-08-13T07:10:32Z",
+   "sysModifiedTime": "2026-08-13T07:10:32Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Hallway",
+  "moduleState": "active",
+  "qrVal": "facilio_2282189",
+  "sysCreatedTime": "2026-08-13T07:10:52Z",
+  "sysModifiedTime": "2026-08-13T07:10:52Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282236,
+  "name": "Corridor \u2014 Mechanical Floor (UW)",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282211,
+   "name": "Utility & Warehouse Block",
+   "description": "Attached warehouse and administrative block at Lakeside Manufacturing Plant, housing the site's secondary plant room.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:12:41Z",
+   "sysModifiedTime": "2026-08-13T07:12:41Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282211"
+  },
+  "floor": {
+   "id": 2282222,
+   "name": "Mechanical Floor",
+   "building": {
+    "id": 2282211
+   },
+   "site": {
+    "id": 2282069
+   },
+   "floorlevel": 2,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282222",
+   "sysCreatedTime": "2026-08-13T07:13:24Z",
+   "sysModifiedTime": "2026-08-13T07:13:24Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Hallway",
+  "moduleState": "active",
+  "qrVal": "facilio_2282236",
+  "sysCreatedTime": "2026-08-13T07:14:45Z",
+  "sysModifiedTime": "2026-08-13T07:14:45Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282155,
+  "name": "Corridor \u2014 Mechanical Floor",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282113,
+   "name": "Tower A",
+   "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T06:55:54Z",
+   "sysModifiedTime": "2026-08-13T06:55:54Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282113"
+  },
+  "floor": {
+   "id": 2282140,
+   "name": "Mechanical Floor",
+   "building": {
+    "id": 2282113
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 3,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282140",
+   "sysCreatedTime": "2026-08-13T06:57:07Z",
+   "sysModifiedTime": "2026-08-13T06:57:07Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Hallway",
+  "moduleState": "active",
+  "qrVal": "facilio_2282155",
+  "sysCreatedTime": "2026-08-13T07:07:58Z",
+  "sysModifiedTime": "2026-08-13T07:07:58Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282161,
+  "name": "Corridor \u2014 Ground (B)",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282156,
+   "name": "Tower B",
+   "description": "South office tower at Greenfield Business Park, mirrored layout to Tower A with its own dedicated plant room.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T07:08:12Z",
+   "sysModifiedTime": "2026-08-13T07:08:12Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282156"
+  },
+  "floor": {
+   "id": 2282157,
+   "name": "Ground Floor",
+   "building": {
+    "id": 2282156
+   },
+   "site": {
+    "id": 2282068
+   },
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282157",
+   "sysCreatedTime": "2026-08-13T07:08:16Z",
+   "sysModifiedTime": "2026-08-13T07:08:16Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Hallway",
+  "moduleState": "active",
+  "qrVal": "facilio_2282161",
+  "sysCreatedTime": "2026-08-13T07:08:33Z",
+  "sysModifiedTime": "2026-08-13T07:08:33Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282122,
+  "name": "Corridor \u2014 Ground",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282113,
+   "name": "Tower A",
+   "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T06:55:54Z",
+   "sysModifiedTime": "2026-08-13T06:55:54Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282113"
+  },
+  "floor": {
+   "id": 2282115,
+   "name": "Ground Floor",
+   "building": {
+    "id": 2282113
+   },
+   "site": {
+    "id": 2282068
+   },
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282115",
+   "sysCreatedTime": "2026-08-13T06:55:57Z",
+   "sysModifiedTime": "2026-08-13T06:55:57Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Hallway",
+  "moduleState": "active",
+  "qrVal": "facilio_2282122",
+  "sysCreatedTime": "2026-08-13T06:56:15Z",
+  "sysModifiedTime": "2026-08-13T06:56:15Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282139,
+  "name": "Corridor \u2014 Floor 2",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282113,
+   "name": "Tower A",
+   "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T06:55:54Z",
+   "sysModifiedTime": "2026-08-13T06:55:54Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282113"
+  },
+  "floor": {
+   "id": 2282134,
+   "name": "Floor 2",
+   "building": {
+    "id": 2282113
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 2,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282134",
+   "sysCreatedTime": "2026-08-13T06:56:43Z",
+   "sysModifiedTime": "2026-08-13T06:56:43Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Hallway",
+  "moduleState": "active",
+  "qrVal": "facilio_2282139",
+  "sysCreatedTime": "2026-08-13T06:57:03Z",
+  "sysModifiedTime": "2026-08-13T06:57:03Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282136,
+  "name": "Conference Room 301",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282113,
+   "name": "Tower A",
+   "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T06:55:54Z",
+   "sysModifiedTime": "2026-08-13T06:55:54Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282113"
+  },
+  "floor": {
+   "id": 2282134,
+   "name": "Floor 2",
+   "building": {
+    "id": 2282113
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 2,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282134",
+   "sysCreatedTime": "2026-08-13T06:56:43Z",
+   "sysModifiedTime": "2026-08-13T06:56:43Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "moduleState": "active",
+  "qrVal": "facilio_2282136",
+  "sysCreatedTime": "2026-08-13T06:56:51Z",
+  "sysModifiedTime": "2026-08-13T06:56:51Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282132,
+  "name": "Conference Room 201",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282113,
+   "name": "Tower A",
+   "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T06:55:54Z",
+   "sysModifiedTime": "2026-08-13T06:55:54Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282113"
+  },
+  "floor": {
+   "id": 2282123,
+   "name": "Floor 1",
+   "building": {
+    "id": 2282113
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 1,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282123",
+   "sysCreatedTime": "2026-08-13T06:56:18Z",
+   "sysModifiedTime": "2026-08-13T06:56:18Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "moduleState": "active",
+  "qrVal": "facilio_2282132",
+  "sysCreatedTime": "2026-08-13T06:56:36Z",
+  "sysModifiedTime": "2026-08-13T06:56:36Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282119,
+  "name": "Conference Room 101",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282113,
+   "name": "Tower A",
+   "description": "North office tower at Greenfield Business Park \u2014 2 floors of tenant office space above a mechanical plant floor.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T06:55:54Z",
+   "sysModifiedTime": "2026-08-13T06:55:54Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282113"
+  },
+  "floor": {
+   "id": 2282115,
+   "name": "Ground Floor",
+   "building": {
+    "id": 2282113
+   },
+   "site": {
+    "id": 2282068
+   },
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282115",
+   "sysCreatedTime": "2026-08-13T06:55:57Z",
+   "sysModifiedTime": "2026-08-13T06:55:57Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "moduleState": "active",
+  "qrVal": "facilio_2282119",
+  "sysCreatedTime": "2026-08-13T06:56:04Z",
+  "sysModifiedTime": "2026-08-13T06:56:04Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282208,
+  "name": "Compressor Room",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282183,
+   "name": "Production Wing",
+   "description": "Main manufacturing hall at Lakeside Manufacturing Plant, with a dedicated plant room floor serving the production process.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:10:27Z",
+   "sysModifiedTime": "2026-08-13T07:10:27Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282183"
+  },
+  "floor": {
+   "id": 2282195,
+   "name": "Plant Room Floor",
+   "building": {
+    "id": 2282183
+   },
+   "site": {
+    "id": 2282069
+   },
+   "floorlevel": 2,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282195",
+   "sysCreatedTime": "2026-08-13T07:11:17Z",
+   "sysModifiedTime": "2026-08-13T07:11:17Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Utility",
+  "moduleState": "active",
+  "qrVal": "facilio_2282208",
+  "sysCreatedTime": "2026-08-13T07:12:29Z",
+  "sysModifiedTime": "2026-08-13T07:12:30Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282167,
+  "name": "Break Room \u2014 Tower B",
+  "site": {
+   "id": 2282068
+  },
+  "building": {
+   "id": 2282156,
+   "name": "Tower B",
+   "description": "South office tower at Greenfield Business Park, mirrored layout to Tower A with its own dedicated plant room.",
+   "site": {
+    "id": 2282068
+   },
+   "sysCreatedTime": "2026-08-13T07:08:12Z",
+   "sysModifiedTime": "2026-08-13T07:08:12Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282156"
+  },
+  "floor": {
+   "id": 2282162,
+   "name": "Floor 1",
+   "building": {
+    "id": 2282156
+   },
+   "site": {
+    "id": 2282068
+   },
+   "floorlevel": 1,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282162",
+   "sysCreatedTime": "2026-08-13T07:08:37Z",
+   "sysModifiedTime": "2026-08-13T07:08:37Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "moduleState": "active",
+  "qrVal": "facilio_2282167",
+  "sysCreatedTime": "2026-08-13T07:08:59Z",
+  "sysModifiedTime": "2026-08-13T07:08:59Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282192,
+  "name": "Break Room \u2014 Mezzanine",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282183,
+   "name": "Production Wing",
+   "description": "Main manufacturing hall at Lakeside Manufacturing Plant, with a dedicated plant room floor serving the production process.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:10:27Z",
+   "sysModifiedTime": "2026-08-13T07:10:27Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282183"
+  },
+  "floor": {
+   "id": 2282190,
+   "name": "Mezzanine",
+   "building": {
+    "id": 2282183
+   },
+   "site": {
+    "id": 2282069
+   },
+   "floorlevel": 1,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282190",
+   "sysCreatedTime": "2026-08-13T07:10:56Z",
+   "sysModifiedTime": "2026-08-13T07:10:56Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Room",
+  "moduleState": "active",
+  "qrVal": "facilio_2282192",
+  "sysCreatedTime": "2026-08-13T07:11:05Z",
+  "sysModifiedTime": "2026-08-13T07:11:05Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282185,
+  "name": "Assembly Area",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282183,
+   "name": "Production Wing",
+   "description": "Main manufacturing hall at Lakeside Manufacturing Plant, with a dedicated plant room floor serving the production process.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:10:27Z",
+   "sysModifiedTime": "2026-08-13T07:10:27Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282183"
+  },
+  "floor": {
+   "id": 2282184,
+   "name": "Ground Floor \u2014 Shop Floor",
+   "building": {
+    "id": 2282183
+   },
+   "site": {
+    "id": 2282069
+   },
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282184",
+   "sysCreatedTime": "2026-08-13T07:10:32Z",
+   "sysModifiedTime": "2026-08-13T07:10:32Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Common Area",
+  "moduleState": "active",
+  "qrVal": "facilio_2282185",
+  "sysCreatedTime": "2026-08-13T07:10:36Z",
+  "sysModifiedTime": "2026-08-13T07:10:36Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ },
+ {
+  "id": 2282218,
+  "name": "Admin Office",
+  "site": {
+   "id": 2282069
+  },
+  "building": {
+   "id": 2282211,
+   "name": "Utility & Warehouse Block",
+   "description": "Attached warehouse and administrative block at Lakeside Manufacturing Plant, housing the site's secondary plant room.",
+   "site": {
+    "id": 2282069
+   },
+   "sysCreatedTime": "2026-08-13T07:12:41Z",
+   "sysModifiedTime": "2026-08-13T07:12:41Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   },
+   "qrVal": "facilio_2282211"
+  },
+  "floor": {
+   "id": 2282217,
+   "name": "Floor 1",
+   "building": {
+    "id": 2282211
+   },
+   "site": {
+    "id": 2282069
+   },
+   "floorlevel": 1,
+   "moduleState": {
+    "id": 183341
+   },
+   "qrVal": "facilio_2282217",
+   "sysCreatedTime": "2026-08-13T07:13:04Z",
+   "sysModifiedTime": "2026-08-13T07:13:04Z",
+   "sysCreatedBy": {
+    "id": 2281806
+   },
+   "sysModifiedBy": {
+    "id": 2281806
+   }
+  },
+  "spaceCategory": "Office",
+  "moduleState": "active",
+  "qrVal": "facilio_2282218",
+  "sysCreatedTime": "2026-08-13T07:13:08Z",
+  "sysModifiedTime": "2026-08-13T07:13:08Z",
+  "sysCreatedBy": {
+   "id": 2281806
+  },
+  "sysModifiedBy": {
+   "id": 2281806
+  }
+ }
+]
