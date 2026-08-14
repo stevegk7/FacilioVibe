@@ -9,9 +9,18 @@
   overflow: hidden;
 }
 
+/* Embedded chrome puts a 44px tab bar above the screen and, unlike the mobile
+   shell, gives the pane no height of its own — without this the flex column
+   has nothing to be 100% OF, so the internal scroller collapses and the body
+   runs off the bottom. Same rule Surveys carries (surveys.css). */
+.embedded .wf-screen { height: calc(var(--app-h) - 44px); }
+
 .wf-head {
   flex: none;
-  padding: 14px 16px 10px;
+  /* The head is the topmost painted element on this screen and no ancestor
+     reserves the inset, so without --safe-t the title, the assist input and
+     the site chip render under the notch / Dynamic Island. */
+  padding: calc(14px + var(--safe-t)) 16px 10px;
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-surface);
 }
@@ -19,7 +28,7 @@
 .wf-body {
   flex: 1;
   min-height: 0;
-  padding: 8px 16px 20px;
+  padding: 8px 16px calc(20px + var(--safe-b));
 }
 
 .wf-edit-btn { height: 36px; padding: 0 12px; }
@@ -116,9 +125,204 @@
 }
 
 .row-card.selected { border-color: var(--blue-500); box-shadow: var(--shadow-focus); }
-.wf-row-caret { transform: rotate(180deg); color: var(--ink-400); flex: none; }
+.wf-row-caret { color: var(--ink-400); flex: none; }
 
-.wf-outdoor { width: 100%; margin-top: 14px; }
+/* ---------- assistant row ---------- */
+
+.wf-assist {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+
+.wf-assist:focus-within { border-color: var(--border-focus); box-shadow: var(--shadow-focus); }
+.wf-assist-icon { color: var(--ink-400); flex: none; }
+
+.wf-assist-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  /* 16px: iOS must not zoom the page */
+  font: 400 16px/1.3 var(--font-sans);
+  color: var(--ink-900);
+}
+
+/* 44px: the house floor for anything tappable (src/styles.css) — and this one
+   is pressed with a thumb while walking. */
+.wf-mic {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--ink-050);
+  color: var(--ink-600);
+  cursor: pointer;
+}
+
+.wf-mic.live { background: var(--danger-500); color: #fff; }
+
+/* ---------- anchor (where you are) ---------- */
+
+.wf-where-name { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.wf-where-age { font-size: 11.5px; font-weight: 400; color: var(--ink-500); }
+.wf-where-age.stale { color: var(--warning-700); }
+.wf-scan-btn { flex: none; width: auto; padding: 0 14px; min-height: 40px; }
+
+/* ---------- disambiguation chips ---------- */
+
+.wf-candidates { margin: 8px 0 4px; }
+.wf-candidate-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+
+.wf-candidate-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 44px;
+  padding: 6px 14px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  cursor: pointer;
+  text-align: left;
+}
+
+.wf-candidate-chip:active { border-color: var(--blue-500); }
+.wf-candidate-name { font: 500 14px/18px var(--font-sans); color: var(--ink-900); }
+.wf-candidate-meta { font-size: 11.5px; color: var(--ink-500); }
+
+/* ---------- steps: states + floor-change interstitials ---------- */
+
+.wf-step.done .wf-step-n { background: var(--success-500); }
+.wf-step.done .wf-step-text { color: var(--ink-500); text-decoration: line-through; }
+.wf-step-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.wf-step-meta { font-size: 12px; color: var(--ink-500); }
+
+.wf-step.floor-change {
+  padding: 10px;
+  margin: 2px 0;
+  border: 1px solid var(--brand-indigo-400);
+  border-radius: var(--radius-md);
+  background: var(--brand-indigo-050);
+}
+
+.wf-floor-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--brand-indigo-600);
+  color: #fff;
+  font: 600 11.5px/1 var(--font-sans);
+}
+
+.wf-floor-badge.big { font-size: 13px; padding: 6px 12px; }
+
+.wf-route-actions { display: flex; gap: 10px; margin-top: 14px; }
+.wf-route-actions .btn-cta { flex: 1; }
+.wf-route-actions .btn-quiet { flex: none; width: auto; padding: 0 16px; }
+/* The bare .link-btn computes to ~28px — under the 44px rule. These two sit
+   in the guided card, tapped mid-walk, so they get real target height. */
+.wf-route-actions.secondary { justify-content: space-between; margin-top: 4px; }
+.wf-route-actions.secondary .link-btn { min-height: 44px; padding: 0 4px; }
+.wf-edge-row .link-btn { min-height: 44px; padding: 0 4px; }
+
+/* ---------- guided mode ---------- */
+
+.wf-progress { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.wf-progress-text { font: 600 12px/1 var(--font-sans); color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.05em; }
+
+.wf-progress-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--ink-100);
+  overflow: hidden;
+}
+
+.wf-progress-bar span {
+  display: block;
+  height: 100%;
+  background: var(--blue-500);
+  transition: width var(--dur-base) var(--ease-standard);
+}
+
+.wf-now { padding: 4px 0 8px; }
+.wf-now.floor-change { display: flex; flex-direction: column; gap: 8px; }
+.wf-now-text { margin: 6px 0 4px; font: 500 19px/26px var(--font-sans); color: var(--ink-900); }
+
+.wf-next {
+  margin: 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 13.5px;
+  line-height: 19px;
+  color: var(--ink-600);
+}
+
+.wf-next-label {
+  font: 600 11px/1 var(--font-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-500);
+  margin-right: 6px;
+}
+
+/* ---------- arrival ---------- */
+
+.wf-arrived-card { text-align: center; padding: 22px 16px 16px; }
+
+.wf-arrived-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
+  background: var(--success-500);
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.wf-arrived-title { display: block; font-size: 18px; margin-bottom: 6px; }
+.wf-arrived-text { margin: 0 0 6px; font-size: 14px; line-height: 20px; color: var(--ink-600); }
+
+/* ---------- scan sheet camera ---------- */
+
+.scs-camera {
+  position: relative;
+  height: 240px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: #000;
+  margin-bottom: 12px;
+}
+
+.scs-camera .fv-cam, .scs-camera video, .scs-camera canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/* The reticle is borrowed from the full-screen survey flow, where it is sized
+   against the VIEWPORT (min(58vw, 240px) at top:38%). In this 240px-tall box
+   that square hangs off the top edge and gets clipped by the overflow — so it
+   is re-sized against the box it is actually in. */
+.scs-frame {
+  position: absolute;
+  top: 50%;
+  width: min(60%, 168px);
+}
+
+.wf-foot-actions { display: flex; gap: 10px; margin-top: 14px; }
+.wf-foot-actions .btn-quiet { flex: 1; }
 
 .wf-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 6px; }
 .wf-edge-row { margin-bottom: 8px; }

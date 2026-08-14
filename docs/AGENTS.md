@@ -13,8 +13,9 @@ harness that makes the quality a number instead of an opinion.
 | `fv-nameplate` | 6368 | `agents/nameplate.schema.json` | `readNameplate()` |
 | `fv-tasks`     | 6369 | `agents/tasks.schema.json`     | `suggestTasks()` → `src/ar/ArWindow.tsx` |
 | `fv-voice`     | 6370 | **none, deliberately**      | `voiceTurn()` → `src/voice/toolLoop.ts` |
+| `fv-wayfinder`| 6438 | `agents/wayfinder.schema.json` | `resolveDestination()` → `src/screens/WayfinderScreen.tsx` |
 
-Live model: `openai / gpt-5.5` on all five (not claude — check with
+Live model: `openai / gpt-5.5` on all six (not claude — check with
 `facilio vibe agent get <name>` before assuming).
 
 > The ids above are this app's. Agents are **app-scoped**: the platform

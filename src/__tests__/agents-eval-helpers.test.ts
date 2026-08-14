@@ -109,7 +109,7 @@ describe('every fixture case is well formed', async () => {
   const { CASES } = await import('../../tools/agent-eval/fixtures.mjs');
 
   it('names a real agent, has an input, a check, a rationale and a counterexample', () => {
-    const agents = ['fv-identify', 'fv-wo-draft', 'fv-nameplate', 'fv-voice', 'fv-tasks'];
+    const agents = ['fv-identify', 'fv-wo-draft', 'fv-nameplate', 'fv-voice', 'fv-tasks', 'fv-wayfinder'];
     for (const testCase of CASES) {
       expect(agents, testCase.name).toContain(testCase.agent);
       expect(typeof testCase.input, testCase.name).toBe('string');
@@ -125,9 +125,11 @@ describe('every fixture case is well formed', async () => {
     expect(new Set(names).size).toBe(names.length);
   });
 
-  it('covers all five agents', () => {
+  // Every agent the app ships must be scored — an unscored agent is one whose
+  // quality is an opinion. Keep this in step with AGENT_FILES in push.mjs.
+  it('covers every agent the app deploys', () => {
     const covered = new Set(CASES.map((c) => c.agent));
-    expect(covered.size).toBe(5);
+    expect(covered.size).toBe(6);
   });
 
   // A check that can never fail scores nothing. Each fixture ships the exact

@@ -52,6 +52,7 @@ import { describeEntry, resolveCode } from '../vision/codes';
 import { stampStopByCode } from '../rounds/roundsStore';
 import { useGeoFix } from '../hooks/useGeoFix';
 import { arOrientation, enableArOrientation, holdYawOffset, placementOrientation, poseSpeedDegS, useHeading } from '../hooks/useHeading';
+import { currentTab, navParamId, onNavigate, setNavParams } from '../shell/router';
 import '../styles/ar.css';
 import '../ar/arspace.css';
 
@@ -183,6 +184,26 @@ export default function ARScreen() {
   const [arOn, setArOn] = useState(true);
   const [presence, setPresence] = useState<Presence | null>(null);
   const [focusAssetId, setFocusAssetId] = useState<number | null>(null);
+
+  // Handoffs (Estate "Find it on site", voice show_on_site, the Wayfinder's
+  // arrival card) arrive as ?asset= — a param this screen historically set
+  // out to ignore, so every caller's promise of "AR will point at it" was
+  // silently broken. Consume it into focus, at mount AND while mounted.
+  useEffect(() => {
+    const consume = () => {
+      // Only OUR tab's params are ours to take. popstate fires for every
+      // navigation, so without this check AR (still mounted for one commit)
+      // would swallow the asset being handed to the 3D estate or Wayfinder.
+      if (currentTab() !== 'ar') return;
+      const assetId = navParamId('asset');
+      if (assetId == null) return;
+      setFocusAssetId(assetId);
+      setNavParams({ asset: null }); // consumed — a stale param must not re-fire
+    };
+    consume();
+    return onNavigate(consume);
+  }, []);
+
   /** Markers the user minimized to a DOT — the visionOS "put it away" state. */
   const [dotted, setDotted] = useState<Set<string>>(() => new Set());
   const [guide, setGuide] = useState<{ heading: number; name: string } | null>(null);

@@ -35,6 +35,7 @@ export const WO_DRAFT_AGENT = 'fv-wo-draft';
 export const NAMEPLATE_AGENT = 'fv-nameplate';
 export const VOICE_AGENT = 'fv-voice';
 export const TASKS_AGENT = 'fv-tasks';
+export const WAYFINDER_AGENT = 'fv-wayfinder';
 
 /** Vision inference is slow; anything past this is a hung run, not a slow one. */
 export const DEFAULT_AGENT_TIMEOUT_MS = 45_000;
@@ -133,6 +134,9 @@ const mock = {
   },
   voice(input: string): string {
     return `Mock reply to: ${input}`;
+  },
+  wayfinderPick(): WayfinderPick {
+    return { index: 0, ask: null, reason: 'mock pick' };
   },
 };
 
@@ -391,6 +395,77 @@ export async function suggestTasks(
     opts,
   );
   return out.tasks;
+}
+
+/** One candidate the wayfinder may resolve to. */
+export interface WayfinderCandidate {
+  name: string;
+  where?: string;
+  openWorkOrders?: number;
+}
+
+export interface WayfinderPick {
+  /** Index into the candidate array, or null when nothing was picked. */
+  index: number | null;
+  /** A short disambiguation question when the request matched several. */
+  ask: string | null;
+  reason: string;
+}
+
+/**
+ * Resolve a spoken destination to ONE candidate.
+ *
+ * The agent picks; the app routes. It never sees the graph and is never asked
+ * for directions — the research this screen follows is unanimous that an
+ * assistant here is an entity resolver whose terminal act is launching a
+ * route, and a model inventing corridors is a technician walked into a wall.
+ *
+ * The reply is a LIST POSITION, not an id: the agent cannot fabricate a
+ * destination that was not offered, and the caller maps the position back to
+ * its own object. Out-of-range positions are dropped rather than clamped —
+ * clamping would silently answer a different question.
+ */
+export async function resolveDestination(
+  request: string,
+  candidates: WayfinderCandidate[],
+  here: { siteName?: string; standpointName?: string } = {},
+  opts: AgentRunOptions = {},
+): Promise<WayfinderPick> {
+  if (isMockMode()) return mock.wayfinderPick();
+  if (candidates.length === 0) return { index: null, ask: null, reason: 'nothing in scope' };
+  const hereLine = [
+    here.siteName ? `site ${here.siteName}` : 'site unknown',
+    here.standpointName ? `at ${here.standpointName}` : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const list = candidates
+    .map(
+      (c, i) =>
+        `${i + 1}. ${c.name} · ${c.where ?? 'location unknown'} · ${
+          c.openWorkOrders ? `${c.openWorkOrders} open` : 'none'
+        }`,
+    )
+    .join('  / ');
+  const input = `HERE: ${hereLine}\nCANDIDATES: ${list}\nREQUEST: ${request}`;
+  return await runStructured<WayfinderPick>(
+    WAYFINDER_AGENT,
+    input,
+    (parsed) => {
+      const choice = orNone(parsed.choice);
+      const n = choice == null ? NaN : Number(choice);
+      // 1-based in the prompt, 0-based here; anything outside the offered
+      // range is a fabrication and becomes "no pick".
+      const index = Number.isInteger(n) && n >= 1 && n <= candidates.length ? n - 1 : null;
+      const ask = orNone(parsed.ask);
+      return {
+        index,
+        ask: index == null && ask ? String(ask).slice(0, 160) : null,
+        reason: String(parsed.reason ?? '').slice(0, 200),
+      };
+    },
+    opts,
+  );
 }
 
 export async function readNameplate(

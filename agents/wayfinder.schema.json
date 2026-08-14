@@ -1,0 +1,21 @@
+{
+  "title": "fv_wayfinder_pick",
+  "type": "object",
+  "description": "Resolves a technician's spoken destination to exactly ONE numbered candidate from the prompt's list, or asks a short question when the request genuinely matches several. Never invents an id and never composes walking directions — the app computes the route.",
+  "properties": {
+    "choice": {
+      "type": "string",
+      "description": "The chosen candidate's number, copied verbatim from the numbered list and rendered as a string (e.g. \"3\"), or the sentinel \"none\" when nothing in the list matches or the request is too vague to pick one (schemas cannot union with null). Never a number absent from the list, never an asset id."
+    },
+    "ask": {
+      "type": "string",
+      "description": "When choice is \"none\" AND the list holds plausible matches: one short question naming what would separate them (a floor, a building, an equipment type). Bound restated because maxLength is not preserved server-side: at most 15 words and 160 characters, no preamble. Otherwise the sentinel \"none\"."
+    },
+    "reason": {
+      "type": "string",
+      "description": "One short sentence of the evidence used — the words that matched, the work order that named it, the floor that ruled others out. Bound restated because maxLength is not preserved server-side: at most 20 words and 200 characters. No preamble."
+    }
+  },
+  "required": ["choice", "ask", "reason"],
+  "additionalProperties": false
+}
