@@ -54,6 +54,15 @@ beforeEach(() => {
   );
 });
 
+/* The first route on this screen waits on more than the UI settling: the
+   auto-graph query does `await import('../estate/buildEstate')` and then builds
+   the estate and the graph. Vite serialises module transforms across workers, so
+   that wait costs 427ms with this file alone and blows past the shared 5s
+   `asyncUtilTimeout` when the whole suite runs in parallel — reproducibly, which
+   is what distinguishes it from load flake. It gets its own budget rather than
+   raising everyone's, since only a lazy module load is this slow. */
+const ESTATE_BUILD_MS = 15_000;
+
 /** Type a code into the scan sheet (mock mode has no camera — typed lane). */
 async function scanCode(user: ReturnType<typeof userEvent.setup>, code: string) {
   await user.click(screen.getAllByRole('button', { name: /Scan/ })[0]);
@@ -74,7 +83,11 @@ describe('wayfinder — demo data and destination resolution', () => {
     // Mock GPS supplies a fix, so the anchor is the entrance — LABELLED as
     // the guess it is, never dressed up as a scan.
     expect(await screen.findByText('nearest entrance by GPS')).toBeInTheDocument();
-    expect(await screen.findByText(/Cross the plaza to Tower A/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Cross the plaza to Tower A/, undefined, {
+        timeout: ESTATE_BUILD_MS,
+      }),
+    ).toBeInTheDocument();
     // Preview shows totals and the guided-mode opt-in.
     expect(screen.getByRole('button', { name: 'Guide me' })).toBeInTheDocument();
     expect(screen.getByText(/~\d+ min/)).toBeInTheDocument();
@@ -178,7 +191,11 @@ describe('wayfinder — handoffs land while mounted', () => {
     });
 
     // Destination set without a remount — the route renders in place.
-    expect(await screen.findByText(/Cross the plaza to Tower A/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Cross the plaza to Tower A/, undefined, {
+        timeout: ESTATE_BUILD_MS,
+      }),
+    ).toBeInTheDocument();
     // Consumed: the param must not survive to re-fire on the next navigation.
     expect(new URLSearchParams(window.location.search).get('asset')).toBeNull();
   });
@@ -475,6 +492,22 @@ describe('round in progress', () => {
     await user.click(await screen.findByRole('button', { name: /Route to it/ }));
     // A real route to the standpoint, not just a label change.
     expect(await screen.findByRole('button', { name: 'Guide me' })).toBeInTheDocument();
+  });
+
+  it('routes from a cold start, where the tap must scope the site first', async () => {
+    startRound();
+    // Nothing scoped — the state the app opens in before a site is picked, and
+    // the one where this tap used to scope the site and then set no route: the
+    // early return leaned on the follow-round effect, which only runs while a
+    // scan is driving the round.
+    sessionStorage.removeItem('fv.location');
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.click(await screen.findByRole('button', { name: /Route to it/ }));
+    expect(
+      await screen.findByRole('button', { name: 'Guide me' }, { timeout: ESTATE_BUILD_MS }),
+    ).toBeInTheDocument();
   });
 
   it('advances to the NEXT stop when a scan proves the one you were routing to', async () => {

@@ -434,19 +434,99 @@ const hopKind = (h: Hop): LegKind => {
   return 'indoor';
 };
 
-/** Same linear-scan Dijkstra shape as router.ts — these graphs are small. */
-function shortestPath(
-  graph: AutoGraph,
-  fromId: string,
-  toId: string,
-  allowUnroutable: boolean,
-): Hop[] | null {
-  const byId = new Map(graph.nodes.map((n) => [n.id, n]));
-  const adj = new Map<string, Array<{ to: string; meters: number }>>();
+/* ---------------- the router's working set ----------------
+   This used to say "these graphs are small". They are not: every asset in the
+   portfolio is a node, so V tracks the asset register, and the cost showed up
+   exactly where it hurts — a far route, which is the one somebody asks for when
+   they do not know the building.
+
+   Measured on the compiled module before this change: 8,821 nodes → 795ms;
+   21,101 nodes → 5,104ms; 84,401 nodes → 94,083ms. A cross-site refusal paid it
+   twice, because distinguishing "no path" from "the site hop needs geo" runs a
+   second search. Two things were quadratic-ish and one was pure repetition:
+   selection scanned the whole distance map every iteration, and the adjacency
+   and node index were rebuilt from scratch on every single call. */
+
+/** Binary min-heap with lazy deletion — no decrease-key, just push duplicates. */
+class MinHeap {
+  private items: Array<{ id: string; d: number }> = [];
+
+  push(id: string, d: number): void {
+    const a = this.items;
+    a.push({ id, d });
+    let i = a.length - 1;
+    while (i > 0) {
+      const parent = (i - 1) >> 1;
+      if (a[parent].d <= a[i].d) break;
+      [a[parent], a[i]] = [a[i], a[parent]];
+      i = parent;
+    }
+  }
+
+  pop(): { id: string; d: number } | undefined {
+    const a = this.items;
+    if (a.length === 0) return undefined;
+    const top = a[0];
+    const last = a.pop() as { id: string; d: number };
+    if (a.length > 0) {
+      a[0] = last;
+      let i = 0;
+      for (;;) {
+        const l = i * 2 + 1;
+        const r = l + 1;
+        let small = i;
+        if (l < a.length && a[l].d < a[small].d) small = l;
+        if (r < a.length && a[r].d < a[small].d) small = r;
+        if (small === i) break;
+        [a[small], a[i]] = [a[i], a[small]];
+        i = small;
+      }
+    }
+    return top;
+  }
+}
+
+type Adjacency = Map<string, Array<{ to: string; meters: number }>>;
+
+/**
+ * Per-graph caches.
+ *
+ * A WeakMap keyed on the graph object, so nothing is retained once a rebuild
+ * replaces it — and the graph IS replaced wholesale on every rebuild, which is
+ * what makes caching safe here: an AutoGraph is derived and never mutated in
+ * place, so a cached index cannot go stale behind a caller's back.
+ */
+const graphCache = new WeakMap<
+  AutoGraph,
+  { byId?: Map<string, AutoNode>; strict?: Adjacency; permissive?: Adjacency }
+>();
+
+function cacheFor(graph: AutoGraph) {
+  let entry = graphCache.get(graph);
+  if (!entry) {
+    entry = {};
+    graphCache.set(graph, entry);
+  }
+  return entry;
+}
+
+function nodeIndex(graph: AutoGraph): Map<string, AutoNode> {
+  const entry = cacheFor(graph);
+  entry.byId ??= new Map(graph.nodes.map((n) => [n.id, n]));
+  return entry.byId;
+}
+
+function adjacency(graph: AutoGraph, allowUnroutable: boolean): Adjacency {
+  const entry = cacheFor(graph);
+  const key = allowUnroutable ? 'permissive' : 'strict';
+  const cached = entry[key];
+  if (cached) return cached;
+
+  const adj: Adjacency = new Map();
   const push = (from: string, to: string, meters: number) => {
-    const list = adj.get(from) ?? [];
-    list.push({ to, meters });
-    adj.set(from, list);
+    const list = adj.get(from);
+    if (list) list.push({ to, meters });
+    else adj.set(from, [{ to, meters }]);
   };
   for (const e of graph.edges) {
     if (e.unroutable || !Number.isFinite(e.meters)) {
@@ -459,28 +539,41 @@ function shortestPath(
     push(e.from, e.to, e.meters);
     push(e.to, e.from, e.meters);
   }
+  entry[key] = adj;
+  return adj;
+}
+
+function shortestPath(
+  graph: AutoGraph,
+  fromId: string,
+  toId: string,
+  allowUnroutable: boolean,
+): Hop[] | null {
+  const byId = nodeIndex(graph);
+  const adj = adjacency(graph, allowUnroutable);
 
   const distTo = new Map<string, number>([[fromId, 0]]);
   const prev = new Map<string, { node: string; meters: number }>();
   const settled = new Set<string>();
+  const queue = new MinHeap();
+  queue.push(fromId, 0);
 
   for (;;) {
-    let current: string | null = null;
-    let best = Infinity;
-    for (const [id, d] of distTo) {
-      if (!settled.has(id) && d < best) {
-        best = d;
-        current = id;
-      }
-    }
-    if (current === null || current === toId) break;
-    settled.add(current);
-    for (const { to, meters } of adj.get(current) ?? []) {
+    const top = queue.pop();
+    if (!top) break;
+    // Lazy deletion: a node can sit in the heap several times, once per
+    // improvement. The first pop is the real one; later copies are stale.
+    if (settled.has(top.id)) continue;
+    if (top.id === toId) break;
+    settled.add(top.id);
+    const best = top.d;
+    for (const { to, meters } of adj.get(top.id) ?? []) {
       if (settled.has(to)) continue;
       const candidate = best + meters;
       if (candidate < (distTo.get(to) ?? Infinity)) {
         distTo.set(to, candidate);
-        prev.set(to, { node: current, meters });
+        prev.set(to, { node: top.id, meters });
+        queue.push(to, candidate);
       }
     }
   }
@@ -540,7 +633,9 @@ export function legEdge(graph: AutoGraph, leg: Pick<AutoLeg, 'nodes'>): AutoEdge
 }
 
 export function routeOnGraph(graph: AutoGraph, fromId: string, toId: string): AutoRoute {
-  const byId = new Map(graph.nodes.map((n) => [n.id, n]));
+  // Shared with the search rather than rebuilt: routeOnGraph runs on every
+  // render that changes an endpoint, and this map is the whole node list.
+  const byId = nodeIndex(graph);
   const start = byId.get(fromId);
   const goal = byId.get(toId);
   if (!start) return { unroutable: true, reason: `unknown node "${fromId}"` };

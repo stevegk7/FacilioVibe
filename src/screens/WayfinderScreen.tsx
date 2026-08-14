@@ -171,6 +171,10 @@ export default function WayfinderScreen() {
   const [siteOpen, setSiteOpen] = useState(false);
   const [startOpen, setStartOpen] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
+  /** A work order tapped before the portfolio graph loaded — see routeToWorkOrder. */
+  const [pendingWo, setPendingWo] = useState<WorkOrder | null>(null);
+  /** A round stop tapped before its site's survey graph loaded — see routeToStop. */
+  const [pendingStop, setPendingStop] = useState(false);
   /** Assistant lane: last reply + disambiguation candidates. */
   const [assistText, setAssistText] = useState('');
   const [assistBusy, setAssistBusy] = useState(false);
@@ -698,6 +702,11 @@ export default function WayfinderScreen() {
       was a TDZ crash on mount. */
   const applyResolvedNode = useCallback(
     (node: AutoNode) => {
+      // Any destination reached another way outranks a tap still waiting on
+      // data — otherwise the graph landing would yank the screen off whatever
+      // the technician chose while they waited.
+      setPendingWo(null);
+      setPendingStop(false);
       if (node.kind === 'asset' && node.recordId != null) {
         const pinned = pinnedDestinations.find((p) => p.assetId === node.recordId);
         if (pinned && destinationForAsset(pinned.asset)) {
@@ -729,6 +738,18 @@ export default function WayfinderScreen() {
       const name = wo.resourceName ?? `Asset ${assetId}`;
       const node = autoGraph?.nodes.find((n) => n.id === `asset:${assetId}`);
 
+      if (!autoGraph) {
+        /* The portfolio has not arrived yet, so this tap cannot be answered
+           NOW — but it can be answered. The old branch said "try again in a
+           moment", which hands the retry back to the technician for a wait the
+           app can see the end of, and a cold start over a field connection is
+           exactly when the first tap lands. Hold the intent instead; the effect
+           below completes it the moment the graph is there. */
+        setPendingWo(wo);
+        setHint(`Reading the portfolio — ${name} will route as soon as it lands.`);
+        return;
+      }
+
       if (!node) {
         /* No node means the estate builder dropped this asset — almost always
            because its space carries no floor. Naming that is actionable; the old
@@ -736,9 +757,7 @@ export default function WayfinderScreen() {
            something the AR tab cannot fix. Settings → Routing coverage lists
            every asset in this state with its reason. */
         setHint(
-          autoGraph
-            ? `${name} isn't on any floor in the portfolio, so there's nowhere to route to. Settings › Routing coverage explains why.`
-            : 'Still reading the portfolio — try again in a moment.',
+          `${name} isn't on any floor in the portfolio, so there's nowhere to route to. Settings › Routing coverage explains why.`,
         );
         return;
       }
@@ -746,7 +765,7 @@ export default function WayfinderScreen() {
       // Scope to the asset's own site when nothing is scoped yet. The survey
       // lane is per site, so without this the AR-precise path stays unavailable
       // however many taps the user makes.
-      if (scope.siteId == null && autoGraph) {
+      if (scope.siteId == null) {
         const site = siteOfNode(autoGraph, node);
         if (site?.recordId != null) {
           setLocation({ scope: { siteId: site.recordId }, names: { site: site.label } });
@@ -757,6 +776,21 @@ export default function WayfinderScreen() {
     },
     [autoGraph, scope.siteId, setLocation, applyResolvedNode],
   );
+
+  /**
+   * Complete a work-order tap that arrived before the portfolio did.
+   *
+   * Cleared BEFORE the retry, so an asset the graph turns out not to carry
+   * reports its real reason once and does not re-enter here. Whoever set a
+   * destination in the meantime keeps it: this only fires while nothing else
+   * has claimed the screen.
+   */
+  useEffect(() => {
+    if (!pendingWo || !autoGraph) return;
+    const wo = pendingWo;
+    setPendingWo(null);
+    routeToWorkOrder(wo);
+  }, [pendingWo, autoGraph, routeToWorkOrder]);
 
   /**
    * The stop this round is currently on: the first one with no proof yet.
@@ -788,8 +822,12 @@ export default function WayfinderScreen() {
     if (!nextStop?.routable) return;
     if (scope.siteId == null && nextStop.siteId != null) {
       setLocation({ scope: { siteId: nextStop.siteId }, names: {} });
-      // The graph for that site has to load before nodeForSurvey can resolve;
-      // the effect below picks the stop up once it has.
+      /* The graph for that site has to load before nodeForSurvey can resolve.
+         This used to rely on the follow-round effect below to pick the stop up,
+         which only runs while a scan is driving the round — so the strip's own
+         button, tapped with nothing scoped, silently changed the site and set no
+         route. Flag it explicitly instead. */
+      setPendingStop(true);
       return;
     }
     const node = graph ? nodeForSurvey(graph, nextStop.surveyId) : undefined;
@@ -797,11 +835,28 @@ export default function WayfinderScreen() {
       setHint(`${nextStop.name} isn’t on this site’s route map yet.`);
       return;
     }
+    setPendingStop(false);
+    setPendingWo(null); // same rule as applyResolvedNode: this stop wins
     setDest({ nodeId: node.id, label: nextStop.name });
     setJourney('preview');
     setStepIdx(0);
     setHint(null);
   }, [nextStop, scope.siteId, setLocation, graph]);
+
+  /**
+   * Complete a stop tap that arrived before its site's graph did.
+   *
+   * Gated on the scope having actually become that stop's site AND a graph
+   * being present: the query is keyed on the site, so `graph` is undefined
+   * while the new one loads, and firing early would report the stop missing
+   * from a map that is simply the previous site's.
+   */
+  useEffect(() => {
+    if (!pendingStop || !nextStop) return;
+    if (scope.siteId !== nextStop.siteId || !graph) return;
+    setPendingStop(false);
+    routeToStop();
+  }, [pendingStop, nextStop, scope.siteId, graph, routeToStop]);
 
   /**
    * Advance to the next stop once the stamp has actually landed.
