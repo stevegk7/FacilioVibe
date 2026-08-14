@@ -1,7 +1,14 @@
 // The router replaces a greedy nearest-waypoint chain that would route through
 // a wall. These lock the properties that made it worth replacing.
 import { describe, expect, it } from 'vitest';
-import { findRoute, nearestNode, stepText } from '../wayfinding/router';
+import {
+  GPS_ANCHOR_MAX_ACCURACY_M,
+  anchorFromFix,
+  findRoute,
+  gpsAnchorRadiusM,
+  nearestNode,
+  stepText,
+} from '../wayfinding/router';
 import type { WayEdge, WayGraph, WayNode } from '../wayfinding/graph';
 
 const node = (id: string, extra: Partial<WayNode> = {}): WayNode => ({
@@ -132,5 +139,59 @@ describe('nearestNode', () => {
   it('ignores nodes with no geotag', () => {
     const g = graph([node('untagged', { kind: 'entrance' })], []);
     expect(nearestNode(g, { lat: 0, lng: 0 }, ['entrance'])).toBeNull();
+  });
+});
+
+/* ---------------- what a GPS fix may claim ----------------
+   `nearestNode` answers "which is closest", never "is that believable". Before
+   anchorFromFix existed the Wayfinder took its answer at any distance, with any
+   accuracy, of any kind — so a technician at the depot started a route from a
+   site entrance, and a site whose entrances carried no coordinates started from
+   whichever plant room happened to be nearest. */
+
+// The mock fixture and the shipped demo's own entrance. ~119m apart, accuracy 8m:
+// a real "you are at this entrance", and the calibration point for the radius.
+const MOCK_FIX = { lat: 12.97212, lng: 77.59369, accuracy: 8 };
+const DEMO_ENTRANCE = { lat: 12.9717, lng: 77.5947 };
+
+describe('anchorFromFix', () => {
+  const site = (extra: Partial<WayNode> = {}) =>
+    graph([node('door', { kind: 'entrance', ...DEMO_ENTRANCE, ...extra })], []);
+
+  it("anchors at the demo's real geometry — the case that must keep working", () => {
+    expect(anchorFromFix(site(), MOCK_FIX)?.id).toBe('door');
+  });
+
+  it('refuses a fix too coarse to name a place', () => {
+    const coarse = { ...MOCK_FIX, accuracy: GPS_ANCHOR_MAX_ACCURACY_M + 1 };
+    expect(anchorFromFix(site(), coarse)).toBeNull();
+  });
+
+  it('refuses when the nearest entrance is somewhere else entirely', () => {
+    // Same site, technician still at the depot ~6km away.
+    const atTheDepot = { lat: 13.0273, lng: 77.5947, accuracy: 8 };
+    expect(anchorFromFix(site(), atTheDepot)).toBeNull();
+  });
+
+  it('never anchors to a standpoint inside a building, however close', () => {
+    const g = graph(
+      [node('plantRoomL9', { kind: 'standpoint', ...DEMO_ENTRANCE })],
+      [],
+    );
+    expect(anchorFromFix(g, MOCK_FIX)).toBeNull();
+  });
+
+  it('refuses a graph whose entrances carry no coordinates', () => {
+    const g = graph([node('door', { kind: 'entrance' })], []);
+    expect(anchorFromFix(g, MOCK_FIX)).toBeNull();
+  });
+
+  it('refuses a non-finite accuracy rather than treating it as perfect', () => {
+    expect(anchorFromFix(site(), { ...MOCK_FIX, accuracy: NaN })).toBeNull();
+  });
+
+  it('scales the radius with the fix error, with a building-scale floor', () => {
+    expect(gpsAnchorRadiusM(8)).toBe(150);
+    expect(gpsAnchorRadiusM(80)).toBe(240);
   });
 });

@@ -37,7 +37,7 @@ import LocationPicker from '../components/LocationPicker';
 import ScanCodeSheet from '../components/ScanCodeSheet';
 import { loadGraph, nodeForCode, nodeForSurvey, saveGraph, withSurveyNodes, nodeById } from '../wayfinding/graph';
 import type { EdgeKind, NodeKind, WayGraph, WayNode } from '../wayfinding/graph';
-import { findRoute, nearestNode } from '../wayfinding/router';
+import { anchorFromFix, findRoute } from '../wayfinding/router';
 import type { Route, RouteStep } from '../wayfinding/router';
 import { mapsDirectionsUrl } from '../wayfinding/legs';
 import { surveyForAsset, surveyForPlace } from '../wayfinding/resolve';
@@ -61,6 +61,7 @@ import {
 import {
   anchorAgeText,
   anchorIsStale,
+  arrivalPhase,
   estimateSeconds,
   isFloorChange,
   minutesText,
@@ -258,9 +259,32 @@ export default function WayfinderScreen() {
   const currentAutoNode = useMemo((): AutoNode | null => {
     if (!autoGraph) return null;
     if (anchor && graph) {
-      const named = nodeById(graph, anchor.nodeId)?.name;
-      const hit = named ? findNode(autoGraph, named)[0] : undefined;
-      if (hit) return hit;
+      const at = nodeById(graph, anchor.nodeId);
+      if (at) {
+        /* Bridge by RECORD ID, most specific first.
+           This used to match the standpoint's display NAME against auto-graph
+           labels — "Tower B — Main Entrance" against a graph that only holds
+           "Tower B" — so it returned nothing for every standpoint this app can
+           create. A scan or a GPS fix therefore set the header's origin and left
+           this lane, the one that routes to ANY record, saying "Pick a start".
+           WayNode already carries the ids, so the join needs no names at all.
+           Floor granularity is the honest ceiling until standpoints themselves
+           become auto-graph nodes: the route starts from the floor's circulation
+           point rather than the exact standpoint, which is a real position
+           instead of no position. */
+        for (const id of [
+          at.floorId != null ? `floor:${at.floorId}` : null,
+          at.buildingId != null ? `building:${at.buildingId}` : null,
+        ]) {
+          if (!id) continue;
+          const node = autoGraph.nodes.find((n) => n.id === id);
+          if (node) return node;
+        }
+        /* Last resort, kept because it costs nothing: a standpoint named after
+           the space it stands in ("Plant Room B") still resolves by name. */
+        const hit = findNode(autoGraph, at.name)[0];
+        if (hit) return hit;
+      }
     }
     // What the user last looked at in the 3D estate (shared nav context).
     try {
@@ -476,7 +500,12 @@ export default function WayfinderScreen() {
     const tryAnchor = (): boolean => {
       const fix = getFix();
       if (!fix) return false;
-      const near = nearestNode(graph, fix, ['entrance']) ?? nearestNode(graph, fix);
+      // anchorFromFix applies the policy the old call had none of: an accuracy
+      // ceiling, a distance bound, and entrances only. It used to fall back to
+      // the nearest geotagged node of ANY kind at ANY distance, which could
+      // start a route from a plant room on Level 9, or from a site entrance
+      // while the technician was still at the depot.
+      const near = anchorFromFix(graph, fix);
       if (!near) return false;
       setAnchor({ nodeId: near.id, via: 'gps', at: Date.now() });
       return true;
@@ -569,10 +598,14 @@ export default function WayfinderScreen() {
   // leave "You've arrived" on screen while the user walked off.
   useEffect(() => {
     if (!dest) return;
-    if (route && route.steps.length === 0) setJourney('arrived');
-    else if (route && route.steps.length > 0) {
-      setJourney((phase) => (phase === 'arrived' ? 'preview' : phase));
-    }
+    // Exhaustive on purpose. This used to handle only the two branches where a
+    // route EXISTS, so `findRoute` returning null left the phase untouched — and
+    // null is the NORMAL answer for a standpoint with no authored edges, which is
+    // every standpoint created in the AR tab. Arriving at the plant room and then
+    // scanning any un-connected standpoint left "You've arrived — <asset> is at
+    // this standpoint" on screen at a place the asset is not, with the AR handoff
+    // still offered. No route means "not arrived" just as loudly as a long one.
+    setJourney((phase) => arrivalPhase(route, phase));
   }, [route, dest]);
 
   // Any change of start or destination invalidates guided progress — the
@@ -955,12 +988,35 @@ export default function WayfinderScreen() {
           <p className="empty-card">Pick a site above to plan a route.</p>
         )}
 
-        {scope.siteId != null && (graph?.edges.length ?? 0) === 0 && (
-          <p className="empty-card">
-            This site has no route map yet. Standpoints become nodes automatically — open{' '}
-            <strong>Graph</strong> below and connect what walks to what.
+        {/* A failed READ is not an empty site. Without this branch a 5xx, an
+            expired session or an unpromoted fvApi rendered "no route map yet"
+            and sent the technician off to author a graph that already exists. */}
+        {scope.siteId != null && (graphQuery.isError || surveys.isError) && (
+          <p className="empty-card wf-empty-error" role="alert">
+            Couldn&apos;t load this site&apos;s route map
+            {graphQuery.error instanceof Error ? ` — ${graphQuery.error.message}` : ''}.{' '}
+            <button
+              className="wf-retry"
+              onClick={() => {
+                void graphQuery.refetch();
+                void surveys.refetch();
+              }}
+            >
+              Try again
+            </button>
           </p>
         )}
+
+        {scope.siteId != null &&
+          !graphQuery.isError &&
+          !surveys.isError &&
+          !graphQuery.isPending &&
+          (graph?.edges.length ?? 0) === 0 && (
+            <p className="empty-card">
+              This site has no route map yet. Standpoints become nodes automatically — open{' '}
+              <strong>Graph</strong> below and connect what walks to what.
+            </p>
+          )}
 
         {dest && !route && anchor && journey !== 'arrived' && (
           <p className="wf-hint">
@@ -1042,7 +1098,16 @@ export default function WayfinderScreen() {
             <div className="section-row">
               <span className="section-label">Open work orders</span>
             </div>
-            {openWos.length === 0 && !workOrders.isLoading && (
+            {workOrders.isError && (
+              <p className="empty-card wf-empty-error" role="alert">
+                Couldn&apos;t load work orders
+                {workOrders.error instanceof Error ? ` — ${workOrders.error.message}` : ''}.{' '}
+                <button className="wf-retry" onClick={() => void workOrders.refetch()}>
+                  Try again
+                </button>
+              </p>
+            )}
+            {openWos.length === 0 && !workOrders.isLoading && !workOrders.isError && (
               <p className="empty-card">No open work orders with an asset to route to.</p>
             )}
             {openWos.slice(0, 12).map((wo: WorkOrder) => (
@@ -1157,7 +1222,27 @@ export default function WayfinderScreen() {
                 </span>
               </button>
             ))}
-          {!autoGraph && <p className="empty-card">Reading the portfolio…</p>}
+          {/* An unbounded "Reading the portfolio…" was the only feedback for a
+              failed estate read or a thrown graph build — the picker simply span
+              forever with no way to retry. */}
+          {!autoGraph && (autoGraphQuery.isError || estate.isError) && (
+            <p className="empty-card wf-empty-error" role="alert">
+              Couldn&apos;t read the portfolio
+              {autoGraphQuery.error instanceof Error ? ` — ${autoGraphQuery.error.message}` : ''}.{' '}
+              <button
+                className="wf-retry"
+                onClick={() => {
+                  void estate.refetch();
+                  void autoGraphQuery.refetch();
+                }}
+              >
+                Try again
+              </button>
+            </p>
+          )}
+          {!autoGraph && !autoGraphQuery.isError && !estate.isError && (
+            <p className="empty-card">Reading the portfolio…</p>
+          )}
         </div>
       </Sheet>
     </section>

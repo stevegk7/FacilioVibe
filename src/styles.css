@@ -262,6 +262,22 @@ html.kb-open #root { transform: translateY(var(--vv-top, 0px)); }
   line-height: 18px;
 }
 
+/* The app store is unreachable on this channel. Danger rather than warning: an
+   offline write will still land, whereas this state means every saved-data
+   screen — surveys, the route graph, plan bindings — is silently empty. No
+   dismiss button, because nothing the user can do here fixes it. */
+.store-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 20px;
+  background: var(--danger-050);
+  color: var(--danger-700);
+  border-bottom: 1px solid var(--danger-500);
+  font-size: var(--fs-small);
+  font-weight: 500;
+}
+
 .offline-banner {
   display: flex;
   justify-content: space-between;

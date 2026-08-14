@@ -474,3 +474,27 @@
 }
 
 .wf-chip-btn:hover { background: rgba(0, 89, 214, 0.12); }
+
+/* ---------- failed reads ----------
+   An empty state and a failed read look identical to a technician unless the
+   error says so. These borrow the danger tokens the app already defines but had
+   never used on this screen, so a failure reads as a failure at a glance rather
+   than as "this site isn't set up yet". */
+.wf-empty-error {
+  background: var(--danger-050);
+  border-color: var(--danger-500);
+  color: var(--danger-700);
+  text-align: left;
+}
+
+.wf-retry {
+  border: 1px solid var(--danger-700);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--danger-700);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  min-height: 32px;
+  cursor: pointer;
+}

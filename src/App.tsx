@@ -5,6 +5,7 @@ import { detectEmbed } from './shell/embed';
 import { installGlobalErrorHandlers, onGlobalError } from './shell/globalErrors';
 import { createAppQueryClient, purgeLegacyPersistedCache } from './api/queryClient';
 import { onQueueChange, flushQueue } from './api/offlineQueue';
+import { onAppStoreStatus } from './api/appStore';
 import { isMockMode } from './api/provider';
 import { LocationProvider } from './state/LocationContext';
 import { warmOrientation } from './hooks/useHeading';
@@ -80,6 +81,7 @@ function landingTab(): string {
 export default function App() {
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [pendingWrites, setPendingWrites] = useState(0);
+  const [storeUnavailable, setStoreUnavailable] = useState<string | null>(null);
   const embed = detectEmbed();
 
   const queryClient = useMemo(createAppQueryClient, []);
@@ -88,6 +90,13 @@ export default function App() {
 
   useEffect(() => onGlobalError(setGlobalError), []);
   useEffect(() => onQueueChange(setPendingWrites), []);
+  // The app store publishes this notice when its Studio function answers 404 —
+  // the exact state of a build promoted to a channel without `fvApi` promoted
+  // alongside it. Reads then degrade to empty by design, so without a subscriber
+  // the whole app looked like a first-run org: Surveys empty, "This site has no
+  // route map yet", every asset reported unpinned. appStore.ts has always
+  // promised "ONE quiet, app-level notice"; nothing was listening for it.
+  useEffect(() => onAppStoreStatus(setStoreUnavailable), []);
 
   // Sensors warm at load, not when a camera surface opens. The compass needs
   // seconds to settle and the projection needs the camera's real frame shape;
@@ -126,6 +135,14 @@ export default function App() {
             >
               Use live data
             </button>
+          </div>
+        )}
+        {/* Not dismissible while true: every saved-data screen is lying about
+            being empty until this is fixed, and the fix is an admin action
+            (promote fvApi on this channel), not something the user can retry. */}
+        {storeUnavailable && (
+          <div className="store-banner" role="alert">
+            <span>{storeUnavailable}</span>
           </div>
         )}
         {pendingWrites > 0 && (

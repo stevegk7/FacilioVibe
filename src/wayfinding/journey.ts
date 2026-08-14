@@ -125,3 +125,25 @@ export function progressForNode(route: Route, startNodeId: string, scannedNodeId
   const index = route.steps.findIndex((s) => s.from.id === scannedNodeId);
   return index >= 0 ? index : null;
 }
+
+/**
+ * The arrival phase implied by the current route.
+ *
+ * Pure and total, which is the entire point: the screen used to inline this as
+ * two `if`s that both required a route to EXIST, so the `route === null` case —
+ * the normal answer for any standpoint with no authored edges, which is every
+ * standpoint created in the AR tab — fell through and left the phase untouched.
+ * A technician who arrived at the plant room and then scanned an unconnected
+ * standpoint kept "You've arrived" on screen, with the AR handoff still offered,
+ * at a place the asset is not.
+ *
+ * No route means "not arrived" exactly as loudly as a long one. Only a route
+ * with zero steps left is arrival, because only that is evidence of it.
+ */
+export function arrivalPhase(
+  route: { steps: unknown[] } | null | undefined,
+  phase: JourneyPhase,
+): JourneyPhase {
+  if (route && route.steps.length === 0) return 'arrived';
+  return phase === 'arrived' ? 'preview' : phase;
+}

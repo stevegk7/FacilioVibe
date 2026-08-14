@@ -181,3 +181,51 @@ export function nearestNode(
   }
   return best;
 }
+
+/* ---------------- what a GPS fix may honestly claim ----------------
+   `nearestNode` answers "which node is closest", which is not the same question
+   as "where is this person". It has no maximum distance and ignores the fix's
+   own error, so on its own it will anchor a technician standing at a depot 6 km
+   away, or holding a 1,500 m cell-tower-only fix, to a site entrance — and the
+   route then starts from a place they have never been. The policy below is the
+   missing half, kept as a pure function so it can be tested without a screen. */
+
+/** Beyond this the fix names a suburb, not a place. Same gate as ar/presence.ts. */
+export const GPS_ANCHOR_MAX_ACCURACY_M = 50;
+
+/**
+ * How far a node may sit from the fix and still be a defensible guess.
+ *
+ * Deliberately building-scale rather than fix-scale: an entrance coordinate is a
+ * single point standing in for a whole façade, and a technician at the far corner
+ * of a large building is legitimately 100m+ from the pin that represents its
+ * door. Calibration datapoint — the shipped demo's own entrance sits ~119m from
+ * the mock fixture, which is a genuine "at this entrance". The ACCURACY gate
+ * above is what rejects a junk fix; this bound only rejects the wrong place.
+ */
+export function gpsAnchorRadiusM(accuracyM: number): number {
+  return Math.max(150, 3 * accuracyM);
+}
+
+/**
+ * The node a GPS fix is allowed to anchor to, or null when the evidence does not
+ * support any of them.
+ *
+ * Entrances only. A survey standpoint deep inside a building is never something a
+ * satellite fix can defensibly name, and the previous untyped fallback would
+ * happily anchor you to a plant room on Level 9 because it happened to be the
+ * closest geotagged node.
+ *
+ * Returning null is a real answer: the caller keeps "From" unset and says why,
+ * which is better than a confident wrong origin.
+ */
+export function anchorFromFix(
+  graph: WayGraph,
+  fix: { lat: number; lng: number; accuracy: number },
+): WayNode | null {
+  if (!Number.isFinite(fix.accuracy) || fix.accuracy > GPS_ANCHOR_MAX_ACCURACY_M) return null;
+  const near = nearestNode(graph, fix, ['entrance']);
+  if (!near || near.lat == null || near.lng == null) return null;
+  const away = haversineMeters(fix, { lat: near.lat, lng: near.lng });
+  return away <= gpsAnchorRadiusM(fix.accuracy) ? near : null;
+}

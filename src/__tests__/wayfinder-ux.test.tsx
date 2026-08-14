@@ -19,6 +19,7 @@ import { goToTab } from '../shell/router';
 import {
   anchorAgeText,
   anchorIsStale,
+  arrivalPhase,
   estimateSeconds,
   floorPhases,
   minutesText,
@@ -274,5 +275,33 @@ describe('journey model (pure)', () => {
     expect(anchorIsStale(scan, now)).toBe(false);
     expect(anchorIsStale({ ...scan, at: now - 6 * 60_000 }, now)).toBe(true);
     expect(anchorAgeText({ nodeId: 'x', via: 'gps', at: now }, now)).toBe('nearest entrance by GPS');
+  });
+});
+
+/* Arrival is the one phase that can contradict reality, so its decision is a
+   pure total function rather than two ifs in an effect. The bug these pin: both
+   original branches required a route to EXIST, so `route === null` — the normal
+   answer for a standpoint with no authored edges, i.e. every standpoint created
+   in the AR tab — left the phase alone and kept "You've arrived" on screen at a
+   place the asset is not, AR handoff and all. */
+describe('arrivalPhase', () => {
+  it('arrives only on a route with no steps left', () => {
+    expect(arrivalPhase({ steps: [] }, 'guided')).toBe('arrived');
+    expect(arrivalPhase({ steps: [] }, 'preview')).toBe('arrived');
+  });
+
+  it('UN-arrives when there is no route at all — the missed branch', () => {
+    expect(arrivalPhase(null, 'arrived')).toBe('preview');
+    expect(arrivalPhase(undefined, 'arrived')).toBe('preview');
+  });
+
+  it('un-arrives when steps remain', () => {
+    expect(arrivalPhase({ steps: [1, 2] }, 'arrived')).toBe('preview');
+  });
+
+  it('leaves any non-arrived phase exactly as it found it', () => {
+    expect(arrivalPhase(null, 'guided')).toBe('guided');
+    expect(arrivalPhase(null, 'preview')).toBe('preview');
+    expect(arrivalPhase({ steps: [1] }, 'guided')).toBe('guided');
   });
 });
