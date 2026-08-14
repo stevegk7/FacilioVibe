@@ -125,8 +125,17 @@ export default function AuthGate({ embedded, children, provider = defaultProvide
   if (state.phase === 'ready') {
     if (isLoginTab()) {
       return (
-        <main className="shell auth-screen">
-          <p>Signed in — you can close this tab and return to Facilio.</p>
+        <main className="auth-page">
+          <div className="auth-card">
+            <div className="auth-brand">
+              <span className="auth-logo" aria-hidden="true" />
+              <span className="auth-word">
+                Facilio <span className="auth-sub">VISION 3D</span>
+              </span>
+            </div>
+            <h1>You’re signed in</h1>
+            <p className="auth-lead">Close this tab and return to Facilio Vision 3D.</p>
+          </div>
         </main>
       );
     }
@@ -134,47 +143,73 @@ export default function AuthGate({ embedded, children, provider = defaultProvide
   }
 
   return (
-    <main className="shell auth-screen">
-      {state.phase === 'embedded-signin' ? (
-        <div className="auth-stack">
-          <h1>Facilio Vision</h1>
-          <p className="muted">Sign in to Facilio to continue.</p>
-          <button
-            onClick={() => window.open(`${window.location.pathname}?login=1`, '_blank', 'noopener')}
-          >
-            Sign in
-          </button>
-          <p className="muted small">Opens a new tab. This panel updates as soon as you're signed in.</p>
+    <main className="auth-page">
+      <div className="auth-card">
+        <div className="auth-brand">
+          <span className="auth-logo" aria-hidden="true" />
+          <span className="auth-word">
+            Facilio <span className="auth-sub">VISION 3D</span>
+          </span>
         </div>
-      ) : state.phase === 'error' ? (
-        <div className="auth-stack">
-          <h1>Facilio Vision</h1>
-          <p className="muted">Couldn't check your session.</p>
-          {state.reason && <p className="error">{state.reason}</p>}
-          <div className="row">
+
+        {state.phase === 'embedded-signin' ? (
+          <>
+            <h1>Sign in to continue</h1>
+            <p className="auth-lead">
+              Vision 3D uses your Facilio account. Nothing is stored here — signing in opens
+              Facilio in a new tab and this panel updates the moment it succeeds.
+            </p>
             <button
-              onClick={() => {
-                marker(false, false);
-                setRetry((r) => r + 1);
-              }}
+              className="btn btn-primary auth-cta"
+              onClick={() => window.open(`${window.location.pathname}?login=1`, '_blank', 'noopener')}
             >
-              Retry
+              Sign in with Facilio
             </button>
-            <button
-              onClick={() => {
-                marker(false, false);
-                provider.login();
-              }}
-            >
-              Sign in
-            </button>
-          </div>
-        </div>
-      ) : (
-        <p className="muted">
-          {state.phase === 'redirecting' ? 'Redirecting to sign-in…' : 'Checking session…'}
-        </p>
-      )}
+            <p className="auth-note">Waiting for the other tab…</p>
+          </>
+        ) : state.phase === 'error' ? (
+          <>
+            <h1>Couldn’t check your session</h1>
+            <p className="auth-lead">
+              Vision 3D could not confirm who you are. This is usually a signed-out session or a
+              blocked third-party cookie.
+            </p>
+            {state.reason && <p className="auth-error">{state.reason}</p>}
+            <div className="auth-actions">
+              <button
+                className="btn btn-primary auth-cta"
+                onClick={() => {
+                  marker(false, false);
+                  provider.login();
+                }}
+              >
+                Sign in with Facilio
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  marker(false, false);
+                  setRetry((r) => r + 1);
+                }}
+              >
+                Try again
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h1>{state.phase === 'redirecting' ? 'Taking you to Facilio…' : 'Checking your session'}</h1>
+            <p className="auth-lead">
+              {state.phase === 'redirecting'
+                ? 'You’ll come straight back here once you’re signed in.'
+                : 'One moment.'}
+            </p>
+            <div className="auth-bar" aria-hidden="true">
+              <span />
+            </div>
+          </>
+        )}
+      </div>
     </main>
   );
 }

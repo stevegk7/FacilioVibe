@@ -826,3 +826,89 @@ html.kb-open #root { transform: translateY(var(--vv-top, 0px)); }
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
+
+/* ---- Sign-in ----
+   The signed-out experience was one line of grey text on white. It is the
+   first thing anyone sees and the only screen shown to someone who is not yet
+   a user, so it now carries the product's name and says what is about to
+   happen. Auth itself is unchanged — Facilio SSO owns the credentials, this
+   app never sees them. */
+.auth-page {
+  min-height: 100%;
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  /* A wash rather than flat white, so the card reads as a card. */
+  background:
+    radial-gradient(1200px 600px at 50% -10%, var(--accent-wash), transparent 70%),
+    var(--bg-app);
+}
+.auth-card {
+  width: min(420px, 100%);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-8);
+  text-align: center;
+}
+.auth-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+}
+.auth-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+}
+.auth-word { font: 700 17px/1 var(--font-sans); color: var(--accent-strong); }
+.auth-sub {
+  font: 600 11px/1 var(--font-sans);
+  letter-spacing: 0.14em;
+  color: var(--ink-500);
+}
+.auth-card h1 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-h3);
+  line-height: var(--lh-h3);
+  color: var(--text-primary);
+}
+.auth-lead {
+  margin: 0 0 var(--space-6);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--text-secondary);
+}
+.auth-cta { height: 40px; padding: 0 var(--space-5); }
+.auth-actions { display: flex; gap: var(--space-2); justify-content: center; flex-wrap: wrap; }
+.auth-note { margin: var(--space-4) 0 0; font-size: var(--fs-small); color: var(--text-muted); }
+.auth-error {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--danger-050);
+  color: var(--danger-700);
+  font-size: var(--fs-small);
+  word-break: break-word;
+}
+/* Indeterminate: we are waiting on a redirect, not measuring progress. */
+.auth-bar { height: 3px; border-radius: 2px; background: var(--ink-100); overflow: hidden; }
+.auth-bar > span {
+  display: block;
+  width: 40%;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: auth-slide 1.1s var(--ease-standard) infinite;
+}
+@keyframes auth-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-bar > span { animation: none; width: 100%; opacity: 0.5; }
+}

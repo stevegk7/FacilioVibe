@@ -36,7 +36,7 @@ describe('auth gate (1.4)', () => {
         {() => <p>app</p>}
       </AuthGate>,
     );
-    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Sign in with Facilio' })).toBeInTheDocument();
     expect(screen.getByText(/identity unreachable/)).toBeInTheDocument();
     expect(login).toHaveBeenCalledTimes(1);
   });
@@ -49,8 +49,8 @@ describe('auth gate (1.4)', () => {
       </AuthGate>,
     );
 
-    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument();
-    expect(screen.getByText(/Opens a new tab/)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Sign in with Facilio' })).toBeInTheDocument();
+    expect(screen.getByText(/opens Facilio in a new tab/i)).toBeInTheDocument();
     expect(login).not.toHaveBeenCalled();
   });
 
