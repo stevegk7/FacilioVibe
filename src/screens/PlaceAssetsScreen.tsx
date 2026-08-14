@@ -13,7 +13,7 @@ import { isMockMode } from '../api/provider';
 import type { Asset, Survey, SurveyMarker, SweepFrame } from '../api/types';
 import { getEmbedFn, syntheticVec, EMBED_MODEL_ID } from '../ar/embedding';
 import { draftBearing } from '../wayfinding/bearingDraft';
-import { ArCard, ArSpace, setArPoseDelay, setArVideoSource } from '../ar/ArSpace';
+import { ArCard, ArSpace, setArFrameSize, setArPoseDelay, setArVideoSource } from '../ar/ArSpace';
 import { AssetTag, NoteTag } from '../ar/markers';
 import AssetSelect from '../components/AssetSelect';
 import DsSelect from '../components/DsSelect';
@@ -82,6 +82,24 @@ interface MarkerDraft {
   bearingKnown: boolean;
 }
 
+/**
+ * A composed marker waiting to be AIMED.
+ *
+ * Choosing what to place and saying where it is are two different jobs, and
+ * doing them in that order is what makes the point land. The old flow froze
+ * the aim when "+ Asset" was tapped and then covered the camera with a search
+ * sheet — so the technician chose an asset while unable to see the equipment,
+ * against a direction captured before they had looked at it. Now the picker
+ * closes, the feed is clear, and the aim is read at the instant Place is
+ * tapped: what is under the crosshair is what gets stored.
+ */
+interface ArmedMarker {
+  kind: MarkerKind;
+  label: string;
+  note?: string;
+  assetId?: number;
+}
+
 let markerSeq = 0;
 
 export default function PlaceAssetsScreen({
@@ -107,6 +125,8 @@ export default function PlaceAssetsScreen({
   // Mock stand-in for the device heading: rotated by explicit buttons.
   const [mockHeading, setMockHeading] = useState(0);
   const [markerForm, setMarkerForm] = useState<MarkerDraft | null>(null);
+  /** Composed, not yet aimed — the camera is clear and Place is under the crosshair. */
+  const [armed, setArmed] = useState<ArmedMarker | null>(null);
   /** The mandatory standpoint code — the survey's origin. */
   const [qrCode, setQrCode] = useState<string | null>(null);
   /** Bearing OF THE CODE at enrolment (corner-corrected when scanned). */
@@ -189,16 +209,19 @@ export default function PlaceAssetsScreen({
   useEffect(() => {
     if (camera.state === 'live') {
       setArVideoSource(camera.videoRef.current);
+      setArFrameSize(camera.frameSize);
       setArPoseDelay(90);
     } else {
       setArVideoSource(null);
+      setArFrameSize(null);
       setArPoseDelay(0);
     }
     return () => {
       setArVideoSource(null);
+      setArFrameSize(null);
       setArPoseDelay(0);
     };
-  }, [camera.state, camera.videoRef]);
+  }, [camera.state, camera.videoRef, camera.frameSize]);
 
   /**
    * Accept a code as this survey's origin. The heading captured here is the
@@ -331,26 +354,62 @@ export default function PlaceAssetsScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, mock, pose, frames]);
 
+  // Mock mode has no compass to sweep with, so the sweep step could never
+  // reach its frame minimum and the marker step was simply unreachable —
+  // ?mock=1 is supposed to render the whole app, and this was a dead end.
+  // Synthetic frames stand in at the same 30° spacing the guided sweep uses.
+  useEffect(() => {
+    if (step !== 'sweep' || !mock) return;
+    if (frames.length >= minFrames()) return;
+    const timer = setTimeout(() => {
+      void captureFrame((frames.length * CAPTURE_STEP_DEG) % 360, 0);
+    }, 10);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, mock, frames]);
 
-  const placeMarkerHere = (kind: MarkerKind) => {
-    // Direction FROZEN AT THE MOMENT OF THE TAP so the phone can be lowered
-    // to type. Stored relative to sweep frame 0.
+  /** Open the composer. The aim is NOT read here — see ArmedMarker. */
+  const composeMarker = (kind: MarkerKind) => {
     const base = frames[0]?.heading ?? 0;
-    const heading = currentHeading();
-    const pitch = currentPitch();
-
     const { rel, bearingKnown } = draftBearing({
-      heading,
+      heading: currentHeading(),
       sweepBase: base,
       markerCount: markers.length,
     });
     if (!bearingKnown) setHint('No compass here — set each marker’s direction by hand.');
-    setMarkerForm({ rel, pitch: pitch ?? 0, kind, bearingKnown });
+    setMarkerForm({ rel, pitch: currentPitch() ?? 0, kind, bearingKnown });
   };
 
   const addMarker = (m: Omit<SurveyMarker, 'id'>) => {
     setMarkers((prev) => [...prev, { ...m, id: `m-${Date.now().toString(36)}-${markerSeq++}` }]);
     setMarkerForm(null);
+  };
+
+  /**
+   * Commit the armed marker at WHERE THE CROSSHAIR POINTS NOW.
+   *
+   * The heading is read inside this handler, not from React state, so it is
+   * the aim at the moment of the tap — a state snapshot could be a frame or
+   * two stale, which at arm's length is centimetres of error on the wall.
+   */
+  const placeArmed = () => {
+    if (!armed) return;
+    const heading = currentHeading();
+    const pitch = currentPitch();
+    if (heading == null) {
+      setHint('No compass reading — aim can’t be captured. Cancel and enter the direction by hand.');
+      return;
+    }
+    const base = frames[0]?.heading ?? 0;
+    addMarker({
+      heading: ((heading - base) % 360 + 360) % 360,
+      pitch: pitch ?? 0,
+      label: armed.label,
+      note: armed.note,
+      assetId: armed.assetId,
+    });
+    setArmed(null);
+    setHint(`${armed.label} placed on the crosshair`);
   };
 
   const moveMarker = (id: string, dHeading: number, dPitch: number) => {
@@ -533,12 +592,44 @@ export default function PlaceAssetsScreen({
               ))}
             </div>
 
-            {markerForm && (
+            {/* Armed: the camera is unobstructed and the only chrome is a
+                label above the crosshair with Place/Cancel right below it —
+                so the thumb never leaves the point being aimed at. */}
+            {armed && (
+              <div className="pa-place-dock" role="group" aria-label="Place marker">
+                <span className="pa-place-label">{armed.label}</span>
+                <div className="pa-place-btns">
+                  <button className="pa-place-btn primary" onClick={placeArmed}>
+                    Place
+                  </button>
+                  <button className="pa-place-btn" onClick={() => setArmed(null)}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {markerForm && !armed && (
               <MarkerForm
                 draft={markerForm}
                 scopeSiteId={scope.siteId}
                 onCancel={() => setMarkerForm(null)}
-                onAdd={addMarker}
+                onCompose={(composed, manualBearing) => {
+                  setMarkerForm(null);
+                  if (manualBearing == null) {
+                    // Compass available: hand over to the crosshair.
+                    setArmed(composed);
+                    setHint('Aim at it, then tap Place');
+                    return;
+                  }
+                  addMarker({
+                    heading: manualBearing,
+                    pitch: markerForm.pitch,
+                    label: composed.label,
+                    note: composed.note,
+                    assetId: composed.assetId,
+                  });
+                }}
               />
             )}
           </>
@@ -603,21 +694,23 @@ export default function PlaceAssetsScreen({
         </div>
       )}
 
-      {step === 'markers' && (
+      {/* While armed the footer stands down: the only two choices are Place
+          and Cancel, and they live under the crosshair. */}
+      {step === 'markers' && !armed && (
         <div className="pa-foot">
           <div className="pa-actions">
-            <button className="pa-btn primary" onClick={() => placeMarkerHere('asset')}>
+            <button className="pa-btn primary" onClick={() => composeMarker('asset')}>
               + Asset
             </button>
-            <button className="pa-btn dark" onClick={() => placeMarkerHere('workorder')}>
+            <button className="pa-btn dark" onClick={() => composeMarker('workorder')}>
               Work order
             </button>
-            <button className="pa-btn dark" onClick={() => placeMarkerHere('finding')}>
+            <button className="pa-btn dark" onClick={() => composeMarker('finding')}>
               Finding
             </button>
           </div>
           <div className="pa-actions">
-            <button className="pa-btn light" onClick={() => placeMarkerHere('note')}>
+            <button className="pa-btn light" onClick={() => composeMarker('note')}>
               Note
             </button>
             <button className="pa-btn light" disabled={saving} onClick={() => void save()}>
@@ -636,12 +729,13 @@ function MarkerForm({
   draft,
   scopeSiteId,
   onCancel,
-  onAdd,
+  onCompose,
 }: {
   draft: MarkerDraft;
   scopeSiteId: number | undefined;
   onCancel: () => void;
-  onAdd: (m: Omit<SurveyMarker, 'id'>) => void;
+  /** Composed marker + a hand-entered bearing when the compass is silent. */
+  onCompose: (m: ArmedMarker, manualBearing: number | null) => void;
 }) {
   const [kind, setKind] = useState<MarkerKind>(draft.kind);
   const [text, setText] = useState('');
@@ -655,23 +749,25 @@ function MarkerForm({
 
   const submit = () => {
     if (!canAdd) return;
-    const heading = ((bearingNum % 360) + 360) % 360;
-    const base = { heading, pitch: draft.pitch };
+    // Hand-typed direction only when the compass could not supply one; with a
+    // compass the marker is ARMED and the bearing comes from the Place tap.
+    const manual = draft.bearingKnown ? null : ((bearingNum % 360) + 360) % 360;
     if (kind === 'asset' && picked) {
-      onAdd({ ...base, label: picked.name, assetId: picked.id });
-    } else if (kind === 'note' || kind === 'finding') {
+      onCompose({ kind, label: picked.name, assetId: picked.id }, manual);
+      return;
+    }
+    const body = text.trim();
+    if (kind === 'note' || kind === 'finding') {
       // A finding is a note the technician wants acted on — same anchor, and
       // the AR panel offers "raise a work order" from it.
-      const body = text.trim();
-      onAdd({
-        ...base,
-        label: (kind === 'finding' ? `Finding: ${body}` : body).slice(0, 60),
-        note: body,
-      });
+      onCompose(
+        { kind, label: (kind === 'finding' ? `Finding: ${body}` : body).slice(0, 60), note: body },
+        manual,
+      );
     } else if (kind === 'workorder') {
-      onAdd({ ...base, label: text.trim().slice(0, 60), note: text.trim() });
+      onCompose({ kind, label: body.slice(0, 60), note: body }, manual);
     } else {
-      onAdd({ ...base, label: text.trim() });
+      onCompose({ kind, label: body }, manual);
     }
   };
 
@@ -728,7 +824,7 @@ function MarkerForm({
       )}
       <div className="row">
         <button className="btn btn-primary" disabled={!canAdd} onClick={submit}>
-          Add marker
+          {draft.bearingKnown ? 'Next — aim at it' : 'Add marker'}
         </button>
         <button className="btn btn-secondary" onClick={onCancel}>
           Cancel

@@ -26,6 +26,7 @@ import { arOrientation, arQuaternionAt, setOrientationForTest } from '../hooks/u
 import { bearingToCaption, wrap } from '../wayfinding/bearing';
 import { CAMERA_LONG_AXIS_FOV_DEG, defaultFov, displayedFov, projectDirection, type ViewFov } from './projection';
 import { longAxisFovDeg } from './fovCal';
+import type { FrameSize } from '../components/camera/useCamera';
 
 /* ---------- displayed-FOV state ---------- */
 
@@ -47,9 +48,35 @@ export function setArVideoSource(el: HTMLVideoElement | null): void {
   fovCache = null;
 }
 
+/**
+ * The frame shape the camera is really delivering, when the video element
+ * cannot report it.
+ *
+ * Inside the Facilio webview the video NEVER plays — frames are pulled off the
+ * track with ImageCapture — so `videoWidth` sits at 0 and the FOV silently
+ * fell back to `defaultFov()`, a made-up 60°×75°. Every marker was then
+ * projected through a lens the camera does not have: pan, and the overlay
+ * moves at a different rate from the scene behind it. That is the drift the
+ * field sees in the app, and it never reproduced in a desktop browser, where
+ * the video element does play and does report its size.
+ */
+let frameSize: FrameSize | null = null;
+export function setArFrameSize(size: FrameSize | null): void {
+  if (frameSize?.w === size?.w && frameSize?.h === size?.h) return;
+  frameSize = size && size.w && size.h ? size : null;
+  fovCache = null;
+}
+
+/** The field of view the projection is ACTUALLY using — for tests and for the
+ * Diagnostics screen, where "which lens does the overlay think it has" is the
+ * first question worth asking when markers drift. */
+export function arDisplayedFov(viewW: number, viewH: number): ViewFov {
+  return currentFov(viewW, viewH);
+}
+
 function currentFov(viewW: number, viewH: number): ViewFov {
-  const vw = videoEl?.videoWidth ?? 0;
-  const vh = videoEl?.videoHeight ?? 0;
+  const vw = videoEl?.videoWidth || frameSize?.w || 0;
+  const vh = videoEl?.videoHeight || frameSize?.h || 0;
   if (!vw || !vh) return defaultFov();
   const cal = longAxisFovDeg(CAMERA_LONG_AXIS_FOV_DEG);
   const key = `${vw}x${vh}|${viewW}x${viewH}|${cal.toFixed(1)}`;

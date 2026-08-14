@@ -327,6 +327,41 @@ export async function enableArOrientation(): Promise<boolean> {
   }
 }
 
+/**
+ * Start the sensors as early as the platform allows — at APP LOAD, not when an
+ * AR surface opens.
+ *
+ * The slow lane needs a few seconds of samples before `yawOffset` settles;
+ * starting it at the moment the camera appears meant the first placement of
+ * every session was made against a compass still converging, and the survey
+ * kept that error forever. Warming at load means the frame is settled before
+ * anyone aims at anything.
+ *
+ * Two paths, because iOS is different:
+ *  - No permission gate (Android, desktop): listen immediately.
+ *  - iOS: `requestPermission()` REJECTS outside a user gesture, so asking here
+ *    would burn the prompt. Arm a one-shot first-gesture handler instead — any
+ *    tap anywhere in the app, including the one that opens AR.
+ * Safe to call repeatedly; both paths are idempotent.
+ */
+export function warmOrientation(): void {
+  if (typeof window === 'undefined') return;
+  const g = globalThis as { DeviceOrientationEvent?: { requestPermission?: () => Promise<string> } };
+  const gated = typeof g.DeviceOrientationEvent?.requestPermission === 'function';
+  if (!gated) {
+    startListening();
+    return;
+  }
+  if (listening || permission === 'granted') return;
+  const onFirstGesture = () => {
+    window.removeEventListener('pointerdown', onFirstGesture, true);
+    window.removeEventListener('touchend', onFirstGesture, true);
+    void enableArOrientation();
+  };
+  window.addEventListener('pointerdown', onFirstGesture, true);
+  window.addEventListener('touchend', onFirstGesture, true);
+}
+
 /** Circular median — bearings wrap, so a plain median is wrong near north. */
 function circularMedian(values: number[]): number {
   const base = values[0];

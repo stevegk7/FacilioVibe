@@ -7,6 +7,8 @@ import { createAppQueryClient, purgeLegacyPersistedCache } from './api/queryClie
 import { onQueueChange, flushQueue } from './api/offlineQueue';
 import { isMockMode } from './api/provider';
 import { LocationProvider } from './state/LocationContext';
+import { warmOrientation } from './hooks/useHeading';
+import { warmCameraGeometry } from './components/camera/useCamera';
 import {
   AppShell,
   CameraIcon,
@@ -86,6 +88,16 @@ export default function App() {
 
   useEffect(() => onGlobalError(setGlobalError), []);
   useEffect(() => onQueueChange(setPendingWrites), []);
+
+  // Sensors warm at load, not when a camera surface opens. The compass needs
+  // seconds to settle and the projection needs the camera's real frame shape;
+  // acquiring both on arrival at the AR tab meant the first aim of a session
+  // was taken against a half-converged frame — and a survey keeps that error.
+  // Neither call can raise a permission prompt on its own.
+  useEffect(() => {
+    warmOrientation();
+    void warmCameraGeometry();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
