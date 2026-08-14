@@ -203,6 +203,38 @@ describe('estate-engine dispose()', () => {
     engine.dispose();
   });
 
+  it('setPlanMode raises the plan walls and re-frames, without rebuilding', () => {
+    // A CAD floor is a drawing (0.85 m walls, near top-down) or a space (2.7 m
+    // walls, oblique). The geometry is identical either way — the wall volume is
+    // built at unit height and carried by a group whose scale.y is the height —
+    // so the toggle must not re-merge a single segment.
+    const data = tinyEstate();
+    (data.buildings[0].floors[0] as Record<string, unknown>).plan = {
+      widthM: 12,
+      depthM: 9,
+      rooms: [],
+      layers: { walls: [[[-5, -4], [5, -4]], [[5, -4], [5, 4]]], doors: [], glazing: [], stairs: [], furniture: [] },
+    };
+    const engine = mountEngine(data);
+
+    expect(engine.getPlanMode()).toBe('drawing');
+    const madeInDrawing = freed.geometries.size;
+
+    engine.enterFloor('1', 11);
+    engine.setPlanMode('solid');
+    expect(engine.getPlanMode()).toBe('solid');
+
+    // Nothing was disposed and rebuilt to change modes.
+    expect(freed.geometries.size).toBe(madeInDrawing);
+
+    engine.setPlanMode('drawing');
+    expect(engine.getPlanMode()).toBe('drawing');
+    // An unknown mode is ignored rather than blanking the floor.
+    engine.setPlanMode('nonsense' as never);
+    expect(engine.getPlanMode()).toBe('drawing');
+    engine.dispose();
+  });
+
   it('setPalette repoints the status ramp at the app design tokens', () => {
     const engine = mountEngine(tinyEstate());
     expect(typeof engine.setPalette).toBe('function');

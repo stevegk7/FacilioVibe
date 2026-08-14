@@ -27,8 +27,14 @@ export interface EstateRaw {
   assets: RawRow[];
   workOrders: RawRow[];
   inspections: RawRow[];
-  /** planId -> the parsed public/plans/<id>.json document. */
+  /** planId -> the parsed plan document (bundled or imported). */
   plans: Record<string, unknown>;
+  /**
+   * floorRecordId -> planId, for plans imported against a specific floor. Takes
+   * precedence over the name-regex PLAN_ASSIGNMENTS, so renaming a floor cannot
+   * silently swap its drawing.
+   */
+  planBindings?: Record<number, string>;
   /**
    * True when list-inspections could not be read (the module is not enabled in
    * this org). Lets the UI say "Inspections aren't enabled here" instead of the
@@ -186,6 +192,13 @@ export interface EstateEngineApi {
   setEditMode(on: boolean): void;
   /** Added by this app: stop rendering while the canvas is parked off-screen. */
   setPaused(paused: boolean): void;
+  /**
+   * Added by this app: read a CAD floor as a drawing or as a space.
+   * 'drawing' keeps the original 0.85 m wall volume and the near-top-down camera;
+   * 'solid' extrudes the same walls to room height and swings the camera oblique.
+   */
+  setPlanMode(mode: 'drawing' | 'solid'): void;
+  getPlanMode(): 'drawing' | 'solid';
   /** Added by this app: repaint the status ramp from the CSS design tokens. */
   setPalette(palette: Record<string, number>): void;
   zoom(direction: number): void;

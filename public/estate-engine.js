@@ -504,19 +504,35 @@
       doors:     { color: 0xC98A4B, op: 0.8, y: 0.46 },
       walls:     { color: 0xE8F0FC, op: 0.95, y: 0.5 }
     };
-    var PLAN_WALL_H = 0.85;
+    /* PATCH (facilio-vision-3d): two readings of the same plan.
+       'drawing' (0.85 m) is the original — architectural line work on the slab with
+       just enough wall volume to read depth, viewed near top-down like a drawing.
+       'solid' (2.7 m) extrudes the same walls to room height and swings the camera
+       oblique, so the floor reads as a space you orbit with the plant standing in
+       real rooms. Same geometry either way; only this number and the camera move. */
+    var PLAN_WALL_DRAWING = 0.85;
+    var PLAN_WALL_SOLID = 2.7;
+    var planMode = 'drawing';
+    var planWallH = PLAN_WALL_DRAWING;   // current, damped toward the goal in tick()
+    var planWallGoal = PLAN_WALL_DRAWING;
+    var planWalls = [];                  // every wall volume group, for the scale sweep
     function buildPlan(plan, parent) {
       var g = new T.Group();
-      // soft wall volume
+      // PATCH (facilio-vision-3d): the wall volume is built at UNIT height with its
+      // base on the slab, then carried by a group whose scale.y is the wall height.
+      // Baking the height into the geometry (as this did) meant the only way to
+      // change it was to rebuild and re-merge every segment — which is what the
+      // Drawing/3D toggle would otherwise have to do on every switch.
       var geos = [];
       (plan.layers.walls || []).forEach(function (poly) {
         for (var k = 1; k < poly.length; k++) {
           var x0 = poly[k - 1][0], z0 = poly[k - 1][1], x1 = poly[k][0], z1 = poly[k][1];
           var dx = x1 - x0, dz = z1 - z0, len = Math.sqrt(dx * dx + dz * dz);
           if (len < 0.02) continue;
-          var bg = new T.BoxGeometry(len, PLAN_WALL_H, 0.09);
+          var bg = new T.BoxGeometry(len, 1, 0.09);
           bg.applyMatrix4(new T.Matrix4().makeRotationY(Math.atan2(-dz, dx)));
-          bg.translate((x0 + x1) / 2, PLAN_WALL_H / 2 + 0.24, (z0 + z1) / 2);
+          // centre at y=0.5 so the base sits at y=0 and scale.y grows upward
+          bg.translate((x0 + x1) / 2, 0.5, (z0 + z1) / 2);
           geos.push(bg.index ? bg.toNonIndexed() : bg);
         }
       });
@@ -525,7 +541,12 @@
           new T.MeshLambertMaterial({ color: 0xAdBcd6, transparent: true, opacity: 0.4, depthWrite: false }));
         wm.userData.baseOp = 0.4;
         wm.raycast = function () {};
-        g.add(wm);
+        var wallVol = new T.Group();
+        wallVol.position.y = 0.24;
+        wallVol.scale.y = planWallH;
+        wallVol.add(wm);
+        planWalls.push(wallVol);
+        g.add(wallVol);
       }
       Object.keys(PLAN_STYLE).forEach(function (role) {
         var st = PLAN_STYLE[role], pts = [];
@@ -826,9 +847,15 @@
       // fit the plate to the viewport at the chosen tilt instead of a blind multiplier;
       // CAD floors read like a drawing, so view them closer to top-down
       var isPlan = !!(rf.data && rf.data.plan);
-      var phi = isPlan ? 0.5 : 0.78;
-      if (isPlan) {
-        // a drawing wants to sit upright on screen — swing to the nearest axis-aligned yaw
+      var solid = isPlan && planMode === 'solid';
+      // A drawing is read from above; a room is read from the side. 0.5 is
+      // near-top-down, 0.92 is the oblique angle that shows wall height and still
+      // sees over the near wall into the plan.
+      var phi = solid ? 0.92 : isPlan ? 0.5 : 0.78;
+      if (isPlan && !solid) {
+        // a drawing wants to sit upright on screen — swing to the nearest axis-aligned yaw.
+        // Solid mode keeps whatever yaw the user was orbiting from: a space has no
+        // "correct" way up, and snapping it would fight the orbit they just did.
         var q = Math.round((goal.theta + Math.PI / 2) / (Math.PI / 2)) * (Math.PI / 2) - Math.PI / 2;
         goal.theta = q;
       }
@@ -836,9 +863,12 @@
       var hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
       var spanX = isPlan ? rb.data.w : Math.max(rb.data.w, rb.data.d);
       var spanZ = isPlan ? rb.data.d : Math.max(rb.data.w, rb.data.d);
-      var m = 1.14;                                            // headroom for chips + bottom bar
+      // headroom for chips + the bottom bar; solid mode also has to fit the walls
+      // themselves, which the plate span alone does not account for
+      var m = solid ? 1.3 : 1.14;
       var R = Math.max(spanX * m / (2 * Math.tan(hfov / 2)),
                        spanZ * m * (Math.cos(phi) + 0.2) / (2 * Math.tan(vfov / 2)));
+      if (solid) goal.target.y += PLAN_WALL_SOLID * 0.35;      // look at the rooms, not the slab
       goal.radius = Math.max(R, 14);
       goal.phi = phi;
     }
@@ -1183,6 +1213,12 @@
       // into extrapolation AWAY from its goal and the camera flies off by e^(4·|dt|)
       var dt = Math.max(0, Math.min((now - last) / 1000, 0.05)); last = now;
       if (Date.now() - lastTouch > 4000 && !editMode && level < 2) goal.theta += dt * 0.055;
+      // walls grow/shrink with the same damping as the camera, so Drawing ⇄ 3D
+      // reads as one motion rather than a snap followed by a glide
+      if (Math.abs(planWallH - planWallGoal) > 0.002) {
+        planWallH = damp(planWallH, planWallGoal, dt, 5);
+        for (var pw = 0; pw < planWalls.length; pw++) planWalls[pw].scale.y = planWallH;
+      }
       cam.theta = damp(cam.theta, goal.theta, dt, 5);
       cam.phi = damp(cam.phi, goal.phi, dt, 5);
       cam.radius = damp(cam.radius, goal.radius, dt, 4);
@@ -1428,6 +1464,7 @@
       });
 
       while (scene.children.length) scene.remove(scene.children[0]);
+      planWalls.length = 0;
       B = {};
       renderer.dispose();
       // The only call that hands the context back. Guarded: a missing method
@@ -1435,6 +1472,22 @@
       if (renderer.forceContextLoss) renderer.forceContextLoss();
       if (window.__estate === api) window.__estate = null;
     };
+
+    /* PATCH (facilio-vision-3d): Drawing ⇄ 3D on a CAD floor.
+     * Only the wall height and the camera change — the plan geometry is the same
+     * either way, so this is a scale and a re-frame, not a rebuild. */
+    api.setPlanMode = function (mode) {
+      var next = mode === 'solid' ? 'solid' : 'drawing';
+      if (next === planMode) return;
+      planMode = next;
+      planWallGoal = next === 'solid' ? PLAN_WALL_SOLID : PLAN_WALL_DRAWING;
+      var rb = B[activeB];
+      if (level === 2 && rb) {
+        var rf = rb.floors.find(function (r) { return r.data.recordId === activeF; });
+        if (rf) camFloor(rb, rf);
+      }
+    };
+    api.getPlanMode = function () { return planMode; };
 
     /* PATCH (facilio-vision-3d): stop rendering while the canvas is parked off-screen. */
     api.setPaused = function (v) {

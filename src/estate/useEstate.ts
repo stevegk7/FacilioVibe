@@ -18,6 +18,7 @@
  */
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { provider } from '../api/provider';
+import { listPlanBindings, loadBoundPlans } from './planStore';
 import type { EstateRaw } from './types';
 
 export const ESTATE_KEY = ['estate'] as const;
@@ -60,7 +61,17 @@ export function useEstate() {
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     async queryFn(): Promise<EstateRaw> {
-      const raw = await provider.loadEstate();
+      // Imported plans ride alongside the CMMS read rather than after it: they
+      // change the building's plate size, so arriving late would mean building
+      // the estate twice.
+      const [raw, bindings] = await Promise.all([
+        provider.loadEstate(),
+        listPlanBindings().catch(() => ({})),
+      ]);
+      const bound = await loadBoundPlans(bindings);
+      raw.plans = { ...raw.plans, ...bound.plans };
+      raw.planBindings = bound.planBindings;
+
       const rows = raw as unknown as Record<string, RawRowLike[]>;
 
       // Keys are byte-identical to the ones hooks.ts and DashboardScreen build,

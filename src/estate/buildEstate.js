@@ -139,6 +139,8 @@ export function statsOf(raw) {
 export function buildEstate(raw, opts = {}) {
   const { sampleHealth = false } = opts;
   const plans = raw.plans || {};
+  /* floorRecordId -> planId, for plans imported against a specific floor. */
+  const bindings = raw.planBindings || {};
 
   const keep = (r) => r && !OBSOLETE.test(r.name || '');
 
@@ -322,6 +324,14 @@ export function buildEstate(raw, opts = {}) {
       /* a floor with a real plan sets the building's footprint — the plate has to be at least as
          big as the drawing, or the walls would poke through the shell */
       const planOf = (f) => {
+        // A plan bound to this floor BY ID wins: it was imported against that
+        // specific floor, whereas PLAN_ASSIGNMENTS matches on building and floor
+        // NAMES and is only a default for the two plans that ship with the app.
+        // Renaming a floor must not silently swap its drawing.
+        // `f` is still a RAW cmms row here (the built floor's recordId is assigned
+        // further down), so the Facilio id is f.id.
+        const boundId = bindings[f.id];
+        if (boundId && plans[boundId]) return plans[boundId];
         const hit = PLAN_ASSIGNMENTS.find((a) => a.building.test(b.name || '') && a.floor.test(f.name || ''));
         return hit ? plans[hit.plan] : null;
       };

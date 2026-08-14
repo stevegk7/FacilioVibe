@@ -25,6 +25,8 @@ import { useEstate } from '../estate/useEstate';
 import { buildEstate } from '../estate/buildEstate';
 import { acquire, release, destroy } from '../estate/estateHost';
 import { planFindOnSite, type FindOnSitePlan } from '../estate/findOnSite';
+import { importPlanFile, PlanExtractError } from '../estate/planImport';
+import { savePlanForFloor } from '../estate/planStore';
 import { goToTab, navParamId, onNavigate, setNavParams } from '../shell/router';
 import { useLocationScope } from '../state/LocationContext';
 import { openRecordSummary, isEmbeddedInFacilio } from '../api/nav';
@@ -130,6 +132,16 @@ export default function EstateScreen() {
   const [plan, setPlan] = useState<FindOnSitePlan | null>(null);
   const [links, setLinks] = useState<LinkTemplates>(EMPTY_LINKS);
   const [effiOpen, setEffiOpen] = useState(false);
+  const [planMode, setPlanMode] = useState<'drawing' | 'solid'>('drawing');
+  const [importState, setImportState] = useState<
+    { kind: 'idle' } | { kind: 'busy'; label: string } | { kind: 'error'; message: string } | { kind: 'done'; message: string }
+  >({ kind: 'idle' });
+  const fileInput = useRef<HTMLInputElement | null>(null);
+  // Read by the acquire callback, which must not re-run when the mode changes.
+  const planModeRef = useRef<'drawing' | 'solid'>('drawing');
+  planModeRef.current = planMode;
+  // Set by an import; consumed once by the next engine build.
+  const restoreFloorRef = useRef<{ buildingId: string; floorId: number } | null>(null);
 
   useEffect(() => {
     loadLinks().then(setLinks).catch(() => setLinks(EMPTY_LINKS));
@@ -197,9 +209,16 @@ export default function EstateScreen() {
         engineRef.current = engine;
         setEngineError(null);
         engine.setPalette(paletteFromTokens());
+        // A rebuilt engine starts in 'drawing'; re-apply the user's choice or the
+        // toggle would say 3D while the walls sat flat.
+        engine.setPlanMode(planModeRef.current);
         engine.setScope({ canSeeFloor: () => true, canSeeMarker: () => true, showSpaces: true });
         engine.setSearch(search);
         setNav(engine.getState());
+        // An import rebuilt the estate under us; go back to the floor it was for.
+        const restore = restoreFloorRef.current;
+        restoreFloorRef.current = null;
+        if (restore) engine.flyToFloor(restore.buildingId, restore.floorId);
         // Apply a pending ?asset= HERE, not only from the deep-link effect.
         // acquire() is async (it lazy-loads three and four scripts), so on a
         // cold open that effect runs while engineRef is still null and the
@@ -686,6 +705,47 @@ export default function EstateScreen() {
     goToTab(next.kind === 'ar' ? 'ar' : 'wayfinder', { asset: selAsset.recordId });
   }
 
+  /**
+   * Import a plan against the floor currently open.
+   *
+   * Bound by floor id, not by name — PLAN_ASSIGNMENTS matches building/floor
+   * names and is only the default for the two plans that ship with the app, so
+   * an import must not be something a later rename can silently detach.
+   */
+  async function onPlanFile(file: File | undefined) {
+    if (!file || !activeF) return;
+    setImportState({ kind: 'busy', label: `Reading ${file.name}…` });
+    try {
+      const { plan } = await importPlanFile(file);
+      setImportState({ kind: 'busy', label: `Saving ${plan.rooms.length} rooms…` });
+      await savePlanForFloor(activeF.recordId, plan);
+      setImportState({
+        kind: 'done',
+        message: `${plan.name} — ${plan.widthM} × ${plan.depthM} m, ${plan.rooms.length} rooms.`,
+      });
+      // The plate size comes from the plan, so the estate has to be rebuilt from
+      // records rather than re-tinted in place — and a rebuild resets the camera
+      // to estate level. Remember where we were so the user lands back on the
+      // floor they just imported to, looking at it.
+      restoreFloorRef.current = openB ? { buildingId: openB.id, floorId: activeF.recordId } : null;
+      await estate.refetch();
+    } catch (err) {
+      // PlanExtractError messages are written to be read by the person who
+      // picked the file; anything else is a bug and says so plainly.
+      const message =
+        err instanceof PlanExtractError
+          ? err.message
+          : `Import failed: ${(err as Error)?.message ?? String(err)}`;
+      setImportState({ kind: 'error', message });
+    }
+  }
+
+  function togglePlanMode() {
+    const next = planMode === 'solid' ? 'drawing' : 'solid';
+    setPlanMode(next);
+    engineRef.current?.setPlanMode(next);
+  }
+
   function copyRef() {
     const text = selAsset
       ? `${selAsset.code} — ${selAsset.name} (asset #${selAsset.recordId})`
@@ -813,6 +873,61 @@ export default function EstateScreen() {
             Sample health
           </button>
         </div>
+
+        {/* floor tools: import a plan, and read it as a drawing or as a space.
+            Only inside a floor — neither means anything at estate or building level. */}
+        {activeF && !selAsset && !selSpace && (
+          <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: 14, zIndex: 23, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {activePlan && (
+                <div role="group" aria-label="Floor view" style={{ display: 'flex', background: C.white, border: `1px solid ${C.line}`, borderRadius: 6, overflow: 'hidden', boxShadow: 'var(--shadow-md)' }}>
+                  {(['drawing', 'solid'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => mode !== planMode && togglePlanMode()}
+                      aria-pressed={planMode === mode}
+                      style={{ padding: '7px 14px', fontSize: 12.5, fontWeight: 500, cursor: 'pointer', border: 'none', background: planMode === mode ? C.blueBg : 'transparent', color: planMode === mode ? C.blueDk : C.sub }}
+                    >
+                      {mode === 'drawing' ? 'Drawing' : '3D'}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <button
+                className="est-ghost"
+                onClick={() => fileInput.current?.click()}
+                disabled={importState.kind === 'busy'}
+                style={{ height: 32, padding: '0 12px', display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 500, color: C.ink, background: C.white, border: `1px solid ${C.line}`, borderRadius: 6, cursor: importState.kind === 'busy' ? 'progress' : 'pointer', whiteSpace: 'nowrap', boxShadow: 'var(--shadow-md)' }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 16V4M7 9l5-5 5 5" /><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2" />
+                </svg>
+                {activePlan ? 'Replace floor plan' : 'Import floor plan'}
+              </button>
+              <input
+                ref={fileInput}
+                type="file"
+                accept=".svg,.json,image/svg+xml,application/json"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  void onPlanFile(e.target.files?.[0]);
+                  e.target.value = ''; // let the same file be picked twice
+                }}
+              />
+            </div>
+
+            {importState.kind !== 'idle' && (
+              <div
+                role="status"
+                style={{ maxWidth: 420, textAlign: 'center', fontSize: 12, lineHeight: 1.45, padding: '7px 12px', borderRadius: 8, background: C.white, border: `1px solid ${importState.kind === 'error' ? C.redBd : C.line}`, color: importState.kind === 'error' ? C.red : C.sub, boxShadow: 'var(--shadow-md)' }}
+              >
+                {importState.kind === 'busy' && importState.label}
+                {importState.kind === 'done' && importState.message}
+                {importState.kind === 'error' && importState.message}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* room label chips */}
         {roomLabels.map((r) => (

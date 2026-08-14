@@ -28,6 +28,12 @@ schematic, not a survey).
 **AR** is the same estate from inside it: point the camera, see the markers, open
 a work order, raise a fault from a photo.
 
+**Floor plans** can be imported from inside the app — open a floor, pick a CAD SVG
+(or a plan JSON extracted offline), and it binds to *that* floor. The app parses
+the drawing and recovers its rooms itself; no CLI, no developer. On any floor with
+a plan, a **Drawing / 3D** toggle reads it either as architectural line work seen
+from above or as room-height walls you orbit as a space.
+
 **The handoff** is the point of the merge:
 
 - *In 3D, on an asset* → **Find it on site**. The app resolves the destination
@@ -59,6 +65,9 @@ src/
     recordPolicy.js      one definition of "which records this app shows"
   estate/
     buildEstate.js       pure: records -> engine geometry (+ .d.ts)
+    planExtract.js       pure: CAD SVG -> plan JSON; the CLI wraps this same module
+    planImport.ts        browser import: SVG or JSON, validated
+    planStore.ts         plan file + the floor binding in KV
     loadEngine.ts        lazy-loads three + the four globals, in order
     estateHost.ts        the canvas outlives React, so tab switches are free
     findOnSite.ts        resolves the handoff BEFORE navigating

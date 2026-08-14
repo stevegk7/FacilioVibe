@@ -96,6 +96,55 @@ The side benefit turned out to matter more than the performance: camera position
 open floor and selected asset survive a round-trip to AR, which is what makes the
 handoff feel like one app rather than two.
 
+## Importing a floor plan
+
+A floor plan can be bound to a floor from inside the app — no CLI, no developer.
+Open a floor, **Import floor plan**, pick a file:
+
+- **SVG** — a geometry-only CAD export. Parsed by `src/estate/planExtract.js`, the
+  same module `tools/extract-plan.mjs` now wraps. One implementation with two
+  front-ends, because two copies of a raster flood-fill drift apart.
+- **JSON** — a plan extracted offline. Validated on the way in
+  (`validatePlanDocument`), because a malformed plan does not fail loudly in the
+  engine: it renders a floor with no walls and looks like the import worked.
+
+The plan document goes to the **file store** (they are 137–400 KB — a file, not a
+KV value). What goes in KV is the small binding record, `settings` →
+`plan.<floorId>`, holding the planId, fileId, size and room count.
+
+**Bindings beat `PLAN_ASSIGNMENTS`.** That table matches building and floor
+*names* and is only the default for the two plans that ship with the app. A plan
+someone attached to a specific floor must not detach because the floor was
+renamed, nor be claimed by another floor that happens to match a regex.
+
+A binding whose plan cannot be fetched is skipped, not fatal — that floor falls
+back to the schematic layout. Refusing to build the estate because one plan 404'd
+would take the whole 3D view down for a single bad import.
+
+### Known: a plan with fewer rooms than the floor has spaces
+
+Spaces bind onto detected rooms largest-first (upstream behaviour, see the port
+notes). If a drawing has fewer rooms than the floor has Facilio spaces, the
+surplus spaces are not shown on that floor — they still exist everywhere else in
+the app. Worth knowing before importing a partial plan over a fully-mapped floor.
+
+## Drawing ⇄ 3D
+
+The same CAD floor, read two ways. `api.setPlanMode('drawing'|'solid')`:
+
+| | walls | camera |
+|---|---|---|
+| `drawing` | 0.85 m volume under the line work | `phi 0.5`, yaw snapped to an axis — a drawing on a table |
+| `solid` | 2.7 m, room height | `phi 0.92`, free yaw, look-at raised — a space you orbit |
+
+The geometry is identical. The wall volume is built at **unit height** in a group
+whose `scale.y` is the height, so the toggle is a scale and a re-frame, damped on
+the same curve as the camera — not a rebuild. `estate-dispose.test.ts` asserts no
+geometry is disposed across a mode change, which is what stops that regressing
+into a re-merge of every wall segment.
+
+Walk-in (first-person) is the deliberate next step on top of this, not part of it.
+
 ## Offline checks
 
 Both run with no Facilio session and are worth keeping:
