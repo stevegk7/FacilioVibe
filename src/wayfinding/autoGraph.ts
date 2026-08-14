@@ -503,6 +503,28 @@ function shortestPath(
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
 /**
+ * Which site a node belongs to.
+ *
+ * AutoNode carries buildingId and floorId but no siteId, so this walks the
+ * containment edge the builder already drew: building → site. Exists because a
+ * screen that knows an asset knows its site too, and asking the user to pick the
+ * site it just told them about is the difference between one tap and four.
+ *
+ * Undefined for a node with no building (a site-level asset, a bare site) —
+ * callers treat that as "cannot narrow", never as an error.
+ */
+export function siteOfNode(graph: AutoGraph, node: AutoNode): AutoNode | undefined {
+  if (node.kind === 'site') return node;
+  if (node.buildingId == null) return undefined;
+  const buildingId = `building:${node.buildingId}`;
+  for (const e of graph.edges) {
+    const other = e.from === buildingId ? e.to : e.to === buildingId ? e.from : null;
+    if (other?.startsWith('site:')) return graph.nodes.find((n) => n.id === other);
+  }
+  return undefined;
+}
+
+/**
  * The edge a leg ARRIVES on — the one a landmark is written against.
  *
  * Looked up by endpoints because a Hop carries no edge id and this is not a hot

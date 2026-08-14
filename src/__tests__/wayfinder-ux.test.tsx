@@ -379,3 +379,63 @@ describe('facing indicator', () => {
     expect(screen.queryByRole('img', { name: /Destination/ })).not.toBeInTheDocument();
   });
 });
+
+/* ---------------- one tap from a work order ----------------
+   The row that used to answer "Pick a site first — routes are per site", which
+   was the app asking for something it already knew: the work order names its
+   asset, and the portfolio graph knows which site that asset is in. */
+describe('work order → route in one tap', () => {
+  it('scopes itself to the asset’s site and routes, with nothing picked first', async () => {
+    // No fv.location at all — the cold start the old copy sent people away from.
+    sessionStorage.removeItem('fv.location');
+    const user = userEvent.setup();
+    renderScreen();
+
+    const row = await screen.findByRole('button', { name: /AHU-03 vibration above threshold/ });
+    await user.click(row);
+
+    // A destination, not an instruction to go and configure something. Matched on
+    // the thread's own prefix so this cannot pass on the row that was tapped.
+    expect(await screen.findByText(/(Route|Destination) set — AHU-03/)).toBeInTheDocument();
+    expect(screen.queryByText(/Pick a site first/)).not.toBeInTheDocument();
+
+    // It scoped itself, which is what makes the AR-precise lane reachable at all.
+    await waitFor(() => {
+      const stored = JSON.parse(sessionStorage.getItem('fv.location') ?? '{}');
+      expect(stored?.scope?.siteId).toBe(1001);
+    });
+  });
+
+  it('routes to an asset nobody has pinned — the portfolio lane can reach it', async () => {
+    sessionStorage.removeItem('fv.location');
+    const user = userEvent.setup();
+    renderScreen();
+
+    // Conveyor M-114 is in the estate but is not pinned at any standpoint, so the
+    // survey lane refuses it. It is still a perfectly routable record.
+    const row = await screen.findByRole('button', { name: /Conveyor M-114 belt replacement/ });
+    await user.click(row);
+
+    await waitFor(() =>
+      expect(screen.queryByText(/isn.t pinned in any survey/)).not.toBeInTheDocument(),
+    );
+    expect(
+      await screen.findByText(/(Route|Destination) set — Conveyor Motor M-114/),
+    ).toBeInTheDocument();
+  });
+
+  it('says WHY when the asset is not on any floor, and points at the readout', async () => {
+    sessionStorage.removeItem('fv.location');
+    const user = userEvent.setup();
+    renderScreen();
+
+    // Feed Pump P-07's space carries no floor, so the builder drops it and no
+    // node exists. The old message blamed the AR tab, which cannot fix this.
+    const row = await screen.findByRole('button', { name: /Pump P-07 seal leak/ });
+    await user.click(row);
+
+    const hint = await screen.findByText(/isn.t on any floor in the portfolio/);
+    expect(hint).toBeInTheDocument();
+    expect(hint.textContent).toMatch(/Routing coverage/);
+  });
+});

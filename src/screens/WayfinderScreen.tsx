@@ -48,7 +48,7 @@ import { surveyForAsset, surveyForPlace } from '../wayfinding/resolve';
 import { canShowFacing, relativeBearing, turnPhrase } from '../wayfinding/facing';
 import type { PlateGeometry, PlateRect } from '../wayfinding/plate';
 import { useEstate } from '../estate/useEstate';
-import { buildAutoGraph, findNode, legEdge, routeOnGraph } from '../wayfinding/autoGraph';
+import { buildAutoGraph, findNode, legEdge, routeOnGraph, siteOfNode } from '../wayfinding/autoGraph';
 import type { AutoGraph, AutoNode, AutoRoute } from '../wayfinding/autoGraph';
 import {
   OverlayConflictError,
@@ -153,7 +153,7 @@ function useGraph(siteId: number | undefined, surveys: Survey[], surveysReady: b
 const OPEN_WO = /open|submitted|assigned|progress|yet to start|on hold/i;
 
 export default function WayfinderScreen() {
-  const { scope, names } = useLocationScope();
+  const { scope, names, setLocation } = useLocationScope();
   const queryClient = useQueryClient();
   const getFix = useGeoFix(true);
   const [mode, setMode] = useState<Mode>('route');
@@ -688,6 +688,54 @@ export default function WayfinderScreen() {
       applyPortfolioDest(node);
     },
     [pinnedDestinations, destinationForAsset, applyPortfolioDest, say],
+  );
+
+  /**
+   * A work order, in one tap.
+   *
+   * This row used to answer "Pick a site first — routes are per site", which was
+   * the app asking the user for something it already knew: the work order names
+   * its asset, and the portfolio graph knows which site that asset is in. So it
+   * scopes itself and routes.
+   *
+   * The two lanes are tried in the right order by applyResolvedNode — the survey
+   * lane when the asset is pinned at a standpoint (AR-precise, landmark-phrased),
+   * the portfolio lane otherwise. Before this, an unpinned asset was simply
+   * refused, even though the portfolio lane could route to it perfectly well.
+   */
+  const routeToWorkOrder = useCallback(
+    (wo: WorkOrder) => {
+      const assetId = wo.resourceId as number;
+      const name = wo.resourceName ?? `Asset ${assetId}`;
+      const node = autoGraph?.nodes.find((n) => n.id === `asset:${assetId}`);
+
+      if (!node) {
+        /* No node means the estate builder dropped this asset — almost always
+           because its space carries no floor. Naming that is actionable; the old
+           "isn't pinned in any survey yet" sent people to the AR tab to fix
+           something the AR tab cannot fix. Settings → Routing coverage lists
+           every asset in this state with its reason. */
+        setHint(
+          autoGraph
+            ? `${name} isn't on any floor in the portfolio, so there's nowhere to route to. Settings › Routing coverage explains why.`
+            : 'Still reading the portfolio — try again in a moment.',
+        );
+        return;
+      }
+
+      // Scope to the asset's own site when nothing is scoped yet. The survey
+      // lane is per site, so without this the AR-precise path stays unavailable
+      // however many taps the user makes.
+      if (scope.siteId == null && autoGraph) {
+        const site = siteOfNode(autoGraph, node);
+        if (site?.recordId != null) {
+          setLocation({ scope: { siteId: site.recordId }, names: { site: site.label } });
+        }
+      }
+      setHint(null);
+      applyResolvedNode(node);
+    },
+    [autoGraph, scope.siteId, setLocation, applyResolvedNode],
   );
 
   const route: Route | null = useMemo(() => {
@@ -1255,12 +1303,7 @@ export default function WayfinderScreen() {
               <button
                 key={wo.id}
                 className={wo.resourceId === dest?.assetId ? 'row-card selected' : 'row-card'}
-                onClick={() =>
-                  destinationForAsset(
-                    { id: wo.resourceId as number, name: wo.resourceName ?? `Asset ${wo.resourceId}` },
-                    wo.id,
-                  )
-                }
+                onClick={() => routeToWorkOrder(wo)}
               >
                 <span className="sv-row-main">
                   <span className="row-card-title">{wo.subject}</span>
