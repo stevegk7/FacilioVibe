@@ -10,7 +10,7 @@ import {
   type PlaceAssetPolicy,
 } from '../api/permissions';
 import { loadRoleMap, saveRoleMap } from '../api/roles';
-import { useCan } from '../state/SessionContext';
+import { useCan, useSession } from '../state/SessionContext';
 import DiagnosticsScreen from './DiagnosticsScreen';
 import { EMPTY_LINKS, loadLinks, saveLinks, type LinkTemplates } from '../api/links';
 import { useSites } from '../api/hooks';
@@ -47,8 +47,17 @@ function siteIdOfEmbKey(key: string): string {
   return key.split('.')[1] ?? '0';
 }
 
+/** Why this person has the role they have, in words rather than jargon. */
+const ROLE_REASON: Record<string, string> = {
+  bootstrap: 'built-in administrator',
+  map: 'listed under Administrators below',
+  default: 'not listed as an administrator',
+  unavailable: 'could not read the permission list — defaulted to technician',
+};
+
 function SessionCard() {
   const [me, setMe] = useState<CurrentUser | null | 'loading'>('loading');
+  const session = useSession();
   const embed = detectEmbed();
 
   useEffect(() => {
@@ -65,6 +74,8 @@ function SessionCard() {
   const rows: Array<[string, string]> = [
     ['Mode', isMockMode() ? 'mock (?mock=1)' : 'real (facilio-cmms)'],
     ['User', me === 'loading' ? '…' : me ? `${me.user.name} <${me.user.email}>` : 'signed out'],
+    // The question this card kept failing to answer: "why am I a technician?"
+    ['Role', session ? `${session.role} — ${ROLE_REASON[session.source] ?? session.source}` : '…'],
     ['Org', me === 'loading' || !me ? '—' : String(me.org.orgId)],
     ['Embedded', embed.embedded ? `yes (capp_id ${embed.cappId ?? '—'})` : 'no'],
   ];
@@ -73,6 +84,25 @@ function SessionCard() {
     <div className="kit-card">
       <div className="kit-card-hd">
         <h3>Session</h3>
+        {/*
+          The only way out of a session, and it did not exist before: auth is a
+          cookie on *.vibe.facilio.com, so the app silently resumes whoever the
+          browser already holds. With no sign-out there was no way to arrive as
+          anyone else — you could not test the technician and the admin from one
+          machine, which is exactly what this build is for.
+        */}
+        <button
+          className="btn btn-secondary"
+          onClick={() => provider.logout()}
+          disabled={isMockMode()}
+          title={
+            isMockMode()
+              ? 'Mock mode has no real session to end.'
+              : 'Ends the Facilio session and returns you to sign-in.'
+          }
+        >
+          Sign out
+        </button>
       </div>
       <div className="kit-card-bd">
         <table className="diag-table">
