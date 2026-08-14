@@ -1,87 +1,83 @@
-# Working on Facilio Vision
+# Working on Facilio Vision 3D
 
-Three of us share this repo. `main` is the release branch — anything merged there
-gets built and pushed to the Vibe app automatically, so `main` stays protected and
-all work arrives through pull requests.
+Three of us share this repo. `main` is the release branch — everything arrives
+through a pull request.
 
-## One-time machine setup
+**New here? Read [ONBOARDING.md](./ONBOARDING.md) first** — it has the full
+setup, the platform gotchas and the release procedure. This file is the short
+version of the git side.
+
+## One-time setup
 
 ```bash
-# Node 20+ required
-node -v
-
-# Facilio CLI (binary is `facilio`)
+node -v                          # 22.12+ (not 20 — see ONBOARDING §1)
 npm install -g @facilio/cli
-
-# Sign in — opens a browser, approve once.
-# Use the vibeathon account so you land in org "Facilio Vetri Kazhagam" (#2915).
 facilio login
-facilio whoami          # confirm the org before you do anything else
+facilio whoami                   # MUST print org #2915 before you do anything
 
-git clone https://github.com/RajkumarSenthil02/facilio-vision.git
-cd facilio-vision
+git clone https://github.com/stevegk7/FacilioVibe.git
+cd FacilioVibe
 npm install
 ```
 
-`facilio whoami` must print org **#2915**. If it prints a different org you are signed
-in as the wrong account — `facilio logout`, then `facilio login` again with the
-vibeathon credentials. Deploying from the wrong org ships the app somewhere else.
+You need **write access** to the repo. It belongs to stevegk7 — if `git push`
+returns 403, ask him to add you as a collaborator.
 
 ## Day-to-day loop
 
 ```bash
-git switch main && git pull
-git switch -c <yourname>/<short-topic>
+git switch main && git pull          # always; three people push here
+git switch -c <yourname>/<topic>
 
-npm run dev          # local dev server with hot reload
+npm run dev                          # open with ?mock=1
 
 # ...make your change...
 
+npm run verify                       # build + tests + checks + bundle budget
 git add -A && git commit -m "..."
-git push -u origin <yourname>/<short-topic>
-gh pr create --fill      # or open the PR in the browser
+git push -u origin <yourname>/<topic>
+gh pr create --fill
 ```
 
-Get one teammate to review, then merge. The merge triggers the deploy.
+Get one teammate to review, then merge.
 
-Branch naming: `<yourname>/<short-topic>` — e.g. `raj/camera-capture`,
-`priya/asset-lookup`. Keeps `git branch -a` readable when three people are pushing.
+Branch naming: `<yourname>/<short-topic>` — e.g. `raj/camera-fov`,
+`priya/asset-lookup`. Keeps `git branch -a` readable when three people push.
+
+## Rebase before you open the PR
+
+If your branch was cut before someone else's merge, `git diff main...yours`
+shows *their* commits as deletions, and merging it silently reverts their work.
+This has happened once already.
+
+```bash
+git log <yourbranch>..origin/main    # empty = current
+git rebase origin/main               # otherwise
+```
 
 ## Before you open a PR
 
-- `npm run build` succeeds locally.
-- No secrets, API keys, or org ids committed.
-- You did not invent a connection or action slug — see below.
+- `npm run verify` passes locally (build, 46 test files, both offline checks,
+  bundle budget).
+- No secrets, API keys or org ids committed.
+- You did not invent a connection or action slug — discover them with
+  `facilio connections search` / `schemas` / `execute --params` first.
+- If you changed an agent's instructions, you ran `node tools/agent-eval/push.mjs
+  <agent>` and `node tools/agent-eval/run.mjs <agent>`.
 
-## Calling Facilio data
+## Deploying — there is no CI
 
-`vibe.executeAction(connectionSlug, actionSlug, payload)` is the only supported way
-to read Facilio data. Never guess the slugs or the payload shape — discover them:
-
-```bash
-facilio connections search "work orders"
-facilio connections schemas <slug> --with-output
-facilio connections execute <slug> <action> --payload '{...}'   # verify for real
-```
-
-Wire it into the app only after the CLI call returns what you expect.
-
-## Deploying by hand
-
-You normally don't need to — merging to `main` does it. If you need a one-off deploy
-from your machine:
+**Merging does not deploy anything.** This repo has no `.github/workflows`; a
+release is a person running:
 
 ```bash
-npm run build && facilio vibe deploy
+git switch main && git pull
+npm run verify
+npm run deploy
 ```
 
-## How releases actually work
-
-The CI deploy publishes to the app's **preview** environment. That is a platform
-rule, not a CI shortcut: `facilio vibe deploy --prod` records intent but does not
-bypass preview. Promoting a version to the production URL
-(https://facilio-vision.vibe.facilio.com/) is a manual action in the Facilio
-platform UI, done by a human on the deployed version.
-
-So: merge to `main` → new preview build, automatically. Production cutover → someone
-clicks promote.
+That publishes to the **preview** URL. Production is a separate manual promote
+in Vibe Studio — `facilio vibe deploy --prod` records intent but does not
+promote. Production IS live (promoted 2026-08-14), and preview and production
+share one database, so a preview write is a production write. See
+ONBOARDING.md §5 and §14.
