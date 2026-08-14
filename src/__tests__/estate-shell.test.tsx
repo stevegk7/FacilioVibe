@@ -41,14 +41,17 @@ afterEach(() => {
 });
 
 describe('shell sections', () => {
-  it('mobile dock holds exactly the three visible screens', () => {
+  it('mobile dock holds the three visible screens, then the overflow', () => {
     setViewport(false);
     window.history.replaceState({}, '', '/');
     render(<AppShell screens={SCREENS} />);
 
     const dock = document.querySelector('.as-dock') as HTMLElement;
     const labels = [...dock.querySelectorAll('.dock-label')].map((n) => n.textContent);
-    expect(labels).toEqual(['3D Estate', 'AR', 'Wayfinder']);
+    // Three primary destinations keep their slots (design rule 1.5) and
+    // "More" carries everything else — without it, nine screens including
+    // Surveys were unreachable on a phone.
+    expect(labels).toEqual(['3D Estate', 'AR', 'Wayfinder', 'More']);
   });
 
   it('desktop splits Workspace from Admin by section, not by dock membership', () => {
