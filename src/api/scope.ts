@@ -11,14 +11,18 @@
  * Admins are unfiltered. Technicians see work assigned to them and the assets,
  * rooms, floors and buildings that work touches — nothing else.
  *
- * Matching is deliberately belt-and-braces, because the id space is NOT settled:
- * `getCurrentUser()` returns an org user id, work-order assignment is a lookup
- * into the employee module, and those are different id spaces (a work order
- * carries `createdBy: {id: 2281806}` while the same person's employee record is
- * id 11038324111). No work order in org #2915 carries an assignee yet, so there
- * is nothing live to check against. Until there is, a row counts as mine if the
- * assignee matches EITHER id space or my email — and if none of them are
- * present, it is not mine. It fails closed, never open.
+ * EMAIL is the key that actually works, and that is now measured rather than
+ * assumed. Work order 14275667 — the first in org #2915 ever assigned — carries
+ * `assignedTo: {id: 2282340, name, email}`, and 2282340 is a THIRD id space:
+ * not the org user id (2281806, what createdBy carries) and not the employee
+ * record id (11038324195, what list-employees returns). Matching on either id
+ * alone would have shown that technician nothing at all.
+ *
+ * So the id comparisons stay as a fallback for orgs whose assignment points
+ * somewhere this one's does not, but the email is what carries it — compared
+ * here in JS because a '+' in an address breaks a server-side filter
+ * (ONBOARDING §6). If none of the three are present, the row is not mine: it
+ * fails closed, never open. The real row shape is pinned in scope.test.ts.
  */
 import type { Role } from './roles';
 import type { WorkOrder, Asset, Space } from './types';

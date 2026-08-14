@@ -197,6 +197,11 @@ Verified quirks of this org's API, all learned the hard way:
   and `email(is)=<the full address>` both return an empty page with
   `success:true` and no error. Filter on the part before the `+` and make the
   exact comparison in JS — `realProvider.resolveEmployeeId` does this.
+- **`workorder.assignedTo` is a third id space.** Expanded it returns
+  `{id, name, email}` — and that id (2282340 on WO 14275667) is neither the org
+  user id from `getCurrentUser`/`createdBy` (2281806) nor the employee record id
+  from `list-employees` (11038324195). Match a person by **email**, not by id;
+  `src/api/scope.ts` does, and `scope.test.ts` pins the real row.
 - `role` does not exist on `employee`: `expand=role` fails `INVALID_FIELD`.
   There is no role/permission data reachable from the app, which is why
   `src/api/roles.ts` keeps the admin list in the app's own KV store.

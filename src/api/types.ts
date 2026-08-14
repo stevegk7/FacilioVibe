@@ -66,10 +66,10 @@ export interface WorkOrder {
    * "is this mine?" — two people share a name, and the scoping rule that hides
    * one technician's work from another must not turn on a string match.
    *
-   * Which id space this is (org user vs employee record) is not yet settled:
-   * no work order in org #2915 currently carries an assignee, so there is
-   * nothing live to check against. `mine()` in scope.ts therefore matches on
-   * id OR email OR name and tightens once real assigned data exists.
+   * Measured on org #2915 (WO 14275667): this is a THIRD id space — 2282340,
+   * which is neither the org user id nor the employee record id. So the id is
+   * kept, but `isMine()` in scope.ts leans on `assignedToEmail`, which is the
+   * only key that reliably identifies the same person.
    */
   assignedToId?: number;
   assignedToEmail?: string;

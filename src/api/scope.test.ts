@@ -134,3 +134,43 @@ describe('deriving the places a technician may see', () => {
     expect(visibleAssets(assets, new Set(), TECH)).toEqual([]);
   });
 });
+
+describe('the real row shape from org #2915', () => {
+  // Captured from work order 14275667 on 2026-08-15, the first WO in the org
+  // ever given an assignee. Until it existed, which id space `assignedTo`
+  // used was guesswork; this pins the answer so it stops being.
+  const REAL_ROW = {
+    id: 14275667,
+    subject: 'test yaamz',
+    assignedTo: { id: 2282340, name: 'Technician Yaaminy', email: 'yaaminy.sk+technician@facilio.com' },
+  };
+
+  const TECH: SessionScope = {
+    role: 'technician',
+    // What getCurrentUser reports, and what list-employees reports. NEITHER is
+    // the id on the row.
+    uid: 2281806,
+    employeeId: 11038324195,
+    email: 'yaaminy.sk+technician@facilio.com',
+  };
+
+  it('matches on EMAIL, because the assignee id is a third id space', () => {
+    // 2282340 is neither the org user id (2281806, what createdBy carries) nor
+    // the employee record id (11038324195, what list-employees returns). Had
+    // this matched on id alone it would have shown the technician nothing.
+    expect(REAL_ROW.assignedTo.id).not.toBe(TECH.uid);
+    expect(REAL_ROW.assignedTo.id).not.toBe(TECH.employeeId);
+    expect(isMine(REAL_ROW, TECH)).toBe(true);
+  });
+
+  it('still refuses the same row to a different technician', () => {
+    expect(isMine(REAL_ROW, { ...TECH, email: 'someone.else@facilio.com' })).toBe(false);
+  });
+
+  it('matches despite the + in the address, which breaks server-side filters', () => {
+    // Plus-addressing cannot be filtered on server-side (ONBOARDING §6), which
+    // is exactly why this comparison happens here in JS.
+    expect(TECH.email).toContain('+');
+    expect(isMine(REAL_ROW, TECH)).toBe(true);
+  });
+});
