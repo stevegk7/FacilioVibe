@@ -273,7 +273,7 @@ async function myWorld(): Promise<{ assetIds: Set<number>; places: AllowedPlaces
   if (sessionScope().role === 'admin') return null;
   const gen = scopeGeneration();
   if (!worldMemo || worldMemo.gen !== gen) {
-    worldMemo = {
+    const entry: { gen: number; value: Promise<{ assetIds: Set<number>; places: AllowedPlaces }> } = {
       gen,
       value: (async () => {
         const rows = await fetchAllPages<RawWorkOrder>('list-work-orders', {
@@ -298,6 +298,14 @@ async function myWorld(): Promise<{ assetIds: Set<number>; places: AllowedPlaces
         return { assetIds, places: allowedPlaces(assets, await fetchSpaces(), assetIds) };
       })(),
     };
+    // Never cache a REJECTION. spacesMemo clears itself the same way, and for a
+    // sharper reason here: this memo decides what a technician can see, so one
+    // transient list-work-orders failure would otherwise blank their buildings,
+    // floors, spaces and assets for the rest of the session with no way back.
+    entry.value.catch(() => {
+      if (worldMemo === entry) worldMemo = null;
+    });
+    worldMemo = entry;
   }
   return worldMemo.value;
 }

@@ -1020,7 +1020,19 @@
         return;
       }
       if (focusSpaceId !== null) { api.select(null); return; }
-      if (level === 2) { activeF = null; level = 1; api.select(null); camBuilding(B[activeB]); }
+      // The one unguarded B[...] read left in the engine, and the source of
+      // "Cannot read properties of undefined (reading 'data')" in the banner:
+      // dispose() empties B (see api.dispose) but leaves this API reachable, so
+      // a Back — from Escape, the toolbar, or the detail sheet — landed in
+      // camBuilding(undefined). Every sibling call site already guards this.
+      // If the scene no longer holds the building, the honest state is
+      // estate level, not a crash.
+      if (level === 2) {
+        activeF = null; api.select(null);
+        var rbBack = B[activeB];
+        if (rbBack) { level = 1; camBuilding(rbBack); }
+        else { activeB = null; level = 0; camEstate(); }
+      }
       else if (level === 1) { setPeel(activeB, false, Date.now()); activeB = null; level = 0; camEstate(); }
       applyState(); notify();
     };

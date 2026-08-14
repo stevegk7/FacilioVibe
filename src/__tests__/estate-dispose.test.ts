@@ -557,3 +557,51 @@ describe('estate-engine stale-id and null-sprite guards', () => {
     expect(st.floorId).toBeNull();   // no dangling floor id
   });
 });
+
+describe('estate-engine back() after dispose', () => {
+  /**
+   * The banner users actually reported: "Cannot read properties of undefined
+   * (reading 'data')".
+   *
+   * dispose() empties the building map but leaves the API callable, and back()
+   * was the last place that read B[activeB] without a guard — so Escape, the
+   * toolbar Back and the detail-sheet Back all reached camBuilding(undefined)
+   * once the estate had been torn down or rebuilt under them. The React side
+   * now nulls its ref too, but the engine must not depend on that.
+   */
+  it('the harness really does catch the old crash (mutated engine)', () => {
+    const file = path.resolve(process.cwd(), 'public/estate-engine.js');
+    const src = fs.readFileSync(file, 'utf8');
+    const broken = src.replace(
+      `        if (rbBack) { level = 1; camBuilding(rbBack); }
+        else { activeB = null; level = 0; camEstate(); }`,
+      '        level = 1; camBuilding(B[activeB]);',
+    );
+    expect(broken).not.toBe(src); // the guard is present to strip
+
+    const realEngine = window.EstateEngine;
+    try {
+      // eslint-disable-next-line no-new-func
+      new Function(broken)();
+      const engine = mountEngine(tinyEstate());
+      engine.enterBuilding('1');
+      engine.enterFloor('1', 11);
+      engine.dispose();
+      expect(() => engine.back()).toThrow(/reading 'data'|data/);
+    } finally {
+      window.EstateEngine = realEngine;
+    }
+  });
+
+  it('does not throw, and lands at estate level rather than a half state', () => {
+    const engine = mountEngine(tinyEstate());
+    engine.enterBuilding('1');
+    engine.enterFloor('1', 11);
+    engine.dispose();
+
+    expect(() => engine.back()).not.toThrow();
+    // The building is genuinely gone from the scene, so claiming to be inside
+    // it would be a lie — and the next Back would crash on the same missing row.
+    expect(engine.getState().level).toBe(0);
+  });
+});

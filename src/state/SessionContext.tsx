@@ -13,7 +13,7 @@
  * cannot open and fire org-wide queries in their name — and the resolve is one
  * KV read plus one employee lookup, not a page load.
  */
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { provider } from '../api/provider';
 import { isMockMode } from '../api/provider';
 import { can as allows, loadRole, type Capability, type Role, type RoleSource } from '../api/roles';
@@ -113,10 +113,16 @@ export function useRole(): Role {
   return useContext(SessionCtx)?.role ?? sessionScope().role;
 }
 
-/** The gate every screen should use: `const can = useCan(); can('wo.assign')`. */
+/**
+ * The gate every screen should use: `const can = useCan(); can('wo.assign')`.
+ *
+ * Stable across renders on purpose. App.tsx memoises the screen registry on it,
+ * and AppShell re-registers its popstate listener whenever that array changes —
+ * so returning a fresh closure each render quietly rebuilt both every time
+ * anything on the screen updated.
+ */
 export function useCan(): (capability: Capability) => boolean {
   const session = useContext(SessionCtx);
-  const fallback = sessionScope().role;
-  return (capability: Capability) =>
-    session ? session.can(capability) : allows(fallback, capability);
+  const role = session?.role ?? sessionScope().role;
+  return useCallback((capability: Capability) => allows(role, capability), [role]);
 }

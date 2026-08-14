@@ -294,6 +294,12 @@ export default function EstateScreen() {
     const slot = slotRef.current;
     if (!slot || !data) return;
     let alive = true;
+    // Drop the previous engine BEFORE acquiring the next one. The ref was only
+    // ever assigned, never cleared, so between a destroy() and the .then() that
+    // re-points it — and for as long as any gate above returns early — the `?.`
+    // guards on back()/setSearch()/flyTo were guarding a DEAD engine rather than
+    // a null one, which is how a Back press reached a scene with no buildings.
+    engineRef.current = null;
 
     acquire(slot, data, callbacks)
       .then((engine) => {
@@ -368,7 +374,15 @@ export default function EstateScreen() {
 
   // The estate's records changed under us (a refetch, or sign-out). The scene is
   // built from the old ones, so it has to go rather than be re-parked.
-  useEffect(() => () => { if (!estate.data) destroy(); }, [estate.data]);
+  useEffect(
+    () => () => {
+      if (!estate.data) {
+        engineRef.current = null;
+        destroy();
+      }
+    },
+    [estate.data],
+  );
 
   useEffect(() => {
     engineRef.current?.setSearch(search);
