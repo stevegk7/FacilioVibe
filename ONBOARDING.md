@@ -103,7 +103,7 @@ teammate's day.
 
 ```
 npm run build         tsc --noEmit + vite build
-npm run test          vitest (46 files, 414 tests)
+npm run test          vitest (50 files, 445 tests)
 npm run check         offline geometry/record check over real org fixtures
 npm run check:3d      the three.js CAD path, offline
 npm run check:bundle  fails if three.js lands in the entry chunk or it exceeds
@@ -275,11 +275,14 @@ src/state/        LocationContext (site/building/floor scope)
 src/hooks/        useHeading (pose), useGeoFix
 src/ar/           AR projection, markers, pose fusion
 src/vision/       camera scan loop, QR, embeddings
-src/wayfinding/   graph, router, journey model, demo dataset
+src/wayfinding/   TWO graphs: the hand-authored one (graph.ts — survey
+                  standpoints + human-drawn edges) and the auto-graph derived
+                  from the estate hierarchy (autoGraph.ts). Plus router,
+                  journey model, demo dataset.
 src/rounds/       inspection rounds: store, active-round chip, CSV export
 src/estate/       the 3D estate (lazy-loaded — see below)
 src/voice/        Effi: intents + the client-side tool loop
-src/__tests__/    every test, flat
+src/__tests__/    screen and integration tests (pure modules test in place)
 agents/           agent instructions + schemas (source of truth)
 functions/fvApi/  the KV function
 fixtures/         real org #2915 snapshots — back ?mock=1, npm run check, ?harness=1
@@ -332,8 +335,11 @@ does nothing.
 `history.pushState` directly — that changes the URL without changing the screen
 and drops mock/embed context.
 
-**Writing a test.** Tests live flat in `src/__tests__/*.test.ts(x)`, jsdom +
-Testing Library. Vitest globals are **off** — import `{ describe, it, expect }`
+**Writing a test.** Two conventions coexist, both run by `npm run test`:
+screen- and integration-level tests live flat in `src/__tests__/*.test.ts(x)`;
+pure modules increasingly keep their tests beside them (`src/wayfinding/
+autoGraph.test.ts`). Put a test next to the module when it needs no DOM.
+jsdom + Testing Library either way. Vitest globals are **off** — import `{ describe, it, expect }`
 from `vitest` explicitly. `setup.ts` already clears the DOM, storage and history
 between tests. Three ways to fake data:
 
