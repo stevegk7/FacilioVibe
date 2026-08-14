@@ -5,10 +5,18 @@ import DsSelect from '../components/DsSelect';
 import { appStore } from '../api/appStore';
 import {
   DEFAULT_PLACE_ASSET_POLICY,
+  loadEditGraphPolicy,
   loadPlaceAssetPolicy,
+  saveEditGraphPolicy,
   savePlaceAssetPolicy,
   type PlaceAssetPolicy,
 } from '../api/permissions';
+import {
+  OverlayConflictError,
+  saveEdgeNote,
+  type AutoGraphOverlay,
+} from '../wayfinding/autoGraphStore';
+import { useEstate } from '../estate/useEstate';
 import { loadRoleMap, saveRoleMap } from '../api/roles';
 import { useCan, useSession } from '../state/SessionContext';
 import DiagnosticsScreen from './DiagnosticsScreen';
@@ -407,6 +415,258 @@ function PlaceAssetPolicyCard() {
   );
 }
 
+/**
+ * Every landmark anybody has written against a route edge, in one place.
+ *
+ * The Wayfinder lets whoever is standing in the corridor write the sentence,
+ * which is where the knowledge is. This is the other half: somewhere an admin
+ * can see the whole set, fix a wrong one, and take a bad one back out — without
+ * having to route to it first.
+ *
+ * Collapsed by default on purpose. Resolving an edge id to "Reception → Chiller
+ * CH-02" means rebuilding that site's graph, which means building the estate,
+ * and opening Settings should not pay for that.
+ */
+function RouteLandmarksCard() {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+  const [editing, setEditing] = useState<{ siteId: string; edgeId: string } | null>(null);
+  const [draft, setDraft] = useState('');
+
+  /* One read for every site: the overlays share a key prefix, so there is no
+     need to walk the site list — which would also miss notes written with no
+     site scoped, since those land under `wf.autograph.0`. */
+  const overlays = useQuery({
+    queryKey: kvKey('settings', 'wf.autograph.'),
+    queryFn: () => appStore.kvList<AutoGraphOverlay>('settings', 'wf.autograph.', 200),
+  });
+
+  /* Labels come from the rebuilt graph, never from parsing the edge id: a site
+     node id falls back to the site NAME when the building carries no siteId, so
+     splitting on '--' breaks on any site whose name contains one. */
+  const estate = useEstate();
+  const labels = useQuery({
+    queryKey: ['settings-landmark-labels', estate.dataUpdatedAt],
+    enabled: open && !!estate.data,
+    queryFn: async () => {
+      // Dynamic: a static import drags the estate builder into the entry chunk,
+      // which the bundle guard has already caught once.
+      const { buildEstate } = await import('../estate/buildEstate');
+      const { buildAutoGraph } = await import('../wayfinding/autoGraph');
+      const graph = buildAutoGraph(buildEstate(estate.data!, { sampleHealth: false }), {});
+      const byNode = new Map(graph.nodes.map((n) => [n.id, n.label]));
+      const byEdge = new Map(
+        graph.edges.map((e) => [
+          e.id,
+          `${byNode.get(e.from) ?? e.from} → ${byNode.get(e.to) ?? e.to}`,
+        ]),
+      );
+      return byEdge;
+    },
+  });
+
+  const rows = (overlays.data ?? []).flatMap((row) => {
+    const siteId = row.key.slice('wf.autograph.'.length);
+    const notes = row.value?.edgeNotes ?? {};
+    return Object.entries(notes).map(([edgeId, note]) => ({
+      siteId,
+      edgeId,
+      note,
+      version: row.value?.version ?? 0,
+    }));
+  });
+
+  const save = async (siteId: string, edgeId: string, instruction: string, version: number) => {
+    setStatus(null);
+    try {
+      await saveEdgeNote(
+        siteId,
+        edgeId,
+        { instruction, at: new Date().toISOString() },
+        version,
+      );
+      setEditing(null);
+      // Both caches hold the same document — the Wayfinder's is keyed per site.
+      await queryClient.invalidateQueries({ queryKey: kvKey('settings', 'wf.autograph.') });
+      await queryClient.invalidateQueries({ queryKey: ['wf-autograph-overlay', Number(siteId)] });
+      setStatus(instruction.trim() ? 'Saved' : 'Removed');
+    } catch (err) {
+      setStatus(
+        err instanceof OverlayConflictError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Could not save',
+      );
+      // Refetch either way: after a conflict this card is holding a stale
+      // version, and a retry has to be written against what is actually stored.
+      await queryClient.invalidateQueries({ queryKey: kvKey('settings', 'wf.autograph.') });
+    }
+  };
+
+  return (
+    <div className="kit-card">
+      <div className="kit-card-hd">
+        <h3>Route landmarks</h3>
+        {status ? (
+          <span className="muted small">{status}</span>
+        ) : (
+          <button className="btn" onClick={() => setOpen((v) => !v)}>
+            {open ? 'Hide' : 'Show'}
+          </button>
+        )}
+      </div>
+      {open && (
+        <div className="kit-card-bd">
+          <p className="muted small" style={{ marginTop: 0 }}>
+            A landmark replaces the generated step (“Walk to Chiller CH-02”) with something a
+            technician can actually see. They are written from the Wayfinder while walking the
+            route; this is where they can be corrected. Clearing the text removes one.
+          </p>
+          {overlays.isLoading && <p className="muted small">Reading…</p>}
+          {overlays.isError && (
+            <p className="muted small">
+              Couldn’t read the landmarks
+              {overlays.error instanceof Error ? ` — ${overlays.error.message}` : ''}.{' '}
+              <button className="btn" onClick={() => void overlays.refetch()}>
+                Try again
+              </button>
+            </p>
+          )}
+          {!overlays.isLoading && !overlays.isError && rows.length === 0 && (
+            <p className="muted small">
+              No landmarks written yet. Route to somewhere in the Wayfinder and use the ＋ on a step.
+            </p>
+          )}
+          {rows.length > 0 && (
+            <table className="diag-table">
+              <tbody>
+                {rows.map((r) => {
+                  const where = labels.data?.get(r.edgeId);
+                  const isEditing =
+                    editing?.siteId === r.siteId && editing?.edgeId === r.edgeId;
+                  return (
+                    <tr key={`${r.siteId}:${r.edgeId}`}>
+                      <td>
+                        <strong>{where ?? r.edgeId}</strong>
+                        {!where && labels.isFetched && (
+                          <>
+                            {' '}
+                            <span className="muted small">(edge no longer exists)</span>
+                          </>
+                        )}
+                        <div className="muted small">
+                          Site {r.siteId}
+                          {r.note.by ? ` · ${r.note.by}` : ''}
+                        </div>
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <textarea
+                            rows={2}
+                            value={draft}
+                            onChange={(e) => setDraft(e.target.value)}
+                            onBlur={() => void save(r.siteId, r.edgeId, draft, r.version)}
+                            aria-label={`Landmark for ${where ?? r.edgeId}`}
+                          />
+                        ) : (
+                          <button
+                            className="btn"
+                            onClick={() => {
+                              setEditing({ siteId: r.siteId, edgeId: r.edgeId });
+                              setDraft(r.note.instruction);
+                              setStatus(null);
+                            }}
+                          >
+                            {r.note.instruction}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Who may author the route graph — the gate the Wayfinder's landmark control
+ * already consults. It shipped with a loader, a saver and no UI at all, so the
+ * policy could only ever be its open-by-default.
+ */
+function EditGraphPolicyCard() {
+  const [policy, setPolicy] = useState<PlaceAssetPolicy>(DEFAULT_PLACE_ASSET_POLICY);
+  const [emails, setEmails] = useState('');
+  const [status, setStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    void loadEditGraphPolicy().then((p) => {
+      setPolicy(p);
+      setEmails(p.emails.join('\n'));
+    });
+  }, []);
+
+  const save = async (next: PlaceAssetPolicy) => {
+    setPolicy(next);
+    try {
+      await saveEditGraphPolicy(next);
+      setStatus('Saved');
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : 'Could not save');
+    }
+  };
+
+  return (
+    <div className="kit-card">
+      <div className="kit-card-hd">
+        <h3>Who can write route landmarks</h3>
+        {status && <span className="muted small">{status}</span>}
+      </div>
+      <div className="kit-card-bd">
+        <p className="muted small" style={{ marginTop: 0 }}>
+          A landmark is followed by everyone who reads it, and preview and production share one
+          database — so an edit made while testing lands under someone in the field.
+        </p>
+        <DsSelect
+          label="Allowed"
+          value={policy.allowAll ? 'all' : 'listed'}
+          options={[
+            { value: 'all', label: 'Anyone signed in' },
+            { value: 'listed', label: 'Only these people' },
+          ]}
+          onChange={(v: string) => void save({ ...policy, allowAll: v === 'all' })}
+        />
+        {!policy.allowAll && (
+          <label className="field" style={{ marginTop: 10 }}>
+            <span>Emails, one per line</span>
+            <textarea
+              rows={4}
+              value={emails}
+              onChange={(e) => setEmails(e.target.value)}
+              onBlur={() =>
+                void save({
+                  ...policy,
+                  emails: emails
+                    .split(/[\n,]/)
+                    .map((e) => e.trim())
+                    .filter(Boolean),
+                })
+              }
+              placeholder="lead@facilio.com"
+            />
+          </label>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function DeepLinksCard() {
   const [links, setLinks] = useState<LinkTemplates>(EMPTY_LINKS);
   const [status, setStatus] = useState<string | null>(null);
@@ -573,6 +833,8 @@ export default function SettingsScreen() {
       <RecognitionIndexCard />
       <AgentsCard />
       <PlaceAssetPolicyCard />
+      <EditGraphPolicyCard />
+      <RouteLandmarksCard />
       <DeepLinksCard />
       <DangerZoneCard />
       <DiagnosticsCard />
