@@ -338,7 +338,12 @@ button.ar-pill { cursor: pointer; }
 
 .pa-badge.sweep { background: var(--brand-indigo-600); }
 
-/* centered light card used for setup / QR / marker forms */
+/* centered light card used for setup / QR / marker forms.
+   z-index 30 puts it above EVERY piece of stage chrome. At 5 it sat under the
+   footer actions (8), the exit button (8), the step badge (9) and the AR
+   marker cards (6-12), so buttons and pins drew straight through the dialog —
+   the "overridden components" the field reported. A modal is the top layer or
+   it is not a modal. */
 .pa-sheet {
   position: absolute;
   left: 50%;
@@ -355,7 +360,66 @@ button.ar-pill { cursor: pointer; }
   display: flex;
   flex-direction: column;
   gap: 12px;
-  z-index: 5;
+  z-index: 30;
+}
+
+/* Dims the stage behind an open sheet so the chrome underneath reads as
+   inactive instead of as part of the dialog. */
+.pa-sheet::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: rgba(11, 18, 32, 0.55);
+}
+
+/* ---------- armed marker: Place / Cancel under the crosshair ----------
+   Deliberately small and centred on the aim point: the whole reason this
+   exists is that the picker sheet covered the camera, so the technician
+   could not see what they were pointing at. Nothing here may grow to cover
+   the feed. */
+.pa-place-dock {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translateX(-50%);
+  margin-top: 26px; /* clears the 36px crosshair */
+  z-index: 13;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.pa-place-label {
+  max-width: min(280px, calc(100vw - 48px));
+  padding: 6px 12px;
+  background: rgba(11, 18, 32, 0.86);
+  border-radius: var(--radius-pill);
+  color: #fff;
+  font: 500 13px/16px var(--font-sans);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pa-place-btns { display: flex; gap: 8px; }
+
+.pa-place-btn {
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: var(--radius-pill);
+  background: rgba(16, 24, 38, 0.86);
+  color: #fff;
+  font: 600 14px/1 var(--font-sans);
+  cursor: pointer;
+}
+
+.pa-place-btn.primary {
+  border-color: transparent;
+  background: linear-gradient(90deg, var(--brand-indigo-600) 0%, var(--blue-500) 100%);
 }
 
 .pa-sheet h3 { margin: 0; font-size: 15px; }

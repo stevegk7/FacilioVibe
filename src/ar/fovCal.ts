@@ -35,16 +35,64 @@ const FOV_MAX = 90;
 let samples: number[] = [];
 let calibrated: number | null = null;
 let loaded = false;
+/** Frame geometry the stored calibration was measured through. */
+let calGeom: string | null = null;
+/** Frame geometry the camera is delivering now (setCameraGeometry). */
+let liveGeom: string | null = null;
 
 function load(): void {
   if (loaded) return;
   loaded = true;
   try {
     const raw = localStorage.getItem(STORE_KEY);
-    const v = raw ? Number(raw) : NaN;
-    if (Number.isFinite(v) && v >= FOV_MIN && v <= FOV_MAX) calibrated = v;
+    if (!raw) return;
+    // Legacy calibrations were a bare number with no record of the frame they
+    // were measured through — including, on iPad, a zoomed one. They have no
+    // geometry, so the first setCameraGeometry() discards them.
+    const parsed: unknown = raw.startsWith('{') ? JSON.parse(raw) : Number(raw);
+    const v = typeof parsed === 'number' ? parsed : (parsed as { fov?: number })?.fov;
+    const geom = typeof parsed === 'object' ? ((parsed as { geom?: string })?.geom ?? null) : null;
+    if (typeof v === 'number' && Number.isFinite(v) && v >= FOV_MIN && v <= FOV_MAX) {
+      calibrated = v;
+      calGeom = geom;
+    }
   } catch {
     /* storage unavailable — assumed FOV it is */
+  }
+}
+
+function persist(): void {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify({ fov: calibrated, geom: calGeom }));
+  } catch {
+    /* session-only calibration still helps */
+  }
+}
+
+/**
+ * Declare the frame geometry the camera is now delivering.
+ *
+ * A focal length measured in pixels is only meaningful for the frame shape it
+ * was measured in. When the camera starts handing back a different one — a
+ * zoom reset, a constraint change, a different device — the stored FOV
+ * describes a lens that is no longer there, and the projection would keep
+ * trusting it forever. Discard and re-measure; a few seconds of normal
+ * look-around re-converges it.
+ */
+export function setCameraGeometry(w: number, h: number): void {
+  if (!w || !h) return;
+  load();
+  const geom = `${w}x${h}`;
+  if (liveGeom === geom) return;
+  liveGeom = geom;
+  if (calibrated != null && calGeom !== geom) {
+    calibrated = null;
+    samples = [];
+    try {
+      localStorage.removeItem(STORE_KEY);
+    } catch {
+      /* nothing persisted — the in-memory reset is what matters */
+    }
   }
 }
 
@@ -107,11 +155,9 @@ export function observeCalSample(s: CalSample): ProfileShift | null {
     const keptSorted = [...kept].sort((a, b) => a - b);
     calibrated = keptSorted[Math.floor(keptSorted.length / 2)];
     samples = [];
-    try {
-      localStorage.setItem(STORE_KEY, String(calibrated));
-    } catch {
-      /* session-only calibration still helps */
-    }
+    // Stamped with the frame it was measured through — see setCameraGeometry.
+    calGeom = liveGeom ?? `${s.frameW}x${s.frameH}`;
+    persist();
   }
   return shift;
 }
@@ -121,6 +167,8 @@ export function __resetFovCalForTest(): void {
   samples = [];
   calibrated = null;
   loaded = false;
+  calGeom = null;
+  liveGeom = null;
   try {
     localStorage.removeItem(STORE_KEY);
   } catch {

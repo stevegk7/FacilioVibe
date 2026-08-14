@@ -26,7 +26,7 @@ import { draftWorkOrder } from '../api/agents';
 import { useAsset, useAssetSearch } from '../api/hooks';
 import { useLocationScope } from '../state/LocationContext';
 import type { Asset, Survey, SurveyMarker, WorkOrder } from '../api/types';
-import { ArCard, ArGuide, ArSpace, setArPoseDelay, setArVideoSource } from '../ar/ArSpace';
+import { ArCard, ArGuide, ArSpace, setArFrameSize, setArPoseDelay, setArVideoSource } from '../ar/ArSpace';
 import { AssetTag, MinimizedDot, NoteTag, StandpointMarker } from '../ar/markers';
 import ArWindow from '../ar/ArWindow';
 import { fillLink, loadLinks, normaliseLinks } from '../api/links';
@@ -235,16 +235,22 @@ export default function ARScreen() {
   useEffect(() => {
     if (camera.state === 'live') {
       setArVideoSource(camera.videoRef.current);
+      // In the Facilio webview the video never plays, so the element cannot
+      // report its size — the frame size measured off the real frames is the
+      // only truthful source there.
+      setArFrameSize(camera.frameSize);
       setArPoseDelay(90);
     } else {
       setArVideoSource(null);
+      setArFrameSize(null);
       setArPoseDelay(0);
     }
     return () => {
       setArVideoSource(null);
+      setArFrameSize(null);
       setArPoseDelay(0);
     };
-  }, [camera.state, camera.videoRef]);
+  }, [camera.state, camera.videoRef, camera.frameSize]);
   const scan = useScanLoop({ camera, siteId: scope.siteId, enabled: arOn });
 
   // ---- data ----

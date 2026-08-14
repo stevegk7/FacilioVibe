@@ -13,7 +13,13 @@ const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></
 });
 global.window = dom.window;
 global.document = dom.window.document;
-global.navigator = dom.window.navigator;
+// Node 21+ exposes `navigator` as a getter-only global, so a plain assignment
+// throws and this check could not run at all on a current Node.
+Object.defineProperty(global, 'navigator', {
+  value: dom.window.navigator,
+  configurable: true,
+  writable: true,
+});
 global.location = dom.window.location;
 
 // design-project globals, loaded exactly as index.html loads them

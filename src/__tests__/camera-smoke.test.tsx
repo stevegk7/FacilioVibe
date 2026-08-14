@@ -25,16 +25,16 @@ function CamHarness() {
   );
 }
 
-function fakeStream() {
-  const track = { stop: vi.fn() };
+function fakeStream(track: Partial<MediaStreamTrack> = {}) {
+  const t = { stop: vi.fn(), ...track };
   return {
-    getTracks: () => [track],
-    getVideoTracks: () => [track],
+    getTracks: () => [t],
+    getVideoTracks: () => [t],
   } as unknown as MediaStream;
 }
 
-function installMediaDevices() {
-  const getUserMedia = vi.fn(async () => fakeStream());
+function installMediaDevices(stream: MediaStream = fakeStream()) {
+  const getUserMedia = vi.fn(async (_constraints?: MediaStreamConstraints) => stream);
   Object.defineProperty(navigator, 'mediaDevices', {
     configurable: true,
     value: { getUserMedia },
@@ -117,6 +117,82 @@ describe('camera smoke (jsdom)', () => {
     // the retry runs inside the user gesture and succeeds this time
     play.mockResolvedValueOnce(undefined);
     await userEvent.setup().click(resume);
+    await waitFor(() => expect(screen.getByTestId('cam-state')).toHaveTextContent('live'));
+  });
+
+  // The iPad report: "the camera is zoomed by default … so it is very shaky".
+  // A zoomed track is not just uncomfortable — it narrows the field of view,
+  // and the AR projection assumes it is looking through the whole lens, so
+  // every marker drifts against the scene too.
+  it('asks for an UNCROPPED native-shape stream, not a 16:9 crop of a 4:3 sensor', async () => {
+    window.history.replaceState({}, '', '/?mock=1');
+    const getUserMedia = installMediaDevices();
+    installSrcObject();
+    vi.spyOn(window.HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+
+    render(<CamHarness />);
+    await waitFor(() => expect(getUserMedia).toHaveBeenCalled());
+
+    const video = getUserMedia.mock.calls[0][0]!.video as {
+      aspectRatio?: { ideal: number };
+      resizeMode?: string;
+      width?: { ideal: number };
+      height?: { ideal: number };
+    };
+    // resizeMode 'none' forbids the UA from manufacturing a format by
+    // cropping — the crop is what silently zoomed the view.
+    expect(video.resizeMode).toBe('none');
+    expect(video.aspectRatio?.ideal).toBeCloseTo(4 / 3, 5);
+    // and the requested size must itself be 4:3, or the constraint fights it
+    expect(video.width!.ideal / video.height!.ideal).toBeCloseTo(4 / 3, 5);
+  });
+
+  it('resets digital zoom to 1.0 — and never below it, which would swap to the ultra-wide', async () => {
+    window.history.replaceState({}, '', '/?mock=1');
+    const applyConstraints = vi.fn(async (_c?: MediaTrackConstraints) => {});
+    installMediaDevices(
+      fakeStream({
+        getCapabilities: () => ({ zoom: { min: 0.5, max: 8 } }) as MediaTrackCapabilities,
+        getSettings: () => ({ zoom: 2 }) as MediaTrackSettings,
+        applyConstraints,
+      } as Partial<MediaStreamTrack>),
+    );
+    installSrcObject();
+    vi.spyOn(window.HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+
+    render(<CamHarness />);
+    await waitFor(() => expect(applyConstraints).toHaveBeenCalled());
+    const applied = applyConstraints.mock.calls[0][0] as unknown as { advanced: Array<{ zoom: number }> };
+    expect(applied.advanced[0].zoom).toBe(1);
+  });
+
+  it('leaves a camera that is already at 1.0 alone', async () => {
+    window.history.replaceState({}, '', '/?mock=1');
+    const applyConstraints = vi.fn(async (_c?: MediaTrackConstraints) => {});
+    installMediaDevices(
+      fakeStream({
+        getCapabilities: () => ({ zoom: { min: 1, max: 5 } }) as MediaTrackCapabilities,
+        getSettings: () => ({ zoom: 1 }) as MediaTrackSettings,
+        applyConstraints,
+      } as Partial<MediaStreamTrack>),
+    );
+    installSrcObject();
+    vi.spyOn(window.HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+
+    render(<CamHarness />);
+    await waitFor(() => expect(screen.getByTestId('cam-state')).toHaveTextContent('live'));
+    expect(applyConstraints).not.toHaveBeenCalled();
+  });
+
+  it('a camera with no zoom capability still goes live', async () => {
+    window.history.replaceState({}, '', '/?mock=1');
+    installMediaDevices(
+      fakeStream({ getCapabilities: () => ({}) as MediaTrackCapabilities }),
+    );
+    installSrcObject();
+    vi.spyOn(window.HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+
+    render(<CamHarness />);
     await waitFor(() => expect(screen.getByTestId('cam-state')).toHaveTextContent('live'));
   });
 
