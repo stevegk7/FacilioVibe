@@ -1026,6 +1026,7 @@
     };
     api.reset = function () {
       if (camMode === 'walk') api.setCameraMode('orbit');
+      if (api.clearRoute) api.clearRoute();
 
       if (activeB) setPeel(activeB, false, Date.now());
       activeB = null; activeF = null; level = 0; api.select(null); camEstate(); applyState(); notify();
@@ -1206,6 +1207,46 @@
     api.setSearch = function (q) { searchQ = (q || '').toLowerCase(); applyState(); };
     api.setEditMode = function (v) { editMode = !!v; canvas.style.cursor = v ? 'crosshair' : 'grab'; };
     api.getState = function () { return { level: level, buildingId: activeB, floorId: activeF }; };
+    // PATCH (facilio-vision-3d): the wayfinding route. Indoor legs are ribbons
+    // INSIDE the owning floor's group, so peel, visibility and opacity inherit
+    // for free; outdoor legs are dashed lines at the scene root in world
+    // metres. Malformed legs are skipped — same doctrine as the id guards.
+    var routeParts = [];
+    api.clearRoute = function () {
+      routeParts.forEach(function (p) {
+        if (p.parent) p.parent.remove(p);
+        if (p.geometry) p.geometry.dispose();
+        if (p.material) p.material.dispose();
+      });
+      routeParts = [];
+    };
+    api.showRoute = function (specs) {
+      api.clearRoute();
+      (specs || []).forEach(function (leg) {
+        if (!leg || !leg.points || leg.points.length < 2) return;
+        if (leg.kind === 'indoor') {
+          var rb = B[leg.buildingId]; if (!rb) return;
+          var rf = rb.floors.find(function (r) { return r.data.recordId === leg.floorId; });
+          if (!rf) return;
+          var pts = leg.points.map(function (p) { return new T.Vector3(p.x, 0.5, p.z); });
+          var tube = new T.Mesh(
+            new T.TubeGeometry(new T.CatmullRomCurve3(pts), Math.max(12, pts.length * 6), 0.28, 6, false),
+            new T.MeshBasicMaterial({ color: PALETTE.primary, transparent: true, opacity: 0.85 })
+          );
+          rf.group.add(tube);
+          routeParts.push(tube);
+        } else {
+          var pts2 = leg.points.map(function (p) { return new T.Vector3(p.x, 0.25, p.z); });
+          var line = new T.Line(
+            new T.BufferGeometry().setFromPoints(pts2),
+            new T.LineDashedMaterial({ color: PALETTE.primary, dashSize: 2.2, gapSize: 1.4, transparent: true, opacity: 0.75 })
+          );
+          line.computeLineDistances();
+          scene.add(line);
+          routeParts.push(line);
+        }
+      });
+    };
 
     // ---------- input ----------
     var ray = new T.Raycaster(), ndc = new T.Vector2();

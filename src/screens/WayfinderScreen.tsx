@@ -41,6 +41,12 @@ import { findRoute, nearestNode } from '../wayfinding/router';
 import type { Route, RouteStep } from '../wayfinding/router';
 import { mapsDirectionsUrl } from '../wayfinding/legs';
 import { surveyForAsset, surveyForPlace } from '../wayfinding/resolve';
+import { useEstate } from '../estate/useEstate';
+import { buildAutoGraph, findNode, routeOnGraph } from '../wayfinding/autoGraph';
+import type { AutoGraph, AutoNode, AutoRoute } from '../wayfinding/autoGraph';
+import { applyOverlay, loadOverlay } from '../wayfinding/autoGraphStore';
+import { legsToRouteSpec } from '../wayfinding/routeDraw';
+import { computeOutdoorRoute, type OutdoorRoute } from '../api/outdoor';
 import {
   anchorAgeText,
   anchorIsStale,
@@ -80,6 +86,30 @@ function storeAnchor(anchor: Anchor | null): void {
   } catch {
     /* private mode — the in-memory state still works */
   }
+}
+
+/** The outdoor leg's endpoint geo — only when it genuinely crosses two sites
+    that both have coordinates. An intra-site hop has no two points to route
+    between, and pretending otherwise would draw a confident wrong walk. */
+function outdoorGeoEnds(
+  graph: AutoGraph,
+  nodeIds: string[],
+): { from: { lat: number; lng: number }; to: { lat: number; lng: number } } | null {
+  const sites = nodeIds
+    .map((id) => graph.nodes.find((n) => n.id === id))
+    .filter((n): n is AutoNode => !!n && n.kind === 'site' && !!n.geo);
+  if (sites.length < 2) return null;
+  return { from: sites[0].geo!, to: sites[sites.length - 1].geo! };
+}
+
+/** Browse order for the pickers: the containment hierarchy, coarse to fine. */
+function defaultPickList(graph: AutoGraph | null): AutoNode[] {
+  if (!graph) return [];
+  const order: Record<string, number> = { site: 0, building: 1, floor: 2, space: 3, asset: 4, core: 9 };
+  return graph.nodes
+    .filter((n) => n.kind !== 'core') // stair cores are plumbing, not places
+    .slice()
+    .sort((a, b) => (order[a.kind] ?? 9) - (order[b.kind] ?? 9) || a.label.localeCompare(b.label));
 }
 
 function useGraph(siteId: number | undefined, surveys: Survey[], surveysReady: boolean) {
@@ -143,6 +173,133 @@ export default function WayfinderScreen() {
 
   const graphQuery = useGraph(scope.siteId, siteSurveys, !surveys.isPending);
   const graph = graphQuery.data;
+
+  /* ---------------- the portfolio lane ----------------
+     Survey standpoints route you to a PIN with AR precision; the auto graph
+     routes you to ANY record — every site, building, floor, space and asset
+     is a node, derived from the same estate geometry the 3D screen draws,
+     plus whatever refinements the overlay carries. */
+  const estate = useEstate();
+  const siteGeos = useQuery({
+    queryKey: ['wf-sitegeos'],
+    queryFn: async () => {
+      const rows = await appStore.kvList<SiteGeo>('settings', 'sitegeo.', 50);
+      const map: Record<string, { lat: number; lng: number }> = {};
+      for (const row of rows) {
+        if (row.value && Number.isFinite(row.value.lat)) {
+          map[row.key.slice('sitegeo.'.length)] = { lat: row.value.lat, lng: row.value.lng };
+        }
+      }
+      return map;
+    },
+  });
+  const overlayQuery = useQuery({
+    queryKey: ['wf-autograph-overlay', scope.siteId ?? 0],
+    queryFn: () => loadOverlay(scope.siteId ?? 0),
+  });
+  // buildEstate + buildAutoGraph are the estate geometry pipeline — they live
+  // in the 3D chunk, and importing them statically here dragged them into the
+  // entry bundle (the budget guard caught it, 1,087 B over). Dynamic import
+  // keeps the AR cold path lean; the query caches the built graph.
+  const autoGraphQuery = useQuery({
+    queryKey: [
+      'wf-autograph',
+      scope.siteId ?? 0,
+      estate.dataUpdatedAt,
+      siteGeos.dataUpdatedAt,
+      overlayQuery.data?.version ?? 0,
+    ],
+    enabled: !!estate.data,
+    queryFn: async (): Promise<AutoGraph> => {
+      // Only buildEstate is deferred: the graph module itself is small and its
+      // route/find functions run in render paths, but the geometry builder is
+      // the heavy half and already lives in the lazy 3D chunk.
+      const { buildEstate } = await import('../estate/buildEstate');
+      const built = buildEstate(estate.data!, { sampleHealth: false });
+      return applyOverlay(buildAutoGraph(built, { siteGeo: siteGeos.data }), overlayQuery.data ?? null);
+    },
+  });
+  const autoGraph: AutoGraph | null = autoGraphQuery.data ?? null;
+
+  const [autoFrom, setAutoFrom] = useState<AutoNode | null>(null);
+  const [autoTo, setAutoTo] = useState<AutoNode | null>(null);
+  const [pickerFor, setPickerFor] = useState<'from' | 'to' | null>(null);
+  const [pickerQ, setPickerQ] = useState('');
+  const [outdoorInfo, setOutdoorInfo] = useState<OutdoorRoute | null>(null);
+  const [autoArrived, setAutoArrived] = useState(false);
+
+  /** "Current location", resolved honestly: the scanned anchor's name matched
+      into the portfolio, else the location scope, else nothing. */
+  const currentAutoNode = useMemo((): AutoNode | null => {
+    if (!autoGraph) return null;
+    if (anchor && graph) {
+      const named = nodeById(graph, anchor.nodeId)?.name;
+      const hit = named ? findNode(autoGraph, named)[0] : undefined;
+      if (hit) return hit;
+    }
+    const scoped = [
+      scope.floorId != null ? `floor:${scope.floorId}` : null,
+      scope.buildingId != null ? `building:${scope.buildingId}` : null,
+      scope.siteId != null ? `site:${scope.siteId}` : null,
+    ];
+    for (const id of scoped) {
+      if (!id) continue;
+      const node = autoGraph.nodes.find((n) => n.id === id);
+      if (node) return node;
+    }
+    return null;
+  }, [autoGraph, anchor, graph, scope]);
+
+  const fromNode = autoFrom ?? currentAutoNode;
+  const autoRoute: AutoRoute | null = useMemo(
+    () =>
+      autoGraph && fromNode && autoTo && fromNode.id !== autoTo.id
+        ? routeOnGraph(autoGraph, fromNode.id, autoTo.id)
+        : null,
+    [autoGraph, fromNode, autoTo],
+  );
+
+  // Real distance/duration for the outdoor leg once google-maps-routes is
+  // linked. The deep link below never waits for this — it is an enrichment.
+  useEffect(() => {
+    setOutdoorInfo(null);
+    if (!autoRoute || autoRoute.unroutable || !autoGraph) return;
+    const outdoor = autoRoute.legs.find((leg) => leg.kind === 'outdoor');
+    const ends = outdoor ? outdoorGeoEnds(autoGraph, outdoor.nodes) : null;
+    if (!ends) return;
+    let live = true;
+    void computeOutdoorRoute(ends.from, ends.to).then((r) => {
+      if (live) setOutdoorInfo(r);
+    });
+    return () => {
+      live = false;
+    };
+  }, [autoRoute, autoGraph]);
+
+  useEffect(() => setAutoArrived(false), [autoTo?.id]);
+
+  const showRouteIn3d = () => {
+    if (!autoRoute || autoRoute.unroutable) return;
+    // The estate screen consumes this after its engine mounts — a route drawn
+    // before the floor exists would be a ribbon in the void.
+    sessionStorage.setItem('fv.pendingRoute', JSON.stringify(legsToRouteSpec(autoRoute.legs)));
+    goToTab('estate');
+  };
+
+  const openOutdoorLeg = async () => {
+    if (!autoRoute || autoRoute.unroutable || !autoGraph) return;
+    const leg = autoRoute.legs.find((l) => l.kind === 'outdoor');
+    const ends = leg ? outdoorGeoEnds(autoGraph, leg.nodes) : null;
+    if (ends) {
+      window.open(
+        `https://www.google.com/maps/dir/?api=1&origin=${ends.from.lat},${ends.from.lng}&destination=${ends.to.lat},${ends.to.lng}&travelmode=walking`,
+        '_blank',
+        'noopener',
+      );
+      return;
+    }
+    await navigateOutdoors(); // intra-site outdoor hop: the site pin is the honest fallback
+  };
 
   // Open work orders are the reason anyone opens this screen.
   const workOrders = useQuery({
@@ -547,6 +704,94 @@ export default function WayfinderScreen() {
           </div>
         )}
 
+        {/* ---------------- portfolio route lane ---------------- */}
+        <div className="wf-auto" role="group" aria-label="Route anywhere">
+          <span className="section-label">Route anywhere in the portfolio</span>
+          <div className="wf-auto-ends">
+            <button className="wf-where-btn" onClick={() => { setPickerFor('from'); setPickerQ(''); }}>
+              <span className="wf-where-name">
+                <span className="wf-auto-endlabel">From</span>
+                {autoFrom?.label ?? (currentAutoNode ? `${currentAutoNode.label} · current` : 'Pick a start')}
+              </span>
+              <Icon name="chevron-down" size={16} />
+            </button>
+            <button className="wf-where-btn" onClick={() => { setPickerFor('to'); setPickerQ(''); }}>
+              <span className="wf-where-name">
+                <span className="wf-auto-endlabel">To</span>
+                {autoTo?.label ?? 'Any site, building, floor, space or asset'}
+              </span>
+              <Icon name="chevron-down" size={16} />
+            </button>
+          </div>
+
+          {autoTo && !fromNode && (
+            <p className="wf-hint">
+              Destination set — pick a start above (or scan a standpoint, or choose a site) so the
+              route has somewhere to begin.
+            </p>
+          )}
+
+          {autoRoute && 'unroutable' in autoRoute && autoRoute.unroutable && (
+            <p className="wf-hint">
+              {autoRoute.reason}
+              {/geo|coordinat/i.test(autoRoute.reason) && (
+                <>
+                  {' — '}
+                  <button className="wf-link" onClick={() => goToTab('settings')}>
+                    add site coordinates in Settings
+                  </button>
+                </>
+              )}
+            </p>
+          )}
+
+          {autoRoute && !autoRoute.unroutable && !autoArrived && (
+            <div className="wf-auto-route">
+              {autoRoute.legs.map((leg, i) => (
+                <div key={i} className="wf-auto-leg">
+                  <span className={`wf-auto-legkind wf-auto-legkind--${leg.kind}`}>{leg.kind}</span>
+                  <span className="wf-auto-leginstr">{leg.instruction}</span>
+                  <span className="wf-auto-legdist">{Math.round(leg.distanceM)} m</span>
+                </div>
+              ))}
+              {outdoorInfo && (
+                <p className="wf-hint" style={{ margin: 0 }}>
+                  Outdoor leg: {Math.round(outdoorInfo.distanceM)} m · about{' '}
+                  {Math.max(1, Math.round(outdoorInfo.durationS / 60))} min on foot (Google)
+                </p>
+              )}
+              <div className="wf-route-actions">
+                {autoRoute.legs.some((l) => l.kind === 'outdoor') && (
+                  <button className="btn-cta" onClick={() => void openOutdoorLeg()}>
+                    <Icon name="pin" size={18} /> Guide me there
+                  </button>
+                )}
+                <button className="btn-quiet" onClick={showRouteIn3d}>
+                  <Icon name="cube" size={18} /> Show in 3D
+                </button>
+                <button
+                  className="btn-quiet"
+                  onClick={() => {
+                    setAutoArrived(true);
+                    setHint(
+                      `You're at ${autoTo?.label}. Ask below — "open work orders here", or route on to the next stop.`,
+                    );
+                  }}
+                >
+                  I’ve arrived
+                </button>
+              </div>
+            </div>
+          )}
+
+          {autoArrived && autoTo && (
+            <p className="wf-hint">
+              At {autoTo.label}. The assistant above knows this place — ask it anything, or pick the
+              next destination.
+            </p>
+          )}
+        </div>
+
         {scope.siteId == null && (
           <p className="empty-card">Pick a site above to plan a route.</p>
         )}
@@ -707,6 +952,53 @@ export default function WayfinderScreen() {
             </button>
           ))}
           {startable.length === 0 && <p className="empty-card">No named starting points yet.</p>}
+        </div>
+      </Sheet>
+
+      <Sheet
+        open={pickerFor !== null}
+        title={pickerFor === 'from' ? 'Start from' : 'Go to'}
+        onClose={() => setPickerFor(null)}
+      >
+        <input
+          className="wf-assist-input wf-picker-q"
+          value={pickerQ}
+          onChange={(e) => setPickerQ(e.target.value)}
+          placeholder="Search sites, buildings, floors, spaces, assets"
+          aria-label="Search the portfolio"
+        />
+        <div className="wf-picker-list">
+          {pickerFor === 'from' && currentAutoNode && !pickerQ && (
+            <button
+              className="row-card"
+              onClick={() => {
+                setAutoFrom(null); // null means "follow the current location"
+                setPickerFor(null);
+              }}
+            >
+              <span className="sv-row-main">
+                <span className="row-card-title">Current location</span>
+                <span className="row-card-meta">{currentAutoNode.label}</span>
+              </span>
+            </button>
+          )}
+          {autoGraph &&
+            (pickerQ ? findNode(autoGraph, pickerQ) : defaultPickList(autoGraph)).slice(0, 30).map((n) => (
+              <button
+                key={n.id}
+                className="row-card"
+                onClick={() => {
+                  (pickerFor === 'from' ? setAutoFrom : setAutoTo)(n);
+                  setPickerFor(null);
+                }}
+              >
+                <span className="sv-row-main">
+                  <span className="row-card-title">{n.label}</span>
+                  <span className="row-card-meta">{n.kind}</span>
+                </span>
+              </button>
+            ))}
+          {!autoGraph && <p className="empty-card">Reading the portfolio…</p>}
         </div>
       </Sheet>
     </section>

@@ -35,6 +35,7 @@ import PortfolioScreen from './PortfolioScreen';
 import { searchEstate, type EstateSearchHit, type SearchableEstate } from '../estate/searchEstate';
 import type {
   EngineNav,
+  EngineRouteLeg,
   EngineSelection,
   EngineTag,
   EstateBuilding,
@@ -251,6 +252,23 @@ export default function EstateScreen() {
         // cold open that effect runs while engineRef is still null and the
         // handoff would silently land on the estate view instead of the asset.
         flyToParamRef.current();
+        // A route handed over from the Wayfinder: draw it, then enter the first
+        // indoor leg's floor so the ribbon is actually in view, not hidden
+        // inside an unopened building.
+        const pending = sessionStorage.getItem('fv.pendingRoute');
+        if (pending) {
+          sessionStorage.removeItem('fv.pendingRoute');
+          try {
+            const spec = JSON.parse(pending) as EngineRouteLeg[];
+            engine.showRoute(spec);
+            const firstIndoor = spec.find((l) => l.kind === 'indoor');
+            if (firstIndoor?.buildingId && firstIndoor.floorId != null) {
+              engine.flyToFloor(firstIndoor.buildingId, firstIndoor.floorId);
+            }
+          } catch {
+            /* malformed handoff — the 3D view just opens normally */
+          }
+        }
       })
       .catch((err: Error) => {
         if (!alive) return;

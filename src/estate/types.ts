@@ -217,7 +217,19 @@ export interface EstateEngineApi {
   back(): void;
   reset(): void;
   getState(): EngineNav;
+  /** Added by this app: draw the wayfinding route. Indoor legs ride their
+   * floor's group (floor-local metres); outdoor legs are world-frame dashes.
+   * Malformed legs are skipped, never thrown on. */
+  showRoute(specs: EngineRouteLeg[]): void;
+  clearRoute(): void;
   dispose(): void;
+}
+
+export interface EngineRouteLeg {
+  kind: 'indoor' | 'outdoor';
+  buildingId?: string;
+  floorId?: number;
+  points: { x: number; z: number }[];
 }
 
 declare global {

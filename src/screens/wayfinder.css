@@ -327,3 +327,89 @@
 .wf-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 6px; }
 .wf-edge-row { margin-bottom: 8px; }
 .wf-picker-list { display: grid; gap: 8px; margin-top: 10px; }
+
+/* ---------- portfolio route lane ---------- */
+
+.wf-auto {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line-200, #dbe4f0);
+  border-radius: 12px;
+  background: var(--surface-0, #fff);
+}
+
+.wf-auto-ends {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wf-auto-endlabel {
+  display: inline-block;
+  min-width: 40px;
+  margin-right: 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--ink-500, #6b7d95);
+}
+
+.wf-auto-route {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wf-auto-leg {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+.wf-auto-legkind {
+  flex: none;
+  width: 58px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 2px 0;
+  border-radius: 5px;
+  color: var(--blue-600);
+  background: rgba(0, 89, 214, 0.08);
+}
+
+.wf-auto-legkind--outdoor { color: #106b3c; background: rgba(16, 107, 60, 0.09); }
+.wf-auto-legkind--vertical { color: #5b4ba8; background: rgba(91, 75, 168, 0.1); }
+
+.wf-auto-leginstr {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink-900);
+}
+
+.wf-auto-legdist {
+  flex: none;
+  color: var(--ink-500, #6b7d95);
+  font-variant-numeric: tabular-nums;
+}
+
+.wf-link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--blue-600);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+}
+
+.wf-picker-q {
+  width: 100%;
+  margin-bottom: 10px;
+}
