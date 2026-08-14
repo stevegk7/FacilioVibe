@@ -3,7 +3,7 @@
 //   desktop (≥1024, not embedded) → topbar + sidebar, hidden screens under Admin
 //   embedded (?capp_id=…)         → compact top pills, visible screens only
 //   mobile (everything else)      → bottom icon dock, visible screens only
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AppShell, { type ShellScreen } from '../layout/AppShell';
@@ -84,6 +84,40 @@ describe('AppShell chrome selection', () => {
     expect(screen.queryByText('Admin')).not.toBeInTheDocument();
   });
 
+  // The dock lists three screens; the sidebar lists every one. Without an
+  // overflow, everything off the dock was reachable on a phone only by typing
+  // ?tab= — which stranded Surveys, where standpoint QR codes are printed.
+  it('every non-dock screen is reachable on mobile through the More sheet', async () => {
+    const user = userEvent.setup();
+    bootAt('?mock=1');
+
+    await user.click(screen.getByRole('button', { name: 'More' }));
+    const sheet = await screen.findByRole('dialog');
+
+    // Grouped exactly as the sidebar groups them…
+    expect(within(sheet).getByText('Admin')).toBeInTheDocument();
+    expect(within(sheet).getByRole('button', { name: 'Dashboard' })).toBeInTheDocument();
+    // …and a devOnly screen is listed nowhere, here included.
+    expect(within(sheet).queryByRole('button', { name: 'Dev test' })).not.toBeInTheDocument();
+
+    await user.click(within(sheet).getByRole('button', { name: 'Settings' }));
+    expect(await screen.findByRole('heading', { name: 'Settings screen' })).toBeInTheDocument();
+    // The sheet closes behind the navigation rather than covering the arrival.
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('the More sheet lists nothing already on the dock', async () => {
+    const user = userEvent.setup();
+    // Settings is the ACTIVE screen, so it joins the dock — and must not also
+    // appear in the overflow, which would offer the same place twice.
+    bootAt('?mock=1&tab=settings');
+
+    await user.click(screen.getByRole('button', { name: 'More' }));
+    const sheet = await screen.findByRole('dialog');
+    expect(within(sheet).queryByRole('button', { name: 'Settings' })).not.toBeInTheDocument();
+    expect(within(sheet).getByRole('button', { name: 'Dashboard' })).toBeInTheDocument();
+  });
+
   it('embedded (?capp_id=) renders compact pills, never the desktop frame', () => {
     // Even at desktop width: the host chrome already owns the page furniture.
     setViewport(true);
@@ -92,8 +126,13 @@ describe('AppShell chrome selection', () => {
     expect(container.querySelector('.as-embedded')).not.toBeNull();
     expect(container.querySelector('.as-sidebar')).toBeNull();
     expect(container.querySelector('.as-dock')).toBeNull();
-    expect(container.querySelectorAll('.tab-bar .tab')).toHaveLength(2);
+    // The pill row carries the two VISIBLE screens as tabs; a hidden screen is
+    // not one of them. (The overflow "More" pill is a button, not a tab, so it
+    // never reads as a destination you are on.)
+    expect(container.querySelectorAll('.tab-bar [role="tab"]')).toHaveLength(2);
     expect(screen.queryByRole('tab', { name: 'Dashboard' })).not.toBeInTheDocument();
+    // …and the hidden ones are still reachable here, same as on the dock.
+    expect(screen.getByRole('button', { name: 'More' })).toBeInTheDocument();
   });
 });
 

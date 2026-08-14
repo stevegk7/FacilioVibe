@@ -1,6 +1,8 @@
 import { useEffect, useState, type ComponentType, type ReactNode } from 'react';
 import ErrorBoundary from '../shell/ErrorBoundary';
 import { detectEmbed } from '../shell/embed';
+import Sheet from '../components/Sheet';
+import { LayoutGridIcon } from './icons';
 import './layout.css';
 
 /**
@@ -91,6 +93,8 @@ export default function AppShell({ screens, initialTab }: AppShellProps) {
 
   const [active, setActive] = useState(() => tabFromLocation(screens, initialTab));
   const [desktop, setDesktop] = useState(desktopNow);
+  /** The dock's overflow sheet — see overflowScreens. */
+  const [moreOpen, setMoreOpen] = useState(false);
   const embedded = detectEmbed().embedded;
 
   useEffect(() => {
@@ -128,6 +132,70 @@ export default function AppShell({ screens, initialTab }: AppShellProps) {
   const visibleScreens = screens.filter((s) => !s.devOnly && sectionOf(s) === 'workspace');
   const hiddenScreens = screens.filter((s) => !s.devOnly && sectionOf(s) === 'admin');
 
+  /**
+   * Everything the dock has no room for.
+   *
+   * The desktop sidebar lists every screen; the dock lists three. That left
+   * nine screens — Surveys and Rounds among them — reachable on a phone ONLY
+   * by typing ?tab= or by finding the one deep link buried in the 3D estate's
+   * empty state. Surveys is where standpoint QR codes are printed, so the
+   * Wayfinder told people to do something the phone gave them no way to do.
+   *
+   * This is the overflow every mobile tab bar eventually grows. The three
+   * primary destinations keep their slots (design rule 1.5); the rest are one
+   * tap away in a sheet, grouped exactly as the sidebar groups them.
+   */
+  const overflowScreens = screens.filter((s) => !s.devOnly && !joinNav.includes(s));
+  const overflowWorkspace = overflowScreens.filter((s) => sectionOf(s) === 'workspace');
+  const overflowAdmin = overflowScreens.filter((s) => sectionOf(s) === 'admin');
+
+  const openMore = (
+    <>
+      <Sheet open={moreOpen} title="All screens" onClose={() => setMoreOpen(false)} size="tall">
+        {overflowWorkspace.length > 0 && (
+          <>
+            <div className="section-row">
+              <span className="section-label">Workspace</span>
+            </div>
+            {overflowWorkspace.map((s) => (
+              <button
+                key={s.id}
+                className="row-card as-more-row"
+                onClick={() => {
+                  setMoreOpen(false);
+                  select(s.id);
+                }}
+              >
+                <span className="as-more-icon" aria-hidden="true">{s.icon}</span>
+                <span className="row-card-title">{s.label}</span>
+              </button>
+            ))}
+          </>
+        )}
+        {overflowAdmin.length > 0 && (
+          <>
+            <div className="section-row">
+              <span className="section-label">Admin</span>
+            </div>
+            {overflowAdmin.map((s) => (
+              <button
+                key={s.id}
+                className="row-card as-more-row"
+                onClick={() => {
+                  setMoreOpen(false);
+                  select(s.id);
+                }}
+              >
+                <span className="as-more-icon" aria-hidden="true">{s.icon}</span>
+                <span className="row-card-title">{s.label}</span>
+              </button>
+            ))}
+          </>
+        )}
+      </Sheet>
+    </>
+  );
+
   // key resets the boundary when the tab changes, so one crashed screen
   // never poisons the next one the user switches to
   const body = (
@@ -151,8 +219,19 @@ export default function AppShell({ screens, initialTab }: AppShellProps) {
               {screen.label}
             </button>
           ))}
+          {overflowScreens.length > 0 && (
+            <button
+              className={moreOpen ? 'tab active' : 'tab'}
+              aria-haspopup="dialog"
+              aria-expanded={moreOpen}
+              onClick={() => setMoreOpen(true)}
+            >
+              More
+            </button>
+          )}
         </nav>
         {body}
+        {openMore}
       </div>
     );
   }
@@ -233,7 +312,21 @@ export default function AppShell({ screens, initialTab }: AppShellProps) {
             <span className="dock-label">{screen.label}</span>
           </button>
         ))}
+        {overflowScreens.length > 0 && (
+          <button
+            className={moreOpen ? 'dock-item active' : 'dock-item'}
+            aria-haspopup="dialog"
+            aria-expanded={moreOpen}
+            onClick={() => setMoreOpen(true)}
+          >
+            <span className="dock-icon" aria-hidden="true">
+              <LayoutGridIcon size={24} />
+            </span>
+            <span className="dock-label">More</span>
+          </button>
+        )}
       </nav>
+      {openMore}
     </div>
   );
 }
