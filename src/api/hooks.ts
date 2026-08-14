@@ -115,3 +115,44 @@ export function useCreateWorkOrder(assetId: number | null) {
       queryClient.invalidateQueries({ queryKey: ['workorders', 'asset', assetId] }),
   });
 }
+
+/**
+ * The buttons the org's state flow offers on this work order right now.
+ *
+ * Not cached beyond the moment: the whole contract of get-record-actions is
+ * "call it immediately before acting, and again after any state change", so a
+ * stale list would offer transitions the workflow has already closed.
+ */
+export function useWorkOrderActions(workOrderId: number | null) {
+  return useQuery({
+    queryKey: ['workorder', workOrderId, 'actions'],
+    queryFn: () => provider.getWorkOrderActions(workOrderId as number),
+    enabled: workOrderId !== null,
+    staleTime: 0,
+  });
+}
+
+/**
+ * Run one of those buttons, then re-read everything the transition can change:
+ * the action list itself (a new state offers new buttons), the asset's work
+ * orders (status, assignee) and the checklist.
+ */
+export function useExecuteWorkOrderAction(workOrderId: number, assetId: number | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      action,
+      formData,
+    }: {
+      action: { buttonId: number; buttonType: string };
+      formData?: Record<string, unknown>;
+    }) => provider.executeWorkOrderAction(workOrderId, action, formData),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['workorder', workOrderId, 'actions'] }),
+        queryClient.invalidateQueries({ queryKey: ['workorders', 'asset', assetId] }),
+        queryClient.invalidateQueries({ queryKey: ['workorder', workOrderId, 'tasks'] }),
+      ]);
+    },
+  });
+}

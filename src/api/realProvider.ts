@@ -1,5 +1,5 @@
 import { vibe } from './vibe';
-import { cmms, chunk, fetchAllPages, inFilter, rowsOf } from './facilioHelpers';
+import { cmms, chunk, execute, fetchAllPages, inFilter, rowsOf } from './facilioHelpers';
 import { callFn } from './scriptFns';
 import { visibleRows } from './recordPolicy';
 import {
@@ -21,6 +21,8 @@ import type {
   ListQuery,
   LocationScope,
   PageResult,
+  RecordAction,
+  RecordActions,
   Site,
   Space,
   WorkOrder,
@@ -107,6 +109,15 @@ interface RawEmployee {
   id: number;
   name?: string;
   email?: string;
+}
+
+/** get-record-actions returns these four buckets plus the current state. */
+interface RawRecordActions {
+  currentState?: RecordActions['currentState'];
+  stateTransitions?: RecordAction[];
+  approvalTransitions?: RecordAction[];
+  customButtons?: RecordAction[];
+  systemButtons?: RecordAction[];
 }
 
 // Task row shape is org-dependent; map defensively. `status`/closed flags vary
@@ -518,6 +529,50 @@ export const realProvider: DataProvider = {
     return moduleState.allowed_values
       .filter((v): v is { label: string; value: string } => Boolean(v.label && v.value))
       .map(({ label, value }) => ({ label, value }));
+  },
+
+  /**
+   * The live action list, straight from the org's published state flow.
+   *
+   * Two different connections, on purpose: process-automation READS what the
+   * flow offers, and record-level-button-actions RUNS it. Neither is
+   * facilio-cmms, so both go through `execute` rather than the `cmms` helper.
+   *
+   * The reader is filtered server-side by the caller's own permissions, which
+   * means a technician is offered exactly what the workflow lets them do —
+   * the app never has to reimplement that rule, and cannot get it wrong.
+   */
+  async getWorkOrderActions(workOrderId: number): Promise<RecordActions> {
+    const res = await execute<RawRecordActions>('facilio-process-automation', 'get-record-actions', {
+      moduleName: 'workorder',
+      recordId: workOrderId,
+    });
+    // The payload sits at the top level of the response, not under `data`, so
+    // accept either rather than depending on which wrapper this action uses.
+    const raw = (res.data ?? (res as unknown as RawRecordActions)) ?? {};
+    return {
+      currentState: raw.currentState,
+      stateTransitions: raw.stateTransitions ?? [],
+      approvalTransitions: raw.approvalTransitions ?? [],
+      customButtons: raw.customButtons ?? [],
+      systemButtons: raw.systemButtons ?? [],
+    };
+  },
+
+  async executeWorkOrderAction(
+    workOrderId: number,
+    action: Pick<RecordAction, 'buttonId' | 'buttonType'>,
+    formData?: Record<string, unknown>,
+  ): Promise<void> {
+    await execute('facilio-record-level-button-actions', 'execute-button-for-a-record', {
+      moduleName: 'workorder',
+      recordId: workOrderId,
+      buttonId: action.buttonId,
+      buttonType: action.buttonType,
+      // Only buttons that declare a form accept it; sending an empty object to
+      // the rest is a needless way to fail.
+      ...(formData && Object.keys(formData).length ? { formData } : {}),
+    });
   },
 
   async changeWorkOrderStatus(workOrderId: number, status: string) {

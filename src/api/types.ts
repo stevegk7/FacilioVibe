@@ -77,6 +77,51 @@ export interface WorkOrder {
   createdTime?: string;
 }
 
+/**
+ * One button the org's published state flow says this record offers RIGHT NOW.
+ *
+ * Not the status catalogue: `getWorkOrderStatuses` returns every status the
+ * module defines and the UI fakes transitions by removing the current one,
+ * which offers moves the workflow forbids. This comes from the flow itself,
+ * already filtered for the record's state, the caller's permissions, its
+ * approval status and each button's criteria — so it is the truth, and it is
+ * why none of these names are hardcoded anywhere in the app.
+ */
+export interface RecordAction {
+  buttonId: number;
+  /** 'stateTransition' | 'approval' | 'customButton' | 'systemButton'. */
+  buttonType: string;
+  name: string;
+  /** systemButtons only — 'print', 'download', … */
+  identifier?: string;
+  toStateId?: number;
+  /** Present when the transition collects input before it will run. */
+  form?: RecordActionForm;
+}
+
+export interface RecordActionForm {
+  id?: number;
+  displayName?: string;
+  fields?: RecordActionField[];
+}
+
+export interface RecordActionField {
+  name: string;
+  displayName?: string;
+  required?: boolean;
+  /** e.g. 'text', 'number', 'team-staff-assignment' — org-configured. */
+  displayType?: string;
+}
+
+/** Everything the flow offers on one record, plus where it currently sits. */
+export interface RecordActions {
+  currentState?: { id?: number; displayName?: string; status?: string };
+  stateTransitions: RecordAction[];
+  approvalTransitions: RecordAction[];
+  customButtons: RecordAction[];
+  systemButtons: RecordAction[];
+}
+
 /** One entry of the status catalogue (workorder.moduleState allowed_values). */
 export interface WorkOrderStatus {
   label: string;

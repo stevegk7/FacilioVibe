@@ -14,6 +14,7 @@ import type {
   AssetSearch,
   ListQuery,
   PageResult,
+  RecordAction,
   WorkOrder,
   WorkOrderDraft,
   WorkOrderTask,
@@ -255,6 +256,92 @@ export const mockProvider: DataProvider = {
     return delay(
       visibleWorkOrders(workOrders).filter((wo) => assetIds.includes(wo.resourceId ?? -1)),
     );
+  },
+
+  /**
+   * A state flow shaped like the live one, so ?mock=1 rehearses the real
+   * interaction rather than a screenshot of it: the buttons change with the
+   * status, one of them carries a form, and a terminal state offers nothing.
+   *
+   * The names deliberately match org #2915's published flow ("Assign Worker",
+   * "Cancel") rather than any table in a spec — the point of this feature is
+   * that the flow is the source of truth.
+   */
+  async getWorkOrderActions(workOrderId: number) {
+    const wo = workOrders.find((w) => w.id === workOrderId);
+    const empty = {
+      stateTransitions: [],
+      approvalTransitions: [],
+      customButtons: [],
+      systemButtons: [],
+    };
+    if (!wo || !canReadWorkOrder(wo)) return delay(empty);
+
+    const transitions: RecordAction[] = [];
+    const add = (buttonId: number, name: string, form?: RecordAction['form']) =>
+      transitions.push({ buttonId, buttonType: 'stateTransition', name, ...(form ? { form } : {}) });
+
+    switch ((wo.status ?? '').toLowerCase()) {
+      case 'open':
+      case 'yet to start':
+        add(9101, 'Assign Worker', {
+          id: 1,
+          displayName: 'Enter details',
+          fields: [{ name: 'assignment', displayName: 'Team/Staff', displayType: 'team-staff-assignment' }],
+        });
+        add(9102, 'Start Work');
+        add(9103, 'Cancel');
+        break;
+      case 'in progress':
+        add(9104, 'Resolve');
+        add(9105, 'Pause');
+        break;
+      case 'on hold':
+        add(9106, 'Resume');
+        break;
+      case 'resolved':
+        add(9107, 'Close');
+        add(9108, 'Re-Open');
+        break;
+      case 'closed':
+        add(9108, 'Re-Open');
+        break;
+      default:
+        break; // Cancelled / Skipped are terminal — no actions, deliberately
+    }
+
+    return delay({
+      ...empty,
+      currentState: { displayName: wo.status, status: wo.status },
+      stateTransitions: transitions,
+    });
+  },
+
+  async executeWorkOrderAction(
+    workOrderId: number,
+    action: { buttonId: number; buttonType: string },
+    formData?: Record<string, unknown>,
+  ) {
+    const wo = workOrders.find((w) => w.id === workOrderId);
+    if (!wo || !canReadWorkOrder(wo)) throw new Error('Work order not found');
+
+    // Mirror what the transition would do to the record, so the panel's refresh
+    // shows a genuinely different state and a genuinely different button set.
+    const LANDS_ON: Record<number, string> = {
+      9102: 'In Progress',
+      9103: 'Cancelled',
+      9104: 'Resolved',
+      9105: 'On Hold',
+      9106: 'In Progress',
+      9107: 'Closed',
+      9108: 'Open',
+    };
+    const next = LANDS_ON[action.buttonId];
+    if (next) wo.status = next;
+    if (action.buttonId === 9101 && formData?.assignment) {
+      wo.assignedTo = String(formData.assignment);
+    }
+    await delay(undefined);
   },
 
   async getWorkOrder(id: number) {

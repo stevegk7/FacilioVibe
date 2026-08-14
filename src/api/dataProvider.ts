@@ -6,6 +6,8 @@ import type {
   Floor,
   ListQuery,
   PageResult,
+  RecordAction,
+  RecordActions,
   Site,
   Space,
   WorkOrder,
@@ -64,6 +66,18 @@ export interface DataProvider {
   getWorkOrderStatuses(): Promise<WorkOrderStatus[]>;
   /** Execute a transition through the status action; `status` is the internal name. */
   changeWorkOrderStatus(workOrderId: number, status: string): Promise<void>;
+  /**
+   * The buttons the org's published state flow offers on this work order right
+   * now. Re-read after EVERY transition — the whole point is that the answer
+   * changes with the state, and a stale list offers moves that no longer exist.
+   */
+  getWorkOrderActions(workOrderId: number): Promise<RecordActions>;
+  /** Run one of those buttons. `formData` only for buttons that declare a form. */
+  executeWorkOrderAction(
+    workOrderId: number,
+    action: Pick<RecordAction, 'buttonId' | 'buttonType'>,
+    formData?: Record<string, unknown>,
+  ): Promise<void>;
   /** Create via the script lane — the create action itself is broken (see scriptFns.ts). */
   createWorkOrder(draft: WorkOrderDraft): Promise<number>;
 

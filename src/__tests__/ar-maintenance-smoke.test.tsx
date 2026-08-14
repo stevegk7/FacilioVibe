@@ -161,10 +161,31 @@ describe('AR maintenance loop (mock mode)', () => {
       ).toBeInTheDocument(),
     );
 
-    // move the work order status through the catalogue — capsule transitions,
-    // one tap per state (the dropdown shipped broken inside the glass window)
-    const group = await within(panel).findByRole('group', { name: 'Move to' });
-    await user.click(within(group).getByRole('button', { name: /Closed/ }));
+    // Walk the work order through the org's STATE FLOW, not the status
+    // catalogue. There is no longer a one-tap jump to Closed, because the flow
+    // does not offer one from Open — and the buttons must be re-read after each
+    // transition, which is the whole contract of this panel.
+    const actions = () => within(panel).findByRole('group', { name: 'Actions' });
+
+    // Open offers Start Work; it does NOT offer Resolve or Close.
+    let group = await actions();
+    expect(within(group).queryByRole('button', { name: /^Close$/ })).toBeNull();
+    await user.click(within(group).getByRole('button', { name: 'Start Work' }));
+    await waitFor(() => expect(panel.querySelector('.vg-chip')).toHaveTextContent('In Progress'));
+
+    // …and now the strip has refreshed to what In Progress allows.
+    group = await actions();
+    await waitFor(() =>
+      expect(within(group).getByRole('button', { name: 'Resolve' })).toBeInTheDocument(),
+    );
+    await user.click(within(group).getByRole('button', { name: 'Resolve' }));
+    await waitFor(() => expect(panel.querySelector('.vg-chip')).toHaveTextContent('Resolved'));
+
+    group = await actions();
+    await waitFor(() =>
+      expect(within(group).getByRole('button', { name: 'Close' })).toBeInTheDocument(),
+    );
+    await user.click(within(group).getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(panel.querySelector('.vg-chip')).toHaveTextContent('Closed'));
 
     // pin a note at this standpoint for whoever comes next: "Pin here" freezes

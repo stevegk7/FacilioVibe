@@ -15,14 +15,14 @@ import { useRef, useState } from 'react';
 import { goToTab } from '../shell/router';
 import {
   useAddWorkOrderTask,
-  useChangeWorkOrderStatus,
+  useExecuteWorkOrderAction,
   useSetTaskStatus,
-  useWorkOrderStatuses,
+  useWorkOrderActions,
   useWorkOrdersForAsset,
   useWorkOrderTasks,
 } from '../api/hooks';
 import { briefAsset, suggestTasks } from '../api/agents';
-import type { Asset, WorkOrder } from '../api/types';
+import type { Asset, RecordAction, RecordActions, WorkOrder } from '../api/types';
 import Icon from '../components/Icon';
 import { isEmbeddedInFacilio, openRecordSummary } from '../api/nav';
 import './visionGlass.css';
@@ -314,9 +314,19 @@ function WoDetail({ wo, assetId, assetName }: { wo: WorkOrder; assetId: number; 
   const tasks = useWorkOrderTasks(wo.id);
   const setTask = useSetTaskStatus(wo.id);
   const addTask = useAddWorkOrderTask(wo.id);
-  const statuses = useWorkOrderStatuses();
-  const changeStatus = useChangeWorkOrderStatus(assetId);
+  const actions = useWorkOrderActions(wo.id);
+  const runAction = useExecuteWorkOrderAction(wo.id, assetId);
   const done = (tasks.data ?? []).filter((t) => t.closed).length;
+
+  // `wo` is a snapshot captured into the view stack when the row was tapped, so
+  // it does not change when a transition lands. The flow's own answer does, and
+  // it is authoritative — prefer it for the status chip.
+  const status = actions.data?.currentState?.displayName ?? wo.status;
+
+  // A transition that declares a form needs its input before it will run, so
+  // the button opens the form in place rather than firing.
+  const [openForm, setOpenForm] = useState<RecordAction | null>(null);
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
 
   // AI-proposed checklist: each proposal is a chip; tapping WRITES that task.
   // Proposals the agent already sees exist are filtered by the agent seam.
@@ -340,7 +350,7 @@ function WoDetail({ wo, assetId, assetName }: { wo: WorkOrder; assetId: number; 
     <div className="vg-detail">
       <div className="vg-detail-head">
         <span className="vg-row-title">{wo.subject}</span>
-        <span className={`vg-chip t-${statusTone(wo.status)}`}>{wo.status ?? 'Unknown'}</span>
+        <span className={`vg-chip t-${statusTone(status)}`}>{status ?? 'Unknown'}</span>
       </div>
       {wo.description && <p className="vg-dim">{wo.description}</p>}
       <dl className="vg-meta">
@@ -414,30 +424,102 @@ function WoDetail({ wo, assetId, assetName }: { wo: WorkOrder; assetId: number; 
       </div>
       {addTask.isError && <p className="vg-err">{(addTask.error as Error).message}</p>}
 
-      <h4 className="vg-section">Move to</h4>
-      {/* capsule transitions, not a dropdown: a select's floating list has no
-          good home inside a glass window (it shipped broken once), and the
-          catalogue is small — every state one tap away is the better AR UX */}
-      <div className="vg-status-row" role="group" aria-label="Move to">
-        {(statuses.data ?? [])
-          .filter((s) => s.label !== wo.status)
-          .map((s) => (
+      <h4 className="vg-section">Actions</h4>
+      {/*
+        The org's published state flow decides what appears here — not this
+        file. It replaced a strip built from the status CATALOGUE minus the
+        current status, which offered moves the workflow forbids (every state
+        from every other state) and knew nothing about permissions. The flow's
+        own answer is already filtered for the record's state, this technician's
+        permissions, the approval status and each button's criteria, so a
+        transition rejected by the workflow can no longer be offered at all.
+
+        Capsules rather than a dropdown, per the standing rule for this window:
+        a select's floating list has no good home inside glass, and everything
+        stays in front of a live camera.
+      */}
+      <div className="vg-status-row" role="group" aria-label="Actions">
+        {(actions.data?.stateTransitions ?? [])
+          .concat(actions.data?.approvalTransitions ?? [])
+          .concat(actions.data?.customButtons ?? [])
+          .map((action) => (
             <button
-              key={s.value}
+              key={`${action.buttonType}-${action.buttonId}`}
               className="vg-status-btn"
-              disabled={changeStatus.isPending}
-              onClick={() => changeStatus.mutate({ workOrderId: wo.id, status: s.value })}
+              disabled={runAction.isPending}
+              onClick={() => {
+                if (action.form?.fields?.length) {
+                  setFormValues({});
+                  setOpenForm(action);
+                  return;
+                }
+                runAction.mutate({ action });
+              }}
             >
-              <span className={`vg-dot t-${statusTone(s.label)}`} />
-              {s.label}
+              <span className={`vg-dot t-${statusTone(action.name)}`} />
+              {action.name}
             </button>
           ))}
-        {statuses.data && statuses.data.length === 0 && (
-          <p className="vg-dim">No transitions available.</p>
+        {actions.isLoading && <p className="vg-dim">Reading the workflow…</p>}
+        {actions.data && !hasActions(actions.data) && (
+          <p className="vg-dim">No actions available in this state.</p>
         )}
       </div>
-      {changeStatus.isPending && <p className="vg-dim">Updating status…</p>}
-      {changeStatus.isError && <p className="vg-err">{(changeStatus.error as Error).message}</p>}
+
+      {/* Inline, not a Sheet: a Sheet is fixed, full-viewport and opaque, so it
+          would hide the camera and every marker — leaving AR to fill in two
+          fields is exactly the break this feature exists to avoid. */}
+      {openForm && (
+        <form
+          className="vg-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            runAction.mutate(
+              { action: openForm, formData: formValues },
+              { onSuccess: () => setOpenForm(null) },
+            );
+          }}
+        >
+          <h4 className="vg-section">{openForm.form?.displayName ?? openForm.name}</h4>
+          {(openForm.form?.fields ?? []).map((field) => (
+            <label className="vg-field" key={field.name}>
+              <span>
+                {field.displayName ?? field.name}
+                {field.required ? ' *' : ''}
+              </span>
+              <input
+                type={field.displayType === 'number' ? 'number' : 'text'}
+                required={field.required}
+                value={formValues[field.name] ?? ''}
+                onChange={(e) =>
+                  setFormValues((prev) => ({ ...prev, [field.name]: e.target.value }))
+                }
+              />
+            </label>
+          ))}
+          <div className="vg-form-row">
+            <button type="submit" className="vg-status-btn" disabled={runAction.isPending}>
+              {openForm.name}
+            </button>
+            <button type="button" className="vg-status-btn" onClick={() => setOpenForm(null)}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {runAction.isPending && <p className="vg-dim">Running…</p>}
+      {runAction.isError && <p className="vg-err">{(runAction.error as Error).message}</p>}
+      {actions.isError && (
+        <p className="vg-err">Couldn’t read the workflow: {(actions.error as Error).message}</p>
+      )}
     </div>
+  );
+}
+
+/** True when the flow offers anything at all — a terminal state offers nothing. */
+function hasActions(a: RecordActions): boolean {
+  return (
+    a.stateTransitions.length + a.approvalTransitions.length + a.customButtons.length > 0
   );
 }

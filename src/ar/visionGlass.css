@@ -407,3 +407,37 @@
 }
 
 button.vg-ornament { border: none; cursor: pointer; }
+
+/* A transition that collects input, rendered INSIDE the glass rather than in a
+   Sheet — a Sheet is fixed, full-viewport and opaque, so it would hide the
+   camera and every marker the technician is standing in front of. */
+.vg-form {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--vg-fill-thin);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+.vg-form .vg-section { margin-top: 0; }
+.vg-field { display: block; margin-bottom: 10px; }
+.vg-field > span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--vg-text-2);
+  font: 600 12px/1.2 inherit;
+}
+.vg-field > input {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+  color: var(--vg-text-1);
+  /* 16px or iOS zooms the page — and zooming a camera surface loses the pin. */
+  font: 500 16px/1 inherit;
+  font-family: inherit;
+}
+.vg-field > input:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.5); outline-offset: 1px; }
+.vg-form-row { display: flex; flex-wrap: wrap; gap: 8px; }
