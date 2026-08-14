@@ -88,9 +88,13 @@ describe('wayfinder — demo data and destination resolution', () => {
     await screen.findByRole('button', { name: /Quarterly UPS battery inspection/ });
 
     // Two chillers exist in the mock org — the resolver must ASK, not guess.
+    // The question now lives in the conversation thread (spec: ambiguity is a
+    // clarification message with the real options as chips), not a separate
+    // "Did you mean" block.
     await user.type(screen.getByRole('textbox', { name: 'Destination' }), 'chiller{Enter}');
-    const chips = await screen.findByRole('group', { name: 'Did you mean' });
-    await user.click(within(chips).getByRole('button', { name: /Chiller CH-02/ }));
+    const log = await screen.findByRole('log', { name: 'Navigation conversation' });
+    expect(within(log).getByText(/which one do you need/i)).toBeInTheDocument();
+    await user.click(within(log).getByRole('button', { name: /Chiller CH-02/ }));
 
     // The multi-floor route to the plant room: landmark walk, lift
     // interstitial, fire door, yellow line — in order, from the entrance.

@@ -48,6 +48,17 @@ import { applyOverlay, loadOverlay } from '../wayfinding/autoGraphStore';
 import { legsToRouteSpec } from '../wayfinding/routeDraw';
 import { computeOutdoorRoute, type OutdoorRoute } from '../api/outdoor';
 import {
+  fallbackGuidance,
+  handoffPayload,
+  loadChat,
+  nodeWhere,
+  resolvePortfolio,
+  routeText,
+  storeChat,
+  type WfChip,
+  type WfMessage,
+} from '../wayfinding/conversation';
+import {
   anchorAgeText,
   anchorIsStale,
   estimateSeconds,
@@ -143,9 +154,10 @@ export default function WayfinderScreen() {
   const [hint, setHint] = useState<string | null>(null);
   /** Assistant lane: last reply + disambiguation candidates. */
   const [assistText, setAssistText] = useState('');
-  const [assistReply, setAssistReply] = useState<string | null>(null);
   const [assistBusy, setAssistBusy] = useState(false);
   const [candidates, setCandidates] = useState<Asset[]>([]);
+  /** The conversation IS the navigator now — one thread, persisted per session. */
+  const [thread, setThread] = useState<WfMessage[]>(loadChat);
   const spokeRef = useRef(false);
 
   // The whole mock app is walkable with zero setup — wayfinding included.
@@ -228,14 +240,33 @@ export default function WayfinderScreen() {
   const [outdoorInfo, setOutdoorInfo] = useState<OutdoorRoute | null>(null);
   const [autoArrived, setAutoArrived] = useState(false);
 
-  /** "Current location", resolved honestly: the scanned anchor's name matched
-      into the portfolio, else the location scope, else nothing. */
+  /** "Current location", resolved honestly and in trust order: a scan proves,
+      the 3D view's live selection shows, the location scope suggests. */
   const currentAutoNode = useMemo((): AutoNode | null => {
     if (!autoGraph) return null;
     if (anchor && graph) {
       const named = nodeById(graph, anchor.nodeId)?.name;
       const hit = named ? findNode(autoGraph, named)[0] : undefined;
       if (hit) return hit;
+    }
+    // What the user last looked at in the 3D estate (shared nav context).
+    try {
+      const ctx = JSON.parse(sessionStorage.getItem('fv.navContext') ?? '{}') as {
+        assetId?: number; spaceId?: number; floorId?: number; at?: number;
+      };
+      if (ctx.at && Date.now() - ctx.at < 15 * 60_000) {
+        for (const id of [
+          ctx.assetId != null ? `asset:${ctx.assetId}` : null,
+          ctx.spaceId != null ? `space:${ctx.spaceId}` : null,
+          ctx.floorId != null ? `floor:${ctx.floorId}` : null,
+        ]) {
+          if (!id) continue;
+          const node = autoGraph.nodes.find((n) => n.id === id);
+          if (node) return node;
+        }
+      }
+    } catch {
+      /* unreadable context — fall through to the scope */
     }
     const scoped = [
       scope.floorId != null ? `floor:${scope.floorId}` : null,
@@ -279,11 +310,67 @@ export default function WayfinderScreen() {
   useEffect(() => setAutoArrived(false), [autoTo?.id]);
 
   const showRouteIn3d = () => {
-    if (!autoRoute || autoRoute.unroutable) return;
     // The estate screen consumes this after its engine mounts — a route drawn
-    // before the floor exists would be a ribbon in the void.
-    sessionStorage.setItem('fv.pendingRoute', JSON.stringify(legsToRouteSpec(autoRoute.legs)));
+    // before the floor exists would be a ribbon in the void. The destination
+    // rides along so the 3D view highlights it, route or no route.
+    const legs = autoRoute && !autoRoute.unroutable ? legsToRouteSpec(autoRoute.legs) : [];
+    if (legs.length === 0 && !autoTo) return;
+    sessionStorage.setItem('fv.pendingRoute', JSON.stringify(handoffPayload(legs, autoTo)));
     goToTab('estate');
+  };
+
+  /* ---------------- the conversation ---------------- */
+
+  useEffect(() => storeChat(thread), [thread]);
+
+  const say = useCallback((text: string, chips?: WfChip[]) => {
+    setThread((t) => [...t, { role: 'ai', text, chips, at: Date.now() }]);
+  }, []);
+
+  /** Set a portfolio destination and answer in the thread — route, or honest
+      fallback guidance composed from the hierarchy, never an empty state. */
+  const applyPortfolioDest = useCallback(
+    (node: AutoNode) => {
+      setAutoTo(node);
+      setAutoArrived(false);
+      if (!autoGraph) return;
+      const from = autoFrom ?? currentAutoNode;
+      if (!from) {
+        say(`Destination set — ${node.label} (${nodeWhere(autoGraph, node)}). Pick a start above, or scan a standpoint, and I'll route you.`, [
+          { label: 'Show in 3D', action: { kind: 'show-3d' } },
+        ]);
+        return;
+      }
+      const r = routeOnGraph(autoGraph, from.id, node.id);
+      if (r.unroutable) {
+        say(fallbackGuidance(autoGraph, node), [{ label: 'Show in 3D', action: { kind: 'show-3d' } }]);
+        return;
+      }
+      const chips: WfChip[] = [];
+      if (r.legs.some((l) => l.kind === 'outdoor')) {
+        chips.push({ label: 'Guide me there', action: { kind: 'guide-outdoor' } });
+      }
+      chips.push({ label: 'Show in 3D', action: { kind: 'show-3d' } });
+      chips.push({ label: 'I’ve arrived', action: { kind: 'arrived' } });
+      say(routeText(r, node.label), chips);
+    },
+    [autoGraph, autoFrom, currentAutoNode, say],
+  );
+
+  const onChip = (chip: WfChip) => {
+    const action = chip.action;
+    if (action.kind === 'pick-node') {
+      const node = autoGraph?.nodes.find((n) => n.id === action.nodeId);
+      if (node) {
+        setThread((t) => [...t, { role: 'user', text: chip.label, at: Date.now() }]);
+        applyResolvedNode(node);
+      }
+      return;
+    }
+    if (chip.action.kind === 'show-3d') return showRouteIn3d();
+    if (chip.action.kind === 'guide-outdoor') return void openOutdoorLeg();
+    setAutoArrived(true);
+    say(`You're at ${autoTo?.label ?? 'your destination'}. Ask me anything about this place — open work orders, details — or name the next stop.`);
   };
 
   const openOutdoorLeg = async () => {
@@ -439,6 +526,26 @@ export default function WayfinderScreen() {
     [graph, anchor],
   );
 
+  /** A survey-pinned asset keeps the scan-anchored guided lane — that is the
+      AR-precise path and it must not be displaced by the portfolio route.
+      Everything else (spaces, floors, buildings, unpinned assets) routes on
+      the graph. Declared here, AFTER pinnedDestinations/destinationForAsset:
+      a useCallback dep list evaluates at render, so hoisting this above them
+      was a TDZ crash on mount. */
+  const applyResolvedNode = useCallback(
+    (node: AutoNode) => {
+      if (node.kind === 'asset' && node.recordId != null) {
+        const pinned = pinnedDestinations.find((p) => p.assetId === node.recordId);
+        if (pinned && destinationForAsset(pinned.asset)) {
+          say(`Route set — ${pinned.label}. Preview below; scan any standpoint to anchor exactly.`);
+          return;
+        }
+      }
+      applyPortfolioDest(node);
+    },
+    [pinnedDestinations, destinationForAsset, applyPortfolioDest, say],
+  );
+
   const route: Route | null = useMemo(() => {
     if (!graph || !dest || !anchor) return null;
     return findRoute(graph, anchor.nodeId, dest.nodeId);
@@ -543,9 +650,27 @@ export default function WayfinderScreen() {
     if (!query || assistBusy) return;
     spokeRef.current = viaMic;
     setAssistBusy(true);
-    setAssistReply(null);
     setCandidates([]);
+    setThread((t) => [...t, { role: 'user', text: query, at: Date.now() }]);
     try {
+      // Lane 0: the portfolio graph. "AHU on the 9th floor" resolves against
+      // real nodes — floor references filter, twins become a question with
+      // the actual options, and nothing that isn't a node can be offered.
+      const resolved = resolvePortfolio(autoGraph, query);
+      if (resolved.kind === 'one') {
+        applyResolvedNode(resolved.node);
+        return;
+      }
+      if (resolved.kind === 'many') {
+        say(
+          resolved.question,
+          resolved.candidates.map((n) => ({
+            label: `${n.label} — ${nodeWhere(autoGraph!, n)}`,
+            action: { kind: 'pick-node' as const, nodeId: n.id },
+          })),
+        );
+        return;
+      }
       // Lane 1: the query is a name. One hit routes; several become chips.
       const hits = (await provider.searchAssets({ text: query, scope })).slice(0, 6);
       if (hits.length === 1) {
@@ -576,7 +701,7 @@ export default function WayfinderScreen() {
           return;
         }
         if (pick.ask) {
-          setAssistReply(pick.ask);
+          say(pick.ask);
           setCandidates(routable.slice(0, 4).map((r) => r.asset));
           return;
         }
@@ -585,9 +710,9 @@ export default function WayfinderScreen() {
       // the same tool loop Effi runs, with deps that set the route here
       // instead of describing it or switching tabs.
       const result = await runToolLoop(query, { siteId: scope.siteId }, assistDeps);
-      setAssistReply(result.answer);
+      say(result.answer);
     } catch (err) {
-      setAssistReply(err instanceof Error ? err.message : 'Something went wrong — try again.');
+      say(err instanceof Error ? err.message : 'Something went wrong — try again.');
     } finally {
       setAssistBusy(false);
       setAssistText('');
@@ -679,8 +804,29 @@ export default function WayfinderScreen() {
       </header>
 
       <div className="wf-body scroll-y">
-        {assistBusy && <p className="wf-hint">Thinking…</p>}
-        {assistReply && !assistBusy && <p className="wf-hint">{assistReply}</p>}
+        {(thread.length > 0 || assistBusy) && (
+          <div className="wf-thread" role="log" aria-label="Navigation conversation">
+            {thread.map((m, i) => (
+              <div key={`${m.at}-${i}`} className={m.role === 'user' ? 'wf-msg wf-msg--user' : 'wf-msg wf-msg--ai'}>
+                <p className="wf-msg-text">{m.text}</p>
+                {m.chips && m.chips.length > 0 && (
+                  <div className="wf-msg-chips">
+                    {m.chips.map((c, j) => (
+                      <button key={j} className="wf-chip-btn" onClick={() => onChip(c)}>
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+            {assistBusy && (
+              <div className="wf-msg wf-msg--ai">
+                <p className="wf-msg-text">Thinking…</p>
+              </div>
+            )}
+          </div>
+        )}
         {hint && <p className="wf-hint">{hint}</p>}
 
         {candidates.length > 0 && (

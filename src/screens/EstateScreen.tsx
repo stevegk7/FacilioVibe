@@ -93,6 +93,21 @@ function age(ms: unknown): string {
  * tokens as everything around it. Falls back to the engine's own defaults if a
  * token is missing rather than blanking a colour.
  */
+/**
+ * The shared navigation context (spec: "state synchronization"). The 3D view
+ * writes what the user is looking at; the Wayfinder conversation reads it so
+ * "current location" and "this" resolve to what is actually on screen.
+ * Merge-write so a selection doesn't erase the level, and vice versa.
+ */
+function writeNavContext(patch: Record<string, unknown>): void {
+  try {
+    const prev = JSON.parse(sessionStorage.getItem('fv.navContext') ?? '{}') as Record<string, unknown>;
+    sessionStorage.setItem('fv.navContext', JSON.stringify({ ...prev, ...patch, at: Date.now() }));
+  } catch {
+    /* storage blocked — sync degrades to per-screen state */
+  }
+}
+
 function paletteFromTokens(): Record<string, number> {
   const css = getComputedStyle(document.documentElement);
   const hex = (name: string): number | undefined => {
@@ -199,11 +214,18 @@ export default function EstateScreen() {
     onLevel: (n: EngineNav) => {
       setNav(n);
       if (n.level !== 2) setSelected(null);
+      writeNavContext({ buildingId: n.buildingId, floorId: n.floorId });
     },
     onSelect: (sel: EngineSelection | null) => {
       setSelected(sel);
       setTab('details');
       setPlan(null);
+      // The conversation on the Wayfinder reads this: picking an asset HERE
+      // is the same fact as saying "this" THERE. Stable ids only.
+      writeNavContext({
+        assetId: sel?.kind === 'asset' ? sel.m?.recordId : undefined,
+        spaceId: sel?.kind === 'space' ? sel.space?.recordId : undefined,
+      });
       const engine = engineRef.current;
       if (!engine) return;
       if (sel?.kind === 'asset' && sel.m) engine.focusAsset(sel.m.recordId);
@@ -259,11 +281,26 @@ export default function EstateScreen() {
         if (pending) {
           sessionStorage.removeItem('fv.pendingRoute');
           try {
-            const spec = JSON.parse(pending) as EngineRouteLeg[];
+            // Payload v1 was a bare legs array; v2 wraps it and adds the
+            // destination so the 3D view highlights what you asked for even
+            // when no route could be drawn. Accept both shapes forever —
+            // a stale tab can hand over the old one.
+            const parsed = JSON.parse(pending) as
+              | EngineRouteLeg[]
+              | { legs: EngineRouteLeg[]; dest?: { kind: 'asset' | 'space'; recordId: number } };
+            const spec = Array.isArray(parsed) ? parsed : (parsed.legs ?? []);
+            const dest = Array.isArray(parsed) ? undefined : parsed.dest;
             engine.showRoute(spec);
-            const firstIndoor = spec.find((l) => l.kind === 'indoor');
-            if (firstIndoor?.buildingId && firstIndoor.floorId != null) {
-              engine.flyToFloor(firstIndoor.buildingId, firstIndoor.floorId);
+            if (dest?.kind === 'asset') {
+              // flies building → floor → selects, and the focus dims the rest
+              engine.flyToMarker(dest.recordId);
+            } else if (dest?.kind === 'space') {
+              engine.select(dest.recordId, 'space'); // recovers cross-floor
+            } else {
+              const firstIndoor = spec.find((l) => l.kind === 'indoor');
+              if (firstIndoor?.buildingId && firstIndoor.floorId != null) {
+                engine.flyToFloor(firstIndoor.buildingId, firstIndoor.floorId);
+              }
             }
           } catch {
             /* malformed handoff — the 3D view just opens normally */
@@ -505,7 +542,11 @@ export default function EstateScreen() {
       bd: active ? C.blueBd : C.hair,
       fg: active ? C.blueDk : C.ink,
       iconFg: active ? C.blue : C.mute,
-      onClick: () => engineRef.current?.select(a.recordId),
+      // flyToMarker, not select: select() marks a pin the camera may not even
+      // be looking at (wrong floor, estate level) — the "selection does
+      // nothing" complaint. The flight enters the right building and floor,
+      // then selects, so the selector always lands with correct context.
+      onClick: () => engineRef.current?.flyToMarker(a.recordId),
     };
   };
 
