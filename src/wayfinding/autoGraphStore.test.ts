@@ -8,7 +8,15 @@ import { describe, expect, it, vi } from 'vitest';
 import type { EstateData, EstateFloor } from '../estate/types';
 import { buildAutoGraph, routeOnGraph } from './autoGraph';
 import type { AutoEdge } from './autoGraph';
-import { applyOverlay, loadOverlay, overlayKey, saveOverlay, validateOverlay } from './autoGraphStore';
+import {
+  OverlayConflictError,
+  applyOverlay,
+  loadOverlay,
+  overlayKey,
+  saveEdgeNote,
+  saveOverlay,
+  validateOverlay,
+} from './autoGraphStore';
 import type { AutoGraphOverlay } from './autoGraphStore';
 
 // Map-backed appStore fake — loadOverlay/saveOverlay never touch the SDK here.
@@ -120,9 +128,14 @@ const bridge: AutoEdge = {
   outdoor: true,
 };
 
-const overlayWith = (edges: AutoEdge[], removeEdgeIds: string[] = []): AutoGraphOverlay => ({
+const overlayWith = (
+  edges: AutoEdge[],
+  removeEdgeIds: string[] = [],
+  edgeNotes: AutoGraphOverlay['edgeNotes'] = {},
+): AutoGraphOverlay => ({
   addEdges: edges,
   removeEdgeIds,
+  edgeNotes,
   version: 1,
 });
 
@@ -206,6 +219,111 @@ describe('loadOverlay / saveOverlay', () => {
 
     // Partial garbage degrades field by field instead of all-or-nothing.
     kv.set(overlayKey(13), { addEdges: 'nope', removeEdgeIds: [1, 'keep'], version: 'x' });
-    expect(await loadOverlay(13)).toEqual({ addEdges: [], removeEdgeIds: ['keep'], version: 0 });
+    expect(await loadOverlay(13)).toEqual({
+      addEdges: [],
+      removeEdgeIds: ['keep'],
+      edgeNotes: {},
+      version: 0,
+    });
+  });
+});
+
+/* ---------------- landmarks on derived edges ----------------
+   The derived graph could only ever say "Walk to X". The survey lane has carried
+   authored instructions since the rebuild, and the research the route surface is
+   built on says landmark phrasing beats distance — a landmark also lets someone
+   confirm they are still on the right path, which a metre count cannot. These
+   pin the loop that lets the graph be taught: write a note, and the next rebuild
+   still reads it back. */
+describe('edge notes — the landmark layer', () => {
+  const AT = '2026-08-15T09:00:00.000Z';
+
+  it('an authored landmark replaces the generated sentence, and survives a rebuild', () => {
+    const graph = buildAutoGraph(fixtureEstate());
+    // Any real derived edge; the point is that the id is stable across rebuilds.
+    const edgeId = graph.edges.find((e) => !e.unroutable)!.id;
+
+    const overlay = overlayWith([], [], {
+      [edgeId]: { instruction: 'Past the red fire-hose cabinet, then left', at: AT },
+    });
+
+    // Applied to a FRESHLY built graph, exactly as the screen does.
+    const applied = applyOverlay(buildAutoGraph(fixtureEstate()), overlay);
+    const edge = applied.edges.find((e) => e.id === edgeId);
+    expect(edge?.instruction).toBe('Past the red fire-hose cabinet, then left');
+  });
+
+  it('leaves every other edge alone', () => {
+    const graph = buildAutoGraph(fixtureEstate());
+    const edgeId = graph.edges[0].id;
+    const applied = applyOverlay(graph, overlayWith([], [], {
+      [edgeId]: { instruction: 'Through the double doors', at: AT },
+    }));
+    const untouched = applied.edges.filter((e) => e.id !== edgeId);
+    expect(untouched.every((e) => e.instruction === undefined)).toBe(true);
+  });
+
+  it('a note for an edge the rebuild no longer produces is simply not applied', () => {
+    const applied = applyOverlay(buildAutoGraph(fixtureEstate()), overlayWith([], [], {
+      'edge:that:vanished': { instruction: 'Past the old plant room', at: AT },
+    }));
+    expect(applied.edges.some((e) => e.instruction)).toBe(false);
+  });
+
+  it('reads back a note written by saveEdgeNote, and bumps the version', async () => {
+    kv.clear();
+    const next = await saveEdgeNote(77, 'edge:a:b', { instruction: 'Left at the lift lobby', at: AT }, 0);
+    expect(next.version).toBe(1);
+
+    const stored = await loadOverlay(77);
+    expect(stored?.edgeNotes['edge:a:b'].instruction).toBe('Left at the lift lobby');
+    expect(stored?.version).toBe(1);
+  });
+
+  it('refuses to clobber a concurrent edit', async () => {
+    kv.clear();
+    await saveEdgeNote(77, 'edge:a:b', { instruction: 'First author', at: AT }, 0);
+    // Second author still holding version 0 — the state they were looking at.
+    await expect(
+      saveEdgeNote(77, 'edge:c:d', { instruction: 'Second author', at: AT }, 0),
+    ).rejects.toBeInstanceOf(OverlayConflictError);
+
+    // And the first author's note is still there, unclobbered.
+    const stored = await loadOverlay(77);
+    expect(stored?.edgeNotes['edge:a:b'].instruction).toBe('First author');
+    expect(stored?.edgeNotes['edge:c:d']).toBeUndefined();
+  });
+
+  it('an empty instruction removes the note — a wrong landmark can be taken back', async () => {
+    kv.clear();
+    const first = await saveEdgeNote(77, 'edge:a:b', { instruction: 'Wrong turn, sorry', at: AT }, 0);
+    await saveEdgeNote(77, 'edge:a:b', { instruction: '   ', at: AT }, first.version);
+    const stored = await loadOverlay(77);
+    expect(stored?.edgeNotes['edge:a:b']).toBeUndefined();
+  });
+
+  it('tolerates hand-edited junk in the notes map', async () => {
+    kv.clear();
+    kv.set(overlayKey(88), {
+      addEdges: [],
+      removeEdgeIds: [],
+      version: 3,
+      edgeNotes: {
+        good: { instruction: 'Past the meter cupboard', at: AT },
+        blank: { instruction: '   ' },
+        wrongType: 'not an object',
+        nullish: null,
+      },
+    });
+    const stored = await loadOverlay(88);
+    expect(Object.keys(stored!.edgeNotes)).toEqual(['good']);
+  });
+
+  it('a document written before edge notes existed still loads', async () => {
+    kv.clear();
+    kv.set(overlayKey(99), { addEdges: [], removeEdgeIds: [], version: 2 });
+    const stored = await loadOverlay(99);
+    expect(stored?.edgeNotes).toEqual({});
+    expect(stored?.version).toBe(2);
   });
 });

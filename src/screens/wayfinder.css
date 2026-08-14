@@ -524,3 +524,34 @@
      white, below the 4.5:1 AA floor for text this size. */
   color: var(--ink-600);
 }
+
+/* ---------- landmark authoring ----------
+   Small and quiet on the leg row: authoring is occasional, the route is what the
+   row is for. 32px keeps it tappable without competing with the instruction. */
+.wf-landmark-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px dashed var(--ink-300);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-600);
+  cursor: pointer;
+}
+
+/* Solid once a human has written one, so an authored leg is visible at a glance
+   from an auto-phrased one. */
+.wf-landmark-btn.is-set {
+  border-style: solid;
+  border-color: var(--blue-500);
+  color: var(--blue-600);
+  background: var(--blue-025);
+}
+
+.wf-landmark-btn:focus-visible {
+  outline: 2px solid var(--blue-500);
+  outline-offset: 2px;
+}

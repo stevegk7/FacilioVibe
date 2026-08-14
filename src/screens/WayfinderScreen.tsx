@@ -26,6 +26,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { appStore } from '../api/appStore';
 import { provider } from '../api/provider';
 import { seedMockDemoData } from '../api/seedDemoData';
+import { loadEditGraphPolicy, policyAllows } from '../api/permissions';
 import { resolveDestination } from '../api/agents';
 import { useLocationScope } from '../state/LocationContext';
 import { useGeoFix } from '../hooks/useGeoFix';
@@ -42,9 +43,14 @@ import type { Route, RouteStep } from '../wayfinding/router';
 import { mapsDirectionsUrl } from '../wayfinding/legs';
 import { surveyForAsset, surveyForPlace } from '../wayfinding/resolve';
 import { useEstate } from '../estate/useEstate';
-import { buildAutoGraph, findNode, routeOnGraph } from '../wayfinding/autoGraph';
+import { buildAutoGraph, findNode, legEdge, routeOnGraph } from '../wayfinding/autoGraph';
 import type { AutoGraph, AutoNode, AutoRoute } from '../wayfinding/autoGraph';
-import { applyOverlay, loadOverlay } from '../wayfinding/autoGraphStore';
+import {
+  OverlayConflictError,
+  applyOverlay,
+  loadOverlay,
+  saveEdgeNote,
+} from '../wayfinding/autoGraphStore';
 import { legsToRouteSpec } from '../wayfinding/routeDraw';
 import { computeOutdoorRoute, type OutdoorRoute } from '../api/outdoor';
 import {
@@ -161,6 +167,11 @@ export default function WayfinderScreen() {
   /** The conversation IS the navigator now — one thread, persisted per session. */
   const [thread, setThread] = useState<WfMessage[]>(loadChat);
   const spokeRef = useRef(false);
+  /** Landmark authoring: which derived edge is being written, and its text. */
+  const [noteFor, setNoteFor] = useState<{ edgeId: string; current: string } | null>(null);
+  const [noteText, setNoteText] = useState('');
+  const [noteBusy, setNoteBusy] = useState(false);
+  const [noteError, setNoteError] = useState<string | null>(null);
 
   // The whole mock app is walkable with zero setup — wayfinding included.
   useEffect(() => {
@@ -211,6 +222,23 @@ export default function WayfinderScreen() {
     queryKey: ['wf-autograph-overlay', scope.siteId ?? 0],
     queryFn: () => loadOverlay(scope.siteId ?? 0),
   });
+
+  /* Authoring the route graph is gated for the same reason placing an asset
+     marker is: every later route trusts it, a wrong landmark is followed by
+     everyone who reads it, and preview and production share one database — so an
+     edit made while testing lands under a technician in the field. Same policy
+     shape and the same open-by-default as the asset gate. */
+  const mayEditGraphQuery = useQuery({
+    queryKey: ['wf-may-edit-graph'],
+    queryFn: async () => {
+      const [policy, me] = await Promise.all([
+        loadEditGraphPolicy(),
+        provider.getCurrentUser().catch(() => null),
+      ]);
+      return policyAllows(policy, me?.user.email);
+    },
+  });
+  const mayEditGraph = mayEditGraphQuery.data ?? false;
   // buildEstate + buildAutoGraph are the estate geometry pipeline — they live
   // in the 3D chunk, and importing them statically here dragged them into the
   // entry bundle (the budget guard caught it, 1,087 B over). Dynamic import
@@ -346,6 +374,47 @@ export default function WayfinderScreen() {
   }, [autoRoute, autoGraph]);
 
   useEffect(() => setAutoArrived(false), [autoTo?.id]);
+
+  /**
+   * Write a landmark against the derived edge a leg arrives on.
+   *
+   * The version the author was LOOKING AT goes with the write, so a second
+   * author who has been editing the same site since this copy was read is
+   * detected rather than silently overwritten. On success the overlay query is
+   * invalidated, which rebuilds the graph and re-phrases the route — the author
+   * reads their own sentence back immediately.
+   */
+  const saveLandmark = async (instruction: string) => {
+    if (!noteFor || scope.siteId == null) return;
+    setNoteBusy(true);
+    setNoteError(null);
+    try {
+      const me = await provider.getCurrentUser().catch(() => null);
+      await saveEdgeNote(
+        scope.siteId,
+        noteFor.edgeId,
+        { instruction, at: new Date().toISOString(), by: me?.user.email },
+        overlayQuery.data?.version ?? 0,
+      );
+      await queryClient.invalidateQueries({ queryKey: ['wf-autograph-overlay', scope.siteId] });
+      setNoteFor(null);
+    } catch (err) {
+      setNoteError(
+        err instanceof OverlayConflictError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Could not save that landmark.',
+      );
+      // A conflict means this screen is holding a stale overlay; pull the
+      // current one so a retry is written against what is actually stored.
+      if (err instanceof OverlayConflictError) {
+        await queryClient.invalidateQueries({ queryKey: ['wf-autograph-overlay', scope.siteId] });
+      }
+    } finally {
+      setNoteBusy(false);
+    }
+  };
 
   const showRouteIn3d = () => {
     // The estate screen consumes this after its engine mounts — a route drawn
@@ -940,13 +1009,35 @@ export default function WayfinderScreen() {
 
           {autoRoute && !autoRoute.unroutable && !autoArrived && (
             <div className="wf-auto-route">
-              {autoRoute.legs.map((leg, i) => (
-                <div key={i} className="wf-auto-leg">
-                  <span className={`wf-auto-legkind wf-auto-legkind--${leg.kind}`}>{leg.kind}</span>
-                  <span className="wf-auto-leginstr">{leg.instruction}</span>
-                  <span className="wf-auto-legdist">{Math.round(leg.distanceM)} m</span>
-                </div>
-              ))}
+              {autoRoute.legs.map((leg, i) => {
+                const edge = autoGraph ? legEdge(autoGraph, leg) : undefined;
+                const authored = Boolean(edge?.instruction);
+                return (
+                  <div key={i} className="wf-auto-leg">
+                    <span className={`wf-auto-legkind wf-auto-legkind--${leg.kind}`}>{leg.kind}</span>
+                    <span className="wf-auto-leginstr">{leg.instruction}</span>
+                    {/* Distance is derived from schematic geometry on any floor
+                        without a bound plan, so it stays secondary to the words. */}
+                    <span className="wf-auto-legdist">{Math.round(leg.distanceM)} m</span>
+                    {mayEditGraph && edge && (
+                      <button
+                        className={authored ? 'wf-landmark-btn is-set' : 'wf-landmark-btn'}
+                        onClick={() => {
+                          setNoteFor({ edgeId: edge.id, current: edge.instruction ?? '' });
+                          setNoteText(edge.instruction ?? '');
+                          setNoteError(null);
+                        }}
+                        aria-label={
+                          authored ? `Edit the landmark for: ${leg.instruction}` : `Add a landmark for: ${leg.instruction}`
+                        }
+                        title={authored ? 'Edit this landmark' : 'Add a landmark'}
+                      >
+                        <Icon name={authored ? 'note' : 'plus'} size={14} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
               {outdoorInfo && (
                 <p className="wf-hint" style={{ margin: 0 }}>
                   Outdoor leg: {Math.round(outdoorInfo.distanceM)} m · about{' '}
@@ -1150,6 +1241,59 @@ export default function WayfinderScreen() {
         onClose={() => setScanOpen(false)}
         onCode={applyScan}
       />
+
+      {/* Landmark authoring — the loop that lets the derived graph be taught.
+          The overlay has been able to hold corrections since it was written and
+          nothing ever wrote one, so every portfolio route was stuck with
+          "Walk to X" forever. Whoever is standing in the corridor is the person
+          who knows what you pass. */}
+      <Sheet
+        open={noteFor !== null}
+        title="What do you pass?"
+        onClose={() => {
+          setNoteFor(null);
+          setNoteError(null);
+        }}
+      >
+        <p className="sv-help" style={{ marginTop: 0 }}>
+          One line, phrased the way you would say it out loud — “past the red fire-hose cabinet,
+          then left”. A landmark beats a distance: it also tells the next person they are still on
+          the right path.
+        </p>
+        <input
+          className="wf-assist-input wf-picker-q"
+          value={noteText}
+          onChange={(e) => setNoteText(e.target.value)}
+          placeholder="Past the red fire-hose cabinet, then left"
+          aria-label="Landmark for this step"
+          maxLength={140}
+        />
+        {noteError && (
+          <p className="empty-card wf-empty-error" role="alert">
+            {noteError}
+          </p>
+        )}
+        <div className="wf-route-actions">
+          <button className="btn-cta" onClick={() => void saveLandmark(noteText)} disabled={noteBusy}>
+            {noteBusy ? 'Saving…' : 'Save landmark'}
+          </button>
+          {noteFor?.current && (
+            <button
+              className="btn-quiet"
+              disabled={noteBusy}
+              onClick={() => {
+                // Empty text is how a note is removed — a wrong landmark has to
+                // be as easy to take back as it was to write. Passed explicitly
+                // rather than via state, which would not have updated yet.
+                setNoteText('');
+                void saveLandmark('');
+              }}
+            >
+              Remove
+            </button>
+          )}
+        </div>
+      </Sheet>
 
       <Sheet open={siteOpen} title="Where are you working?" onClose={() => setSiteOpen(false)}>
         <LocationPicker />

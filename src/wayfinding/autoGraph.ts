@@ -57,6 +57,12 @@ export interface AutoEdge {
    * Dijkstra skips these.
    */
   unroutable?: boolean;
+  /**
+   * A landmark somebody authored for this edge, applied from the overlay.
+   * Never derived — if it is here, a human wrote it, which is exactly why it
+   * outranks the generated phrasing.
+   */
+  instruction?: string;
 }
 
 export interface AutoGraph {
@@ -496,6 +502,21 @@ function shortestPath(
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
+/**
+ * The edge a leg ARRIVES on — the one a landmark is written against.
+ *
+ * Looked up by endpoints because a Hop carries no edge id and this is not a hot
+ * path; threading the id through Dijkstra to save a scan of a small edge list
+ * would be the wrong trade. Exported so the screen's "add a landmark" control
+ * and the phrasing below can never disagree about which edge that is.
+ */
+export function legEdge(graph: AutoGraph, leg: Pick<AutoLeg, 'nodes'>): AutoEdge | undefined {
+  if (leg.nodes.length < 2) return undefined;
+  const a = leg.nodes[leg.nodes.length - 2];
+  const b = leg.nodes[leg.nodes.length - 1];
+  return graph.edges.find((e) => (e.from === a && e.to === b) || (e.from === b && e.to === a));
+}
+
 export function routeOnGraph(graph: AutoGraph, fromId: string, toId: string): AutoRoute {
   const byId = new Map(graph.nodes.map((n) => [n.id, n]));
   const start = byId.get(fromId);
@@ -568,10 +589,19 @@ export function routeOnGraph(graph: AutoGraph, fromId: string, toId: string): Au
   });
 
   const nodeById = (id: string) => byId.get(id) as AutoNode;
+  const authoredFor = (leg: AutoLeg): string | undefined =>
+    legEdge(graph, leg)?.instruction?.trim() || undefined;
   for (let i = 0; i < legs.length; i++) {
     const leg = legs[i];
     const next = legs[i + 1];
     const last = nodeById(leg.nodes[leg.nodes.length - 1]);
+    // A human's landmark beats every generated sentence below. This is the rule
+    // the survey lane has always had and the derived graph never did.
+    const authored = authoredFor(leg);
+    if (authored) {
+      leg.instruction = authored;
+      continue;
+    }
     if (leg.kind === 'vertical') {
       leg.instruction = `Take stairs to ${last.label}`;
     } else if (leg.kind === 'outdoor') {

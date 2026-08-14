@@ -47,3 +47,27 @@ export async function loadPlaceAssetPolicy(): Promise<PlaceAssetPolicy> {
 export async function savePlaceAssetPolicy(policy: PlaceAssetPolicy): Promise<void> {
   await appStore.kvPut('settings', PLACE_ASSET_KEY, normalisePolicy(policy));
 }
+
+/**
+ * Who may author the ROUTE GRAPH — edges, and the landmarks written against
+ * them.
+ *
+ * Same reasoning as asset placement, and for a while it was the conspicuous
+ * gap: placing a pin was gated because "every later scan and route trusts it",
+ * while the routes themselves were open to anyone signed in. A wrong landmark
+ * is followed by every technician who reads it, and because preview and
+ * production share one database, an edit made while testing lands under people
+ * in the field.
+ *
+ * Deliberately the same shape and the same default (open) as the asset gate:
+ * nothing breaks the day this ships, and an admin narrows it in Settings.
+ */
+export const EDIT_GRAPH_KEY = 'perm.editGraph';
+
+export async function loadEditGraphPolicy(): Promise<PlaceAssetPolicy> {
+  return normalisePolicy(await appStore.kvGet('settings', EDIT_GRAPH_KEY));
+}
+
+export async function saveEditGraphPolicy(policy: PlaceAssetPolicy): Promise<void> {
+  await appStore.kvPut('settings', EDIT_GRAPH_KEY, normalisePolicy(policy));
+}
