@@ -233,6 +233,12 @@ export interface EstateEngineApi {
   back(): void;
   reset(): void;
   getState(): EngineNav;
+  /**
+   * Camera azimuth in radians, for the compass. Read per frame — the orbit
+   * angle changes continuously during a drag, so it is deliberately NOT part
+   * of the notify()/EngineNav state.
+   */
+  getHeading(): number;
   /** Added by this app: draw the wayfinding route. Indoor legs ride their
    * floor's group (floor-local metres); outdoor legs are world-frame dashes.
    * Malformed legs are skipped, never thrown on. */

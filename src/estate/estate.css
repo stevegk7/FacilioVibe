@@ -414,3 +414,38 @@
     top: calc((100% - var(--est-sheet-h, 0px)) / 2) !important;
   }
 }
+
+/* Compass — sits directly above the zoom rail, same visual family: white
+   surface, hairline border, the shared elevation token. */
+.est-compass {
+  position: absolute;
+  right: 14px;
+  z-index: 22;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: var(--surface, #fff);
+  border: 1px solid var(--line, #e3e7ee);
+  border-radius: 50%;
+  box-shadow: var(--shadow-md);
+  pointer-events: none; /* orientation readout, not a control */
+}
+.est-compass-dial {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  /* No transition: this is driven per frame from the camera, and easing it
+     would make the needle lag the model it is describing. */
+}
+.est-compass-n {
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  font: 700 9px/1 inherit;
+  letter-spacing: 0.04em;
+  color: var(--ink-700, #384a62);
+}

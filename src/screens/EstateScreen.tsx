@@ -33,6 +33,7 @@ import { openRecordSummary, isEmbeddedInFacilio } from '../api/nav';
 import { fillLink, loadLinks, EMPTY_LINKS, type LinkTemplates } from '../api/links';
 import PortfolioScreen from './PortfolioScreen';
 import { searchEstate, type EstateSearchHit, type SearchableEstate } from '../estate/searchEstate';
+import Compass from '../estate/Compass';
 import { useRole } from '../state/SessionContext';
 import type {
   EngineNav,
@@ -1386,6 +1387,11 @@ export default function EstateScreen() {
             </div>
           </div>
         )}
+
+        {/* Orientation, stacked directly above the zoom rail so the two
+            camera controls read as one cluster. Offset clears the rail
+            (one 36px row per tool) plus a 10px gap. */}
+        <Compass engineRef={engineRef} style={{ bottom: 14 + tools.length * 36 + 10 }} />
 
         {/* toolbar */}
         <div className="est-zoom-rail" style={{ position: 'absolute', right: 14, bottom: 14, zIndex: 22, display: 'flex', flexDirection: 'column', background: C.white, border: `1px solid ${C.line}`, borderRadius: 8, overflow: 'hidden', boxShadow: 'var(--shadow-md)' }}>

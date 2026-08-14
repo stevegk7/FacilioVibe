@@ -1232,6 +1232,21 @@
     api.setSearch = function (q) { searchQ = (q || '').toLowerCase(); applyState(); };
     api.setEditMode = function (v) { editMode = !!v; canvas.style.cursor = v ? 'crosshair' : 'grab'; };
     api.getState = function () { return { level: level, buildingId: activeB, floorId: activeF }; };
+
+    /**
+     * Where the camera is looking, in radians, for the compass.
+     *
+     * Read per frame rather than pushed through notify(): the orbit angle
+     * changes continuously while a drag is in flight, and notify() fires on
+     * discrete state changes only, so a compass driven by it would jump.
+     *
+     * This is the MODEL's axis, not magnetic north — the estate is built from
+     * CAD plans and a containment hierarchy, neither of which carries a
+     * geographic bearing. It answers "which way am I facing relative to how
+     * this building is drawn", which is the question someone orbiting a model
+     * is actually asking.
+     */
+    api.getHeading = function () { return camMode === 'walk' ? walk.yaw : cam.theta; };
     // PATCH (facilio-vision-3d): the wayfinding route. Indoor legs are ribbons
     // INSIDE the owning floor's group, so peel, visibility and opacity inherit
     // for free; outdoor legs are dashed lines at the scene root in world
