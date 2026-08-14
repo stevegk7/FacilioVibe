@@ -42,6 +42,11 @@ export type Role = 'admin' | 'technician';
  * Keep it short; everyone else belongs in the editable list in Settings.
  */
 export const BOOTSTRAP_ADMINS: readonly string[] = [
+  // The org's own account — what `facilio whoami` reports for #2915 and what
+  // the browser is actually signed in as. Its absence is what put a real
+  // administrator on the technician's empty-state screen; the platform's
+  // `admin` flag is false for it, so nothing else was going to catch it.
+  'vibeathon-2026+fvk@facilio.com',
   'yaaminy.sk@facilio.com',
   'yaaminy.sk+vibeathon2026@facilio.com',
 ];
