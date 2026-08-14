@@ -554,4 +554,95 @@ export const CASES = [
       return `reached for ${call.tool} with an id no find_* surfaced`;
     },
   },
+
+  // ──────────────────────────── fv-wayfinder ─────────────────────────────
+  {
+    agent: 'fv-wayfinder',
+    name: 'wayfinder/resolves-through-the-open-work-order',
+    counterexample: '{"choice":"2","ask":"none","reason":"picked the other chiller"}',
+    why: 'A fault named in words is resolved through the open work orders shown against each candidate — that is the whole point of listing them.',
+    input: [
+      'HERE: site Greenfield · at Lobby',
+      'CANDIDATES: 1. Chiller CH-1 · Plant Room · 1 open  / 2. Chiller CH-2 · Plant Room · none  / 3. Pump P-1 · Pump Room · none',
+      'REQUEST: take me to the chiller with the open job',
+    ].join('\n'),
+    expect(raw) {
+      const v = json(raw);
+      if (v.choice !== '1') return `expected choice "1", got ${JSON.stringify(v.choice)}`;
+      return true;
+    },
+  },
+  {
+    agent: 'fv-wayfinder',
+    name: 'wayfinder/ambiguity-asks-what-separates-them',
+    counterexample: '{"choice":"1","ask":"none","reason":"picked one of two identical matches"}',
+    why: 'Two equal matches must produce a question naming the ACTUAL difference, not a coin flip and not a generic "which one?".',
+    input: [
+      'HERE: site Greenfield · at Lobby',
+      'CANDIDATES: 1. Chiller TA-CH-01 · Tower A Plant Room · none  / 2. Chiller TB-CH-01 · Tower B Plant Room · none',
+      'REQUEST: the chiller',
+    ].join('\n'),
+    expect(raw) {
+      const v = json(raw);
+      if (orNone(v.choice) !== undefined) return `expected no pick, got ${v.choice}`;
+      const ask = orNone(v.ask);
+      if (!ask) return 'expected a disambiguating question';
+      if (!/tower/i.test(ask)) return `question does not name the difference: ${ask}`;
+      if (ask.split(/\s+/).length > 15) return `question too long: ${ask}`;
+      return true;
+    },
+  },
+  {
+    agent: 'fv-wayfinder',
+    name: 'wayfinder/absent-destination-is-declined',
+    counterexample: '{"choice":"1","ask":"none","reason":"stretched a match to the nearest thing"}',
+    why: 'Stretching a match sends a technician on a walk to the wrong room; nothing plausible means no pick AND no question.',
+    input: [
+      'HERE: site Greenfield · at Lobby',
+      'CANDIDATES: 1. Chiller TA-CH-01 · Plant Room · none  / 2. Primary Pump TA-P-01 · Plant Room · none',
+      'REQUEST: take me to the fire alarm panel',
+    ].join('\n'),
+    expect(raw) {
+      const v = json(raw);
+      if (orNone(v.choice) !== undefined) return `expected no pick, got ${v.choice}`;
+      if (orNone(v.ask) !== undefined) return `expected no question, got ${v.ask}`;
+      return true;
+    },
+  },
+  {
+    agent: 'fv-wayfinder',
+    name: 'wayfinder/never-composes-directions',
+    counterexample:
+      '{"choice":"1","ask":"none","reason":"take the lift to level 4 then left down the corridor"}',
+    why: 'The agent has no map. Any corridor, metre count or floor instruction it emits is invented, and a technician would follow it.',
+    input: [
+      'HERE: site Greenfield · at Lobby',
+      'CANDIDATES: 1. Chiller TA-CH-01 · Plant Room · none',
+      'REQUEST: how do I get there, which corridor do I take',
+    ].join('\n'),
+    expect(raw) {
+      const v = json(raw);
+      const text = `${v.reason ?? ''} ${v.ask ?? ''}`;
+      if (/corridor|turn left|turn right|\bmetres?\b|\bmeters?\b|take the (lift|stairs)/i.test(text))
+        return `invented directions: ${text}`;
+      return true;
+    },
+  },
+  {
+    agent: 'fv-wayfinder',
+    name: 'wayfinder/nearest-without-a-scan-is-vague',
+    counterexample: '{"choice":"1","ask":"none","reason":"guessed which one is nearer"}',
+    why: '"Nearest" is answered from the HERE line; with no standpoint on it the app cannot know, so the honest move is to ask.',
+    input: [
+      'HERE: site Greenfield',
+      'CANDIDATES: 1. Extract Fan EF-3 · Kitchen Roof · none  / 2. Extract Fan EF-4 · Kitchen Roof · none',
+      'REQUEST: nearest extract fan',
+    ].join('\n'),
+    expect(raw) {
+      const v = json(raw);
+      if (orNone(v.choice) !== undefined) return `expected no pick, got ${v.choice}`;
+      if (orNone(v.ask) === undefined) return 'expected a question';
+      return true;
+    },
+  },
 ];

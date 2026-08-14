@@ -26,6 +26,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { appStore } from '../api/appStore';
 import { provider } from '../api/provider';
 import { seedMockDemoData } from '../api/seedDemoData';
+import { resolveDestination } from '../api/agents';
 import { useLocationScope } from '../state/LocationContext';
 import { useGeoFix } from '../hooks/useGeoFix';
 import { useVoice } from '../voice/useVoice';
@@ -240,6 +241,47 @@ export default function WayfinderScreen() {
 
   useEffect(() => storeAnchor(anchor), [anchor]);
 
+  /**
+   * The closed set the assistant resolves against: every asset pinned at a
+   * standpoint of THIS site, with where it is and how much work is open on
+   * it. A destination that is not in here cannot be routed to, so offering it
+   * to the model would only invite a confident wrong answer.
+   */
+  const pinnedDestinations = useMemo(() => {
+    const woByAsset = new Map<number, number>();
+    for (const wo of workOrders.data ?? []) {
+      if (!wo.resourceId || !OPEN_WO.test(wo.status ?? 'open')) continue;
+      woByAsset.set(wo.resourceId, (woByAsset.get(wo.resourceId) ?? 0) + 1);
+    }
+    const out: Array<{
+      assetId: number;
+      label: string;
+      where: string;
+      openCount: number;
+      asset: Asset;
+    }> = [];
+    for (const survey of siteSurveys) {
+      for (const marker of survey.markers) {
+        if (marker.assetId == null) continue;
+        if (out.some((o) => o.assetId === marker.assetId)) continue;
+        out.push({
+          assetId: marker.assetId,
+          label: marker.label,
+          where: survey.spaceName ?? survey.name,
+          openCount: woByAsset.get(marker.assetId) ?? 0,
+          asset: { id: marker.assetId, name: marker.label, spaceName: survey.spaceName },
+        });
+      }
+    }
+    return out;
+  }, [siteSurveys, workOrders.data]);
+
+  /** Name of the node we are anchored at — the assistant's "HERE" line. */
+  const anchoredNodeName = useMemo(
+    () => (graph && anchor ? nodeById(graph, anchor.nodeId)?.name : undefined),
+    [graph, anchor],
+  );
+
   const route: Route | null = useMemo(() => {
     if (!graph || !dest || !anchor) return null;
     return findRoute(graph, anchor.nodeId, dest.nodeId);
@@ -357,8 +399,34 @@ export default function WayfinderScreen() {
         setCandidates(hits);
         return;
       }
-      // Lane 2: language → the same tool loop Effi runs, with deps that set
-      // the route here instead of describing it or switching tabs.
+      // Lane 2: fv-wayfinder resolves language against the destinations that
+      // actually EXIST here — the pinned assets of this site's standpoints.
+      // It picks a list position, never an id, so it cannot invent a place.
+      const routable = pinnedDestinations;
+      if (routable.length > 0) {
+        const pick = await resolveDestination(
+          query,
+          routable.map((r) => ({
+            name: r.label,
+            where: r.where,
+            openWorkOrders: r.openCount,
+          })),
+          { siteName: names.site, standpointName: anchoredNodeName },
+        );
+        if (pick.index != null && routable[pick.index]) {
+          const chosen = routable[pick.index];
+          destinationForAsset({ id: chosen.assetId, name: chosen.label });
+          return;
+        }
+        if (pick.ask) {
+          setAssistReply(pick.ask);
+          setCandidates(routable.slice(0, 4).map((r) => r.asset));
+          return;
+        }
+      }
+      // Lane 3: not a destination at all ("what's open on the chiller") —
+      // the same tool loop Effi runs, with deps that set the route here
+      // instead of describing it or switching tabs.
       const result = await runToolLoop(query, { siteId: scope.siteId }, assistDeps);
       setAssistReply(result.answer);
     } catch (err) {

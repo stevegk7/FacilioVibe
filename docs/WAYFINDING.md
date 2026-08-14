@@ -42,10 +42,25 @@ range, so the route ends at the destination standpoint by design.
 **Assistants in this space are grounded resolvers, not narrators.** Pointr's
 AI agents, Mapbox MapGPT and the LLM-wayfinding literature all converge:
 natural language → entity from a closed set → disambiguation → the terminal
-act is LAUNCHING the route. → The assist row resolves plain names with a
-deterministic search (chips on ambiguity) and hands harder language to the
-fv-voice tool loop with deps overridden so `navigate_to`/`show_on_site` SET
-this screen's route instead of describing one or yanking tabs.
+act is LAUNCHING the route. → The assist row runs three lanes, cheapest first:
+
+1. **Plain search** — a name that matches one asset routes instantly and
+   offline; several become tap chips. No model, no latency, no cost.
+2. **`fv-wayfinder`** (`resolveDestination()`) — language resolved against the
+   CLOSED set of destinations that actually exist here: the pinned assets of
+   this site's standpoints, each with its place and its open work-order count.
+   The agent answers with a LIST POSITION, never an id, so a fabricated
+   destination is arithmetically impossible; the client drops any position
+   outside the range it offered rather than clamping it. It asks when several
+   fit ("Tower A or Tower B?") and declines when nothing does.
+3. **The fv-voice tool loop** — for questions that are not destinations at all
+   ("what's open on the chiller"), with deps overridden so `navigate_to` /
+   `show_on_site` SET this screen's route instead of describing one or
+   yanking the user to another tab.
+
+The agent is told, in its instructions and again in its eval suite, that it has
+no map: any corridor, metre count or floor instruction it emits would be
+invented, and a technician would follow it.
 
 ## Demo dataset
 

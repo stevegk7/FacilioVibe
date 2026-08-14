@@ -18,6 +18,7 @@ import {
   draftWorkOrder,
   identifyAsset,
   readNameplate,
+  resolveDestination,
   runStructured,
   voiceTurn,
 } from '../api/agents';
@@ -327,6 +328,72 @@ describe('mock mode replies (?mock=1) never touch the platform', () => {
       serial: 'SN-0042',
     });
     await expect(voiceTurn('hello')).resolves.toBe('Mock reply to: hello');
+    expect(executeAgent).not.toHaveBeenCalled();
+  });
+});
+
+// The wayfinder assistant's guard rails. The agent answers with a LIST
+// POSITION, never an id — so a fabricated destination is arithmetically
+// impossible — and the client still refuses anything outside the range it
+// offered, because clamping would silently answer a different question.
+describe('resolveDestination: the wayfinder resolver', () => {
+  const THREE = [
+    { name: 'Chiller CH-1', where: 'Plant Room', openWorkOrders: 1 },
+    { name: 'Chiller CH-2', where: 'Plant Room' },
+    { name: 'Pump P-1', where: 'Pump Room' },
+  ];
+
+  it('maps a 1-based choice onto the caller\'s own array', async () => {
+    executeAgent.mockResolvedValueOnce(
+      reply('{"choice":"1","ask":"none","reason":"only chiller with an open job"}'),
+    );
+    await expect(resolveDestination('the chiller with the job', THREE)).resolves.toEqual({
+      index: 0,
+      ask: null,
+      reason: 'only chiller with an open job',
+    });
+  });
+
+  it('drops a position outside the offered range instead of clamping it', async () => {
+    executeAgent.mockResolvedValueOnce(
+      reply('{"choice":"9","ask":"none","reason":"invented a fourth option"}'),
+    );
+    const out = await resolveDestination('take me somewhere', THREE);
+    expect(out.index).toBeNull();
+  });
+
+  it('keeps the disambiguation question only when nothing was picked', async () => {
+    executeAgent.mockResolvedValueOnce(
+      reply('{"choice":"none","ask":"CH-1 or CH-2?","reason":"two equal matches"}'),
+    );
+    await expect(resolveDestination('the chiller', THREE)).resolves.toMatchObject({
+      index: null,
+      ask: 'CH-1 or CH-2?',
+    });
+
+    executeAgent.mockResolvedValueOnce(
+      reply('{"choice":"2","ask":"CH-1 or CH-2?","reason":"picked one anyway"}'),
+    );
+    // A pick AND a question is contradictory; the pick wins and the question
+    // is dropped rather than shown under a route that is already set.
+    await expect(resolveDestination('the chiller', THREE)).resolves.toMatchObject({
+      index: 1,
+      ask: null,
+    });
+  });
+
+  it('never calls the platform when there is nothing to choose between', async () => {
+    await expect(resolveDestination('anything', [])).resolves.toEqual({
+      index: null,
+      ask: null,
+      reason: 'nothing in scope',
+    });
+    expect(executeAgent).not.toHaveBeenCalled();
+  });
+
+  it('answers offline in mock mode', async () => {
+    window.history.replaceState({}, '', '/?mock=1');
+    await expect(resolveDestination('the chiller', THREE)).resolves.toMatchObject({ index: 0 });
     expect(executeAgent).not.toHaveBeenCalled();
   });
 });
