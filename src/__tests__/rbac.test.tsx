@@ -19,24 +19,33 @@ function bootAs(role: 'admin' | 'technician', tab = '') {
 }
 
 describe('navigation is role-aware', () => {
-  it('hides Diagnostics from a technician even when the URL names it', async () => {
-    bootAs('technician', 'diagnostics');
+  // Rounds and Capture were withdrawn from the product, and Diagnostics moved
+  // inside Settings — so none of the three is a screen any more, for anyone.
+  it.each(['diagnostics', 'rounds', 'capture'])(
+    'does not resolve ?tab=%s for anyone — the modules are gone, not hidden',
+    async (tab) => {
+      bootAs('admin', tab);
 
-    // The dock still resolves, so the app booted rather than erroring…
-    expect(await screen.findByRole('tab', { name: 'AR' })).toBeInTheDocument();
-    // …but the screen the URL asked for does not exist for this person. Not
-    // merely unlisted: AppShell resolves ?tab= against the filtered array.
-    expect(screen.queryByRole('tab', { name: 'Diagnostics' })).not.toBeInTheDocument();
+      // The app boots and falls back rather than erroring…
+      expect(await screen.findByRole('tab', { name: 'AR' })).toBeInTheDocument();
+      // …and the withdrawn module is nowhere, even for an admin.
+      expect(screen.queryByRole('tab', { name: /diagnostics|rounds|capture/i })).toBeNull();
+    },
+  );
+
+  it('keeps Diagnostics reachable for an admin inside Settings', async () => {
+    bootAs('admin', 'settings');
+
+    expect(await screen.findByRole('heading', { name: 'Diagnostics' })).toBeInTheDocument();
+  });
+
+  it('gives a technician no Diagnostics at all, since Settings itself is reduced', async () => {
+    bootAs('technician', 'settings');
+
+    expect(await screen.findByText(/managed by your CAFM administrator/i)).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.queryByRole('heading', { name: 'Diagnostics' })).not.toBeInTheDocument(),
     );
-  });
-
-  it('gives an admin the same URL', async () => {
-    bootAs('admin', 'diagnostics');
-
-    expect(await screen.findByRole('tab', { name: 'Diagnostics' })).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: 'Diagnostics' })).toBeInTheDocument();
   });
 
   it('shows a technician only their own settings', async () => {

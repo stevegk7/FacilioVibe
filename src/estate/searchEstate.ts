@@ -22,6 +22,8 @@ export interface SearchableEstate {
         recordId: number;
         name?: string;
         code?: string;
+        qrVal?: string | null;
+        spaceName?: string | null;
         markerModuleName?: string;
       }>;
     }>;
@@ -43,6 +45,17 @@ function rank(label: string, q: string): number {
   if (l.startsWith(q)) return 0;
   if (l.includes(q)) return 1;
   return -1;
+}
+
+/** The best rank across several fields, or -1 when none of them match. */
+function bestRank(fields: (string | null | undefined)[], q: string): number {
+  let best = -1;
+  for (const field of fields) {
+    if (!field) continue;
+    const r = rank(String(field), q);
+    if (r >= 0 && (best < 0 || r < best)) best = r;
+  }
+  return best;
 }
 
 export function searchEstate(
@@ -72,12 +85,34 @@ export function searchEstate(
       const fName = f.name ?? '';
       for (const m of f.markers) {
         if (m.markerModuleName !== 'asset') continue; // work orders tint assets; they are not destinations
-        const label = String(m.name ?? m.code ?? '');
+        // Label what the rest of the UI labels. The navigator panel and the
+        // breadcrumb both show `code` (the tag number), so someone reading
+        // "TA-AHU-01" off the panel and typing it must get a hit — and the old
+        // `name ?? code` never could, because buildEstate falls `name` back to
+        // the category, making it always truthy and `code` dead.
+        const label = String(m.code || m.name || '');
         const r = rank(label, q);
-        if (r < 0) continue;
+        // Identity first (what it IS), then the weaker matches (where it is,
+        // what its code scans as) so a room name cannot outrank a real asset.
+        const secondary =
+          r < 0
+            ? bestRank([m.name, m.qrVal, String(m.recordId), m.spaceName, fName, bName], q)
+            : -1;
+        if (r < 0 && secondary < 0) continue;
         buckets.push({
-          hit: { kind: 'asset', recordId: m.recordId, buildingId: b.id, floorId: f.recordId, label, sub: `${bName} · ${fName}` },
-          r,
+          hit: {
+            kind: 'asset',
+            recordId: m.recordId,
+            buildingId: b.id,
+            floorId: f.recordId,
+            label,
+            sub: `${bName} · ${fName}`,
+          },
+          // An asset matched only by where it sits ranks BELOW the room itself
+          // (+2) — someone typing a room name wants the room first — but still
+          // above buildings (+4), and always below an asset matched on its own
+          // identity.
+          r: r >= 0 ? r : secondary + 2.5,
           order: order++,
         });
       }

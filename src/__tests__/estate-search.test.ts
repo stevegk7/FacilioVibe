@@ -19,8 +19,19 @@ const ESTATE: SearchableEstate = {
             { recordId: 22, name: 'AH Plant Annex' },
           ],
           markers: [
-            { recordId: 31, name: 'AHU-03', code: 'AHU-03', markerModuleName: 'asset' },
-            { recordId: 32, name: 'Chiller CH-01', markerModuleName: 'asset' },
+            // name and code DIFFER on purpose. They used to be identical here,
+            // which hid a real bug for as long as the fixture existed: the
+            // panel displays `code`, search matched `name`, and typing the code
+            // off the screen returned nothing.
+            {
+              recordId: 31,
+              name: 'Air Handling Unit',
+              code: 'AHU-03',
+              qrVal: 'facilio_31',
+              spaceName: 'Plant Room',
+              markerModuleName: 'asset',
+            },
+            { recordId: 32, name: 'Chiller CH-01', code: 'CH-01', markerModuleName: 'asset' },
             // Work orders tint assets; they are not destinations.
             { recordId: 33, name: 'AHU belt replacement', markerModuleName: 'workorder' },
           ],
@@ -71,5 +82,43 @@ describe('searchEstate', () => {
 
   it('caps the list', () => {
     expect(searchEstate(ESTATE, 'ah', 2)).toHaveLength(2);
+  });
+
+  // The four things a technician actually types: what the panel shows them,
+  // what is printed on the equipment, what the scanner reads, and where it is.
+  it('matches the asset CODE — the identifier every panel displays', () => {
+    const [hit] = searchEstate(ESTATE, 'ahu-03');
+    expect(hit).toMatchObject({ kind: 'asset', recordId: 31 });
+  });
+
+  it('labels the hit with the code, so the dropdown reads like the panel', () => {
+    expect(searchEstate(ESTATE, 'ahu-03')[0].label).toBe('AHU-03');
+  });
+
+  it('still matches the asset name when that is what they remember', () => {
+    const hits = searchEstate(ESTATE, 'air handling');
+    expect(hits[0]).toMatchObject({ kind: 'asset', recordId: 31 });
+  });
+
+  it('matches a scanned QR value', () => {
+    const hits = searchEstate(ESTATE, 'facilio_31');
+    expect(hits[0]).toMatchObject({ kind: 'asset', recordId: 31 });
+  });
+
+  it('matches the record id', () => {
+    const hits = searchEstate(ESTATE, '31');
+    expect(hits.some((h) => h.kind === 'asset' && h.recordId === 31)).toBe(true);
+  });
+
+  it('finds the ASSET when a room name is typed, not just the room', () => {
+    const hits = searchEstate(ESTATE, 'plant room');
+    expect(hits.some((h) => h.kind === 'asset' && h.recordId === 31)).toBe(true);
+    // …and the room itself still ranks above the asset it merely contains.
+    expect(hits[0]).toMatchObject({ kind: 'space', recordId: 21 });
+  });
+
+  it('keeps a location match below a real identity match', () => {
+    // 'ch' hits Chiller CH-01 by name/code; nothing matched by location may win.
+    expect(searchEstate(ESTATE, 'ch')[0]).toMatchObject({ recordId: 32 });
   });
 });

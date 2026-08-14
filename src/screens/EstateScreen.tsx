@@ -33,6 +33,7 @@ import { openRecordSummary, isEmbeddedInFacilio } from '../api/nav';
 import { fillLink, loadLinks, EMPTY_LINKS, type LinkTemplates } from '../api/links';
 import PortfolioScreen from './PortfolioScreen';
 import { searchEstate, type EstateSearchHit, type SearchableEstate } from '../estate/searchEstate';
+import { useRole } from '../state/SessionContext';
 import type {
   EngineNav,
   EngineRouteLeg,
@@ -188,6 +189,7 @@ export default function EstateScreen() {
   const [spaceTags, setSpaceTags] = useState<EngineTag[]>([]);
   const [tab, setTab] = useState<'details' | 'work' | 'insp'>('details');
   const [search, setSearch] = useState('');
+  const role = useRole();
   const [sampleHealth, setSampleHealth] = useState(false);
   const [panelOpen, setPanelOpen] = useState(true);
   const [engineError, setEngineError] = useState<string | null>(null);
@@ -476,6 +478,25 @@ export default function EstateScreen() {
           </div>
           <strong className="est-loading-title">The estate didn’t load</strong>
           <span className="est-loading-sub">{(estate.error as Error)?.message ?? 'Could not load the estate.'}</span>
+        </div>
+      </section>
+    );
+  }
+  // A technician's estate is narrowed to the places their own work reaches, so
+  // "no assigned work" and "the estate failed to load" produce the same empty
+  // model — and an empty 3D scene reads as a bug, not as a permission. Say which
+  // it is. (Admins never reach this branch: their estate is unnarrowed, so an
+  // empty one really is an empty org.)
+  if (role === 'technician' && !(data?.buildings?.length ?? 0)) {
+    return (
+      <section className="screen">
+        <div className="empty-card" role="status">
+          <strong>No work is assigned to you yet.</strong>
+          <p className="muted small">
+            The 3D estate shows the buildings, floors and assets your own work orders touch. As soon
+            as a work order is assigned to you, they appear here.
+          </p>
+          <p className="muted small">Ask your CAFM administrator to assign you work.</p>
         </div>
       </section>
     );

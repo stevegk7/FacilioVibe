@@ -27,10 +27,17 @@ export type Role = 'admin' | 'technician';
 
 /**
  * Admins of last resort. These resolve before the store is consulted, so the
- * org can never lock itself out of Settings — a real risk under deny-by-default.
- * Keep it short; everyone else belongs in the editable list.
+ * org can never lock itself out of Settings — a real risk under deny-by-default,
+ * and one that bit immediately: the first version of this list held only the
+ * plus-addressed CAFM account, so the maintainers' own address resolved as a
+ * technician and the whole estate went blank for them.
+ *
+ * Keep it short; everyone else belongs in the editable list in Settings.
  */
-export const BOOTSTRAP_ADMINS: readonly string[] = ['yaaminy.sk+vibeathon2026@facilio.com'];
+export const BOOTSTRAP_ADMINS: readonly string[] = [
+  'yaaminy.sk@facilio.com',
+  'yaaminy.sk+vibeathon2026@facilio.com',
+];
 
 /**
  * A capability is a thing you can DO, not a screen you can see. Screens come

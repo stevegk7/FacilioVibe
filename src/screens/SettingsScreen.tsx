@@ -11,6 +11,7 @@ import {
 } from '../api/permissions';
 import { loadRoleMap, saveRoleMap } from '../api/roles';
 import { useCan } from '../state/SessionContext';
+import DiagnosticsScreen from './DiagnosticsScreen';
 import { EMPTY_LINKS, loadLinks, saveLinks, type LinkTemplates } from '../api/links';
 import { useSites } from '../api/hooks';
 import { detectEmbed } from '../shell/embed';
@@ -542,6 +543,36 @@ export default function SettingsScreen() {
       <PlaceAssetPolicyCard />
       <DeepLinksCard />
       <DangerZoneCard />
+      <DiagnosticsCard />
     </section>
+  );
+}
+
+/**
+ * Diagnostics is no longer its own nav item — it lives here, inside the admin
+ * half of Settings, so it inherits this screen's gate rather than needing one
+ * of its own.
+ *
+ * Rendered on demand rather than inline: it repeats the session, provider and
+ * org that SessionCard already shows a few centimetres above, and it round-trips
+ * the KV store on mount. Neither belongs in the cost of opening Settings.
+ */
+function DiagnosticsCard() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="kit-card">
+      <div className="kit-card-hd">
+        <h3>Diagnostics</h3>
+        <button className="btn-quiet" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+          {open ? 'Hide' : 'Open diagnostics'}
+        </button>
+      </div>
+      {open && (
+        <div className="kit-card-bd">
+          <DiagnosticsScreen />
+        </div>
+      )}
+    </div>
   );
 }

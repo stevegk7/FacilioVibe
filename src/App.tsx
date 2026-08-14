@@ -13,7 +13,6 @@ import { warmCameraGeometry } from './components/camera/useCamera';
 import {
   AppShell,
   CameraIcon,
-  ClipboardListIcon,
   CubeIcon,
   HomeIcon,
   LayoutGridIcon,
@@ -27,21 +26,23 @@ import { SessionProvider, useCan } from './state/SessionContext';
 import ARScreen from './screens/ARScreen';
 import EstateScreen from './screens/EstateScreenLazy';
 import WayfinderScreen from './screens/WayfinderScreen';
-import RoundsScreen, { ActiveRoundChip } from './screens/RoundsScreen';
 import BoomScreen from './screens/BoomScreen';
 import { lazyScreen } from './screens/lazyScreen';
 
-// The dock three (plus Rounds, which App renders the ActiveRoundChip from and
-// so could not leave the entry chunk anyway) stay eager. Everything else is
-// deferred — see lazyScreen for why the entry chunk had no room left.
+// Only the dock three stay eager. Everything else is deferred — see lazyScreen
+// for why the entry chunk had no room left.
+//
+// Rounds and Capture are deliberately absent: both modules were withdrawn from
+// the product. Their source is still in the tree (src/rounds/, CaptureScreen,
+// and the vision capture pipeline that AR, Rooms, Dashboard and Voice all still
+// import) but neither is registered, so neither is reachable — including by
+// ?tab=, which resolves against this array. Diagnostics moved inside Settings.
 const SurveysScreen = lazyScreen(() => import('./screens/SurveysScreen'), 'surveys');
 const PortfolioScreen = lazyScreen(() => import('./screens/PortfolioScreen'), 'the portfolio');
-const CaptureScreen = lazyScreen(() => import('./screens/CaptureScreen'), 'capture');
 const RoomsScreen = lazyScreen(() => import('./screens/RoomsScreen'), 'rooms');
 const VoiceSheet = lazyScreen(() => import('./screens/VoiceSheet'), 'Effi');
 const DashboardScreen = lazyScreen(() => import('./screens/DashboardScreen'), 'the dashboard');
 const SettingsScreen = lazyScreen(() => import('./screens/SettingsScreen'), 'settings');
-const DiagnosticsScreen = lazyScreen(() => import('./screens/DiagnosticsScreen'), 'diagnostics');
 
 installGlobalErrorHandlers();
 
@@ -60,17 +61,11 @@ const SCREENS: ShellScreen[] = [
   { id: 'ar', label: 'AR', icon: <CameraIcon />, visible: true, bleed: true, component: ARScreen },
   { id: 'wayfinder', label: 'Wayfinder', icon: <RouteIcon />, visible: true, component: WayfinderScreen },
   { id: 'surveys', label: 'Surveys', icon: <MapPinIcon />, visible: false, section: 'workspace', component: SurveysScreen },
-  { id: 'rounds', label: 'Rounds', icon: <RouteIcon />, visible: false, section: 'workspace', component: RoundsScreen },
   { id: 'dashboard', label: 'Dashboard', icon: <LayoutGridIcon />, visible: false, component: DashboardScreen },
   { id: 'portfolio', label: 'Portfolio', icon: <HomeIcon />, visible: false, component: PortfolioScreen },
-  { id: 'capture', label: 'Capture', icon: <CameraIcon />, visible: false, bleed: true, component: CaptureScreen },
   { id: 'rooms', label: 'Rooms', icon: <HomeIcon />, visible: false, component: RoomsScreen },
   { id: 'voice', label: 'Voice', icon: <MicIcon />, visible: false, component: VoiceSheet },
   { id: 'settings', label: 'Settings', icon: <SettingsIcon />, visible: false, component: SettingsScreen },
-  // The only screen a technician cannot reach AT ALL. Everywhere else they get
-  // a scoped view of their own work; diagnostics is org plumbing with nothing
-  // in it for them, and the spec asks for it to be hidden outright.
-  { id: 'diagnostics', label: 'Diagnostics', icon: <ClipboardListIcon />, visible: false, requires: 'diagnostics.view', component: DiagnosticsScreen },
   // Deliberate crash screen for the error-boundary test — ?tab=boom only.
   { id: 'boom', label: 'Boom', visible: false, devOnly: true, component: BoomScreen },
 ];
@@ -183,7 +178,6 @@ export default function App() {
           {(me) => (
             <SessionProvider me={me}>
               <LocationProvider>
-                <ActiveRoundChip />
                 <RoleAwareShell />
               </LocationProvider>
             </SessionProvider>

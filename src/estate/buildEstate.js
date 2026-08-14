@@ -270,6 +270,9 @@ export function buildEstate(raw, opts = {}) {
       markerModuleName: 'asset',
       code: a.tagNumber || (a.localId != null ? `#${a.localId}` : `#${a.id}`),
       name: a.name || catName,
+      // Carried so "Find an asset" can match a scanned code. The raw row has had
+      // it all along (loadEstateRaw sends no `select`); it was simply dropped here.
+      qrVal: a.qrVal || null,
       description: a.description || '',
       category: catName,
       assetCategoryId: id(a.category),
