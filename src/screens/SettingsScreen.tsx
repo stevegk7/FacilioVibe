@@ -416,6 +416,149 @@ function PlaceAssetPolicyCard() {
 }
 
 /**
+ * Can this portfolio actually be routed?
+ *
+ * Wayfinding degrades quietly, and until now invisibly: a site with no
+ * coordinates cannot take part in any outdoor leg, a floor with no bound plan
+ * routes through a synthesised hub with invented distances, and an asset whose
+ * space carries no floor is dropped from the graph entirely — the assistant
+ * answers "I couldn't find that" about a record that plainly exists. The first
+ * person to learn any of this was a technician standing in a corridor.
+ *
+ * Counting it is what makes the authoring debt payable. Same collapse-by-default
+ * as the landmarks card, for the same reason: this builds the estate.
+ */
+function CoverageCard() {
+  const [open, setOpen] = useState(false);
+  const estate = useEstate();
+
+  const coverage = useQuery({
+    queryKey: ['settings-coverage', estate.dataUpdatedAt],
+    enabled: open && !!estate.data,
+    queryFn: async () => {
+      const { buildEstate } = await import('../estate/buildEstate');
+      const { buildAutoGraph } = await import('../wayfinding/autoGraph');
+      const { siteCoverage, unroutableAssets } = await import('../wayfinding/coverage');
+      const built = buildEstate(estate.data!, { sampleHealth: false });
+      const graph = buildAutoGraph(built, {});
+
+      // Standpoints and landmarks are per site, read straight from the KV the
+      // Wayfinder writes.
+      const [surveys, overlays] = await Promise.all([
+        appStore.kvList<{ siteId?: number }>('surveys', 'survey.', 500).catch(() => []),
+        appStore
+          .kvList<{ edgeNotes?: Record<string, unknown> }>('settings', 'wf.autograph.', 200)
+          .catch(() => []),
+      ]);
+      const standpointsBySite: Record<string, number> = {};
+      for (const row of surveys) {
+        const key = String(row.value?.siteId ?? 0);
+        standpointsBySite[key] = (standpointsBySite[key] ?? 0) + 1;
+      }
+      const landmarksBySite: Record<string, number> = {};
+      for (const row of overlays) {
+        const key = row.key.slice('wf.autograph.'.length);
+        landmarksBySite[key] = Object.keys(row.value?.edgeNotes ?? {}).length;
+      }
+
+      return {
+        sites: siteCoverage(built, {
+          boundFloorIds: Object.keys(estate.data!.planBindings ?? {}).map(Number),
+          standpointsBySite,
+          landmarksBySite,
+        }),
+        unroutable: unroutableAssets(estate.data!, graph),
+      };
+    },
+  });
+
+  return (
+    <div className="kit-card">
+      <div className="kit-card-hd">
+        <h3>Routing coverage</h3>
+        <button className="btn" onClick={() => setOpen((v) => !v)}>
+          {open ? 'Hide' : 'Show'}
+        </button>
+      </div>
+      {open && (
+        <div className="kit-card-bd">
+          <p className="muted small" style={{ marginTop: 0 }}>
+            What can be routed today, and what cannot. Coordinates come from each site’s Facilio
+            location record; a floor without a bound plan still routes, but its distances are
+            derived from a schematic rather than measured.
+          </p>
+          {coverage.isLoading && <p className="muted small">Reading the portfolio…</p>}
+          {coverage.isError && (
+            <p className="muted small">
+              Couldn’t read the portfolio
+              {coverage.error instanceof Error ? ` — ${coverage.error.message}` : ''}.
+            </p>
+          )}
+          {coverage.data && (
+            <>
+              <table className="diag-table">
+                <thead>
+                  <tr>
+                    <th>Site</th>
+                    <th>Coordinates</th>
+                    <th>Plans</th>
+                    <th>Standpoints</th>
+                    <th>Landmarks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {coverage.data.sites.map((s) => (
+                    <tr key={s.siteId ?? s.name}>
+                      <td>{s.name}</td>
+                      <td className={s.hasGeo ? undefined : 'error'}>
+                        {s.hasGeo ? 'yes' : 'missing'}
+                      </td>
+                      <td>
+                        {s.floorsWithPlan} of {s.floors}
+                      </td>
+                      <td className={s.standpoints === 0 ? 'error' : undefined}>{s.standpoints}</td>
+                      <td>{s.landmarks}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {coverage.data.unroutable.length > 0 && (
+                <>
+                  <p className="muted small" style={{ marginTop: 14 }}>
+                    <strong>
+                      {coverage.data.unroutable.length} asset
+                      {coverage.data.unroutable.length === 1 ? '' : 's'} cannot be routed to.
+                    </strong>{' '}
+                    These exist in Facilio but are absent from the route graph, so the assistant
+                    reports it cannot find them and a work order against one has nowhere to send
+                    anybody.
+                  </p>
+                  <table className="diag-table">
+                    <tbody>
+                      {coverage.data.unroutable.map((a) => (
+                        <tr key={a.id}>
+                          <th>{a.name}</th>
+                          <td className="muted small">{a.reason}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              )}
+              {coverage.data.unroutable.length === 0 && (
+                <p className="muted small" style={{ marginTop: 14 }}>
+                  Every asset in the portfolio is reachable by the router.
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * Every landmark anybody has written against a route edge, in one place.
  *
  * The Wayfinder lets whoever is standing in the corridor write the sentence,
@@ -833,6 +976,7 @@ export default function SettingsScreen() {
       <RecognitionIndexCard />
       <AgentsCard />
       <PlaceAssetPolicyCard />
+      <CoverageCard />
       <EditGraphPolicyCard />
       <RouteLandmarksCard />
       <DeepLinksCard />
