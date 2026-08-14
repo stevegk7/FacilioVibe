@@ -53,7 +53,7 @@ export function SessionProvider({ me, children }: { me: CurrentUser; children: R
     void (async () => {
       const resolved = isMockMode()
         ? { role: mockRole(), source: 'map' as RoleSource }
-        : await loadRole(email);
+        : await loadRole(email, me.admin);
 
       // Only a technician needs the employee id, and only in live mode — it is
       // the id space assignment uses. A failure here must not escalate anyone,

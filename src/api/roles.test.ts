@@ -95,3 +95,35 @@ describe('capabilities', () => {
     }
   });
 });
+
+describe('the platform’s own admin flag', () => {
+  // getCurrentUser returns `admin: boolean` alongside user and org. Missing it
+  // shipped a release where real administrators arrived as technicians, so
+  // these pin that it is consulted FIRST and needs nothing else to work.
+  it('makes a platform administrator an admin, whatever the list says', () => {
+    expect(resolveRole('nobody@facilio.com', { admins: [] }, false, true)).toEqual({
+      role: 'admin',
+      source: 'platform',
+    });
+  });
+
+  it('works with no email and an unreachable store — it needs neither', () => {
+    expect(resolveRole(undefined, null, true, true).role).toBe('admin');
+  });
+
+  it('does NOT demote someone the app listed but the platform does not flag', () => {
+    // admin:false is the platform saying "not an org admin", not "deny" — this
+    // app may still grant CAFM admin from its own list.
+    expect(resolveRole('lead@facilio.com', MAP, false, false)).toEqual({
+      role: 'admin',
+      source: 'map',
+    });
+    expect(resolveRole(BOOTSTRAP_ADMINS[0], null, false, false).role).toBe('admin');
+  });
+
+  it('still denies an unlisted, unflagged user', () => {
+    expect(resolveRole('someone@facilio.com', { admins: [] }, false, false).role).toBe(
+      'technician',
+    );
+  });
+});

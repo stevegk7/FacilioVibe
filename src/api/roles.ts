@@ -1,11 +1,18 @@
 /**
  * Who the signed-in person is allowed to be, and what that lets them do.
  *
- * The platform will not tell us. `getCurrentUser()` returns four fields and an
- * orgId (types.ts CurrentUser) with no role on it, and the CMMS employee module
- * has no `role` field at all — asking for one fails loudly with INVALID_FIELD.
- * So role, like `permissions.ts` before it, is an APP setting: a list of admin
- * emails in the app's own KV store, editable by an admin in Settings.
+ * The platform DOES tell us, and missing that cost a release.
+ * `/api/runtime/getCurrentUser` returns `admin: boolean` next to the user and
+ * org. The first version of this file asked the CMMS employee module instead,
+ * found no `role` field there (expand=role fails INVALID_FIELD), and wrongly
+ * generalised that into "there is no role signal anywhere" — so every genuine
+ * administrator whose address was not hardcoded below arrived as a technician
+ * and saw an empty app. The platform flag is now the first thing consulted.
+ *
+ * The email list survives underneath it, because `admin` is the platform's
+ * notion of an org administrator and does not necessarily match who should
+ * hold CAFM admin in THIS app; Settings can still promote someone the platform
+ * does not consider an admin.
  *
  * Two deliberate differences from permissions.ts, both because this gate is
  * about seeing other people's work rather than placing a marker:
@@ -103,7 +110,7 @@ export interface RoleMap {
 export const EMPTY_ROLE_MAP: RoleMap = { admins: [] };
 
 /** Where a role decision came from — so the UI can be honest about a degraded store. */
-export type RoleSource = 'bootstrap' | 'map' | 'default' | 'unavailable';
+export type RoleSource = 'platform' | 'bootstrap' | 'map' | 'default' | 'unavailable';
 
 export interface RoleResolution {
   role: Role;
@@ -134,7 +141,14 @@ export function resolveRole(
   email: string | undefined,
   map: RoleMap | null,
   storeDown = false,
+  platformAdmin?: boolean,
 ): RoleResolution {
+  // The PLATFORM's answer wins, because it is the only source that is true for
+  // every account without anyone maintaining a list. Ignoring it is what made
+  // a genuine CAFM administrator arrive as a technician: their address simply
+  // was not one of the two hardcoded below.
+  if (platformAdmin === true) return { role: 'admin', source: 'platform' };
+
   const address = normaliseEmail(email);
   if (address && BOOTSTRAP_ADMINS.includes(address)) return { role: 'admin', source: 'bootstrap' };
   if (address && map?.admins.includes(address)) return { role: 'admin', source: 'map' };
@@ -151,7 +165,13 @@ export async function saveRoleMap(map: RoleMap): Promise<void> {
 }
 
 /** Resolve the signed-in person's role, including a degraded-store reason. */
-export async function loadRole(email: string | undefined): Promise<RoleResolution> {
+export async function loadRole(
+  email: string | undefined,
+  platformAdmin?: boolean,
+): Promise<RoleResolution> {
+  // The platform flag short-circuits before the store is touched at all: an
+  // administrator must not depend on fvApi being reachable to be one.
+  if (platformAdmin === true) return { role: 'admin', source: 'platform' };
   const map = await loadRoleMap();
-  return resolveRole(email, map, appStoreUnavailable() !== null);
+  return resolveRole(email, map, appStoreUnavailable() !== null, platformAdmin);
 }

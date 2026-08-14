@@ -303,4 +303,14 @@ export interface CurrentUser {
   org: {
     orgId: number;
   };
+  /**
+   * The platform's OWN answer to "is this person an administrator", returned by
+   * /api/runtime/getCurrentUser alongside the user and org.
+   *
+   * It was missed the first time round: the employee module has no `role` field
+   * (expand=role fails INVALID_FIELD), and that was wrongly generalised into
+   * "there is no role signal anywhere", so the app leaned entirely on an email
+   * list. Verified present on the live endpoint 2026-08-15.
+   */
+  admin?: boolean;
 }
