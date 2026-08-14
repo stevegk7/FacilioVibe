@@ -591,11 +591,24 @@
     }
 
     function labelSprite(text, scale) {
-      var c = document.createElement('canvas'); c.width = 512; c.height = 128;
-      var g = c.getContext('2d'); g.font = '600 58px Roboto, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.fillStyle = '#384A62'; g.fillText(text, 256, 68);
+      // The canvas is sized to the TEXT, not fixed at 512. It used to be fixed,
+      // so any name wider than 512px at this font was clipped at both ends —
+      // "Utility & Warehouse Block" rendered as "lity & Warehouse Blo".
+      var FONT = '600 58px Roboto, sans-serif';
+      var BASE = 512, PAD = 28;
+      var c = document.createElement('canvas');
+      var probe = c.getContext('2d'); probe.font = FONT;
+      var textW = Math.ceil(probe.measureText(String(text || '')).width) + PAD * 2;
+      // Setting width RESETS the 2d context, so measure first, then size, then
+      // re-apply every drawing property below.
+      c.width = Math.max(BASE, textW); c.height = 128;
+      var g = c.getContext('2d'); g.font = FONT; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillStyle = '#384A62'; g.fillText(text, c.width / 2, 68);
       var s = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(c), transparent: true }));
-      s.scale.set(scale, scale / 4, 1); return s;
+      // Widen the sprite in the same proportion as the canvas so the glyphs keep
+      // their physical size and aspect instead of being squeezed back into the
+      // old width. (x/y must equal the canvas aspect: (scale*w/512)/(scale/4) = w/128.)
+      s.scale.set(scale * (c.width / BASE), scale / 4, 1); return s;
     }
 
     /* PATCH (facilio-vision-3d): the status ramp, in ONE place. These hexes were repeated
