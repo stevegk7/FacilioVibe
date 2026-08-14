@@ -50,6 +50,22 @@
   --info-500: #0059d6;
   --info-050: #eaf2ff;
 
+  /* ---------- Accent ----------
+     The chrome's own colour, pointed at the brand indigo rather than
+     --blue-500. Facilio's product surfaces read violet (the Portfolio header,
+     the nav rail), and this app's chrome had drifted to the blue primary, so
+     the two sat side by side looking like different products.
+
+     Deliberately an ALIAS layer, not new colours: every value below already
+     existed in the brand scale. Chrome references --accent-*, so re-pointing
+     the palette is one edit here rather than a sweep through every component,
+     and --blue-500 stays exactly what it was for data and links. */
+  --accent: var(--brand-indigo-600);
+  --accent-strong: var(--brand-indigo);
+  --accent-soft: var(--brand-indigo-400);
+  --accent-wash: var(--brand-indigo-050);
+  --accent-ring: rgba(94, 62, 211, 0.22);
+
   /* ---------- Surfaces & borders ---------- */
   --bg-app: #f7f9fc;
   --bg-surface: #ffffff;

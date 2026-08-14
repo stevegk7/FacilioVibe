@@ -53,7 +53,10 @@
   height: 56px;
   padding: 0 20px;
   background: var(--bg-surface);
-  border-bottom: 1px solid var(--ink-200);
+  /* No border-bottom: it ran across the sidebar too (see .as-sidebar). The
+     content area's tint provides the separation, and this shadow only falls
+     where the topbar actually meets content. */
+  box-shadow: 0 1px 0 rgba(40, 54, 72, 0.06);
   position: sticky;
   top: 0;
   z-index: 20;
@@ -77,45 +80,85 @@
   color: var(--ink-600);
 }
 
+/* The topbar and the sidebar are ONE piece of chrome, not two panels that
+   happen to touch. The topbar spans both columns and used to carry a
+   border-bottom, so a hairline ran across the top of the sidebar and cut the
+   nav off from the logo above it — the "shade mismatch beneath the navigation
+   panel". Both internal hairlines are gone; the chrome is a single continuous
+   white L, and the boundary with the content is carried by the content's own
+   tint (--bg-app) plus one soft edge shadow, which reads as depth rather than
+   as a seam. */
 .as-sidebar {
   overflow-y: auto;
   overflow-x: hidden;
   grid-area: sidebar;
   background: var(--bg-surface);
-  border-right: 1px solid var(--ink-200);
-  padding: 10px 8px 16px;
-  overflow-y: auto;
+  /* Was `border-right: 1px solid var(--ink-200)`. */
+  box-shadow: 1px 0 0 rgba(40, 54, 72, 0.06);
+  padding: var(--space-3) var(--space-3) var(--space-6);
 }
 
 .as-nav { display: flex; flex-direction: column; gap: 2px; }
 
 .nav-section {
-  padding: 14px 12px 6px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  padding: var(--space-5) var(--space-3) var(--space-2);
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ink-500);
+  color: var(--ink-400);
 }
+/* The first heading sits against the topbar; the generous top padding that
+   separates later sections is dead space there. */
+.as-nav .nav-section:first-child { padding-top: var(--space-2); }
 
 .nav-item {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
   width: 100%;
-  padding: 8px 12px;
+  /* 40px tall: comfortable to hit, and a consistent rhythm down the rail. */
+  min-height: 40px;
+  padding: var(--space-2) var(--space-3);
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: transparent;
   color: var(--ink-700);
-  font: 500 13px/1.3 var(--font-sans);
+  font: 500 var(--fs-body)/1.3 var(--font-sans);
   text-align: left;
   cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
 }
 
-.nav-item:hover { background: var(--ink-050); border: none; }
-.nav-item.active { background: var(--blue-025); color: var(--blue-600); }
-.nav-item svg { flex: 0 0 auto; }
+.nav-item:hover { background: var(--ink-050); border: none; color: var(--ink-900); }
+.nav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.nav-item.active {
+  background: var(--accent-wash);
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+/* A marker on the rail edge, so the active item is legible at a glance and
+   survives being read by someone who cannot separate the wash from white. */
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--accent);
+}
+/* Icons follow the label's colour instead of staying grey against it. */
+.nav-item svg { flex: 0 0 auto; color: currentColor; opacity: 0.85; }
+.nav-item.active svg { opacity: 1; }
+/* Collapsed to icons, the edge marker has no room and the wash carries it. */
+.as-desktop.collapsed .nav-item.active::before { display: none; }
 
 .as-main { grid-area: main; min-width: 0; overflow-y: auto; }
 
