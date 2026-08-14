@@ -83,10 +83,14 @@ async function bootLocalized() {
   await screen.findByRole('button', { name: 'AR on' });
   // The camera no longer waits on a tap, so the scan can fire before the
   // surveys query settles — re-emit until the standpoint is recognised.
+  // Arm first: emitting through `?.` before the mock's effect has flushed does
+  // nothing at all, so the retry below was silently burning its first attempts
+  // on a no-op rather than on the race it exists for.
+  await waitFor(() => expect(scanBus.emit).not.toBeNull());
   await waitFor(
     async () => {
       await act(async () => {
-        scanBus.emit?.('ws-01-code');
+        scanBus.emit!('ws-01-code');
       });
       screen.getByText('Localized · WS-01 · QR');
     },

@@ -15,7 +15,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import * as THREE from 'three';
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 const freed = { geometries: new Set<object>(), materials: new Set<object>(), textures: new Set<object>() };
 let contextLost = false;
@@ -115,14 +115,32 @@ function tinyEstate() {
   };
 }
 
-function mountEngine(data: ReturnType<typeof tinyEstate>) {
+/**
+ * Every engine this file builds, so teardown can guarantee none is left running.
+ *
+ * A live engine is a requestAnimationFrame loop doing real per-frame work —
+ * applyState, the tag projection, the wall-height sweep. This file builds one per
+ * test, and vitest runs files in PARALLEL: a handful of stray loops here become
+ * CPU contention that makes timing-sensitive tests in other files fail. They did.
+ */
+const engines: EstateEngineApi[] = [];
+
+type EstateEngineApi = InstanceType<NonNullable<typeof window.EstateEngine>>;
+
+function mountEngine(data: ReturnType<typeof tinyEstate>, callbacks = {}) {
   const host = document.createElement('div');
   const canvas = document.createElement('canvas');
   host.appendChild(canvas);
   document.body.appendChild(host);
   // estate-engine.js is a constructor FUNCTION, callable with or without `new`;
   // the typed surface declares the `new` form, so use it.
-  return new window.EstateEngine!(canvas, data as never, {});
+  const engine = new window.EstateEngine!(canvas, data as never, callbacks);
+  // Nothing here asserts anything the render loop produces — every assertion is
+  // a synchronous state change (enter, select, mode, dispose). Park the loop
+  // immediately so these tests cost CPU once, not sixty times a second.
+  engine.setPaused(true);
+  engines.push(engine);
+  return engine;
 }
 
 describe('estate-engine dispose()', () => {
@@ -142,6 +160,19 @@ describe('estate-engine dispose()', () => {
     freed.materials.clear();
     freed.textures.clear();
     contextLost = false;
+  });
+
+  // A test that fails early would otherwise leave its engine's loop running for
+  // the rest of the file — and, because files run in parallel, for everyone else.
+  afterEach(() => {
+    while (engines.length) {
+      const engine = engines.pop();
+      try {
+        engine?.dispose();
+      } catch {
+        /* already disposed by the test itself — that is the normal path */
+      }
+    }
   });
 
   it('runs against the real three r128 the browser gets', () => {
@@ -220,6 +251,7 @@ describe('estate-engine dispose()', () => {
     expect(engine.getPlanMode()).toBe('drawing');
     const madeInDrawing = freed.geometries.size;
 
+    engine.enterBuilding('1');
     engine.enterFloor('1', 11);
     engine.setPlanMode('solid');
     expect(engine.getPlanMode()).toBe('solid');
@@ -232,6 +264,160 @@ describe('estate-engine dispose()', () => {
     // An unknown mode is ignored rather than blanking the floor.
     engine.setPlanMode('nonsense' as never);
     expect(engine.getPlanMode()).toBe('drawing');
+    engine.dispose();
+  });
+
+  /* ---------- walk-in ---------- */
+
+  /** A 12 x 9 m room: four outer walls, one divider, on floor 11 of building '1'. */
+  function planEstate() {
+    const data = tinyEstate();
+    (data.buildings[0].floors[0] as Record<string, unknown>).plan = {
+      widthM: 12,
+      depthM: 9,
+      rooms: [{ id: 1, area: 50, cx: -3, cz: 0, x0: -6, z0: -4.5, x1: 0, z1: 4.5, rects: [[-6, -4.5, 0, 4.5]] }],
+      layers: {
+        walls: [
+          [[-6, -4.5], [6, -4.5]], [[6, -4.5], [6, 4.5]],
+          [[6, 4.5], [-6, 4.5]], [[-6, 4.5], [-6, -4.5]],
+          [[0, -4.5], [0, 4.5]],
+        ],
+        doors: [], glazing: [], stairs: [], furniture: [],
+      },
+    };
+    return data;
+  }
+
+  interface WalkDebug {
+    camMode: string;
+    walk: { x: number; y: number; z: number; yaw: number; pitch: number };
+    walkSegs: number;
+  }
+  const dbg = (engine: ReturnType<typeof mountEngine>) =>
+    (engine as unknown as { _debug(): WalkDebug })._debug();
+
+  it('refuses to walk into a floor that has no plan', () => {
+    // A schematic floor's rooms are laid out, not surveyed. Standing inside them
+    // would present invented geometry as a place.
+    const engine = mountEngine(tinyEstate());
+    engine.enterBuilding('1');
+    engine.enterFloor('1', 11);
+    expect(engine.setCameraMode('walk')).toBe(false);
+    expect(engine.getCameraMode()).toBe('orbit');
+    engine.dispose();
+  });
+
+  it('refuses to walk in from the estate or building level', () => {
+    const engine = mountEngine(planEstate());
+    expect(engine.setCameraMode('walk')).toBe(false);   // level 0
+    engine.enterBuilding('1');
+    expect(engine.setCameraMode('walk')).toBe(false);   // level 1
+    engine.dispose();
+  });
+
+  it('walks in on a plan floor, and forces the walls to room height', () => {
+    const engine = mountEngine(planEstate());
+    engine.enterBuilding('1');
+    engine.enterFloor('1', 11);
+    expect(engine.setCameraMode('walk')).toBe(true);
+    expect(engine.getCameraMode()).toBe('walk');
+    // Drawing-height walls are 0.85 m — you would be standing over them.
+    expect(engine.getPlanMode()).toBe('solid');
+    engine.dispose();
+  });
+
+  it('leaves on Back rather than changing level out from under the camera', () => {
+    const engine = mountEngine(planEstate());
+    engine.enterBuilding('1');
+    engine.enterFloor('1', 11);
+    engine.setCameraMode('walk');
+
+    engine.back();
+    expect(engine.getCameraMode()).toBe('orbit');
+    // …and it is still the same floor: one Back left the room, not the floor.
+    expect(engine.getState()).toEqual({ level: 2, buildingId: '1', floorId: 11 });
+    engine.dispose();
+  });
+
+  it('dropping to Drawing leaves walk, instead of sinking the walls below eye level', () => {
+    const engine = mountEngine(planEstate());
+    engine.enterBuilding('1');
+    engine.enterFloor('1', 11);
+    engine.setCameraMode('walk');
+
+    engine.setPlanMode('drawing');
+    expect(engine.getCameraMode()).toBe('orbit');
+    expect(engine.getPlanMode()).toBe('drawing');
+    engine.dispose();
+  });
+
+  it('reports every mode change, including the ones it makes itself', () => {
+    const seen: string[] = [];
+    const engine = mountEngine(planEstate(), { onCameraMode: (m: string) => seen.push(m) });
+
+    engine.enterBuilding('1');
+    engine.enterFloor('1', 11);
+    engine.setCameraMode('walk');
+    engine.back();               // the engine's own decision to leave
+    expect(seen).toEqual(['walk', 'orbit']);
+    engine.dispose();
+  });
+
+  it('accepts on-screen movement input without a keyboard', () => {
+    const engine = mountEngine(planEstate());
+    engine.enterBuilding('1');
+    engine.enterFloor('1', 11);
+    engine.setCameraMode('walk');
+    // Out-of-range values are clamped rather than teleporting the camera.
+    expect(() => engine.setWalkInput(5, -5)).not.toThrow();
+    expect(() => engine.setWalkInput(0, 0)).not.toThrow();
+    engine.dispose();
+  });
+
+  it('indexes the floor’s own wall geometry to collide against', () => {
+    // The walls you bump into are the walls that were drawn — there is no second
+    // collision model to drift out of sync with the drawing.
+    const engine = mountEngine(planEstate());
+    engine.enterBuilding('1');
+    engine.enterFloor('1', 11);
+    engine.setCameraMode('walk');
+    expect(dbg(engine).walkSegs).toBe(5);   // four outer walls + the divider
+    engine.dispose();
+  });
+
+  it('stands you at eye level in the room, not on the slab', () => {
+    const engine = mountEngine(planEstate());
+    engine.enterBuilding('1');
+    engine.enterFloor('1', 11);
+    engine.setCameraMode('walk');
+    const { walk } = dbg(engine);
+    // floor 0 slab top is 0.24; eye height 1.62 above it.
+    expect(walk.y).toBeCloseTo(0.24 + 1.62, 2);
+    // …and inside the room the plan says is biggest, not at the plate origin.
+    expect(walk.x).toBeLessThan(0);
+    expect(Math.abs(walk.z)).toBeLessThan(4.5);
+    engine.dispose();
+  });
+
+  it('pushes the start position out of a wall it would otherwise begin inside', () => {
+    // The room centroid is put ON the divider wall. Spawning there would drop the
+    // camera inside solid geometry, which is the one place collision can never
+    // recover from — it has no free direction to slide toward.
+    const data = planEstate();
+    const plan = (data.buildings[0].floors[0] as Record<string, unknown>).plan as {
+      rooms: { cx: number; cz: number }[];
+    };
+    plan.rooms[0].cx = 0;   // exactly on the [[0,-4.5],[0,4.5]] divider
+    plan.rooms[0].cz = 0;
+
+    const engine = mountEngine(data);
+    engine.enterBuilding('1');
+    engine.enterFloor('1', 11);
+    engine.setCameraMode('walk');
+
+    const { walk } = dbg(engine);
+    // Pushed clear of the divider by at least the body radius.
+    expect(Math.abs(walk.x)).toBeGreaterThanOrEqual(0.33);
     engine.dispose();
   });
 

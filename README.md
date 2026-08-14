@@ -32,7 +32,9 @@ a work order, raise a fault from a photo.
 (or a plan JSON extracted offline), and it binds to *that* floor. The app parses
 the drawing and recovers its rooms itself; no CLI, no developer. On any floor with
 a plan, a **Drawing / 3D** toggle reads it either as architectural line work seen
-from above or as room-height walls you orbit as a space.
+from above or as room-height walls you orbit as a space — and **Walk in** puts you
+inside it at eye level, drag to look, WASD or the on-screen pad to walk, with the
+drawn walls as the ones you bump into.
 
 **The handoff** is the point of the merge:
 

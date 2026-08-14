@@ -516,6 +516,28 @@
     var planWallH = PLAN_WALL_DRAWING;   // current, damped toward the goal in tick()
     var planWallGoal = PLAN_WALL_DRAWING;
     var planWalls = [];                  // every wall volume group, for the scale sweep
+
+    /* PATCH (facilio-vision-3d): walk-in mode — stand inside the plan.
+     *
+     * The orbit camera is spherical (theta/phi/radius about a target). Walking is
+     * the other kind: a position and a look direction. Rather than bend the orbit
+     * maths into a first-person camera, `camMode` picks which one drives
+     * camera.position each frame, and switching back restores the orbit exactly
+     * as it was — so "leave" returns you to the view you came from, not a reset.
+     *
+     * Collision is circle-vs-segment against the plan's own wall polylines: the
+     * geometry that is drawn IS the geometry you bump into, so there is no second
+     * model to keep in sync. */
+    var WALK_EYE = 1.62;        // eye height above the slab, metres
+    var WALK_SPEED = 3.1;       // m/s — a brisk indoor walk, not a sprint
+    var WALK_RADIUS = 0.34;     // body radius for collision
+    var WALK_LOOK = 0.0042;     // radians per pixel dragged
+    var camMode = 'orbit';
+    var walk = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0 };
+    var walkKeys = {};          // held keyboard keys
+    var walkPad = { forward: 0, strafe: 0 };   // on-screen control (touch)
+    var walkSegs = [];          // [x0,z0,x1,z1] world-space wall segments of the active floor
+    var walkSaved = null;       // the orbit goal to restore on leave
     function buildPlan(plan, parent) {
       var g = new T.Group();
       // PATCH (facilio-vision-3d): the wall volume is built at UNIT height with its
@@ -872,16 +894,86 @@
       goal.radius = Math.max(R, 14);
       goal.phi = phi;
     }
+    /* ---------- walk-in ---------- */
+
+    /** Wall segments of one floor, in WORLD space (plan coords are building-local). */
+    function buildWalkSegs(rb, rf) {
+      var out = [];
+      var plan = rf.data && rf.data.plan;
+      if (!plan) return out;
+      var ox = rb.data.x, oz = rb.data.z;
+      ['walls', 'glazing'].forEach(function (role) {
+        (plan.layers[role] || []).forEach(function (poly) {
+          for (var k = 1; k < poly.length; k++) {
+            var x0 = poly[k - 1][0] + ox, z0 = poly[k - 1][1] + oz;
+            var x1 = poly[k][0] + ox, z1 = poly[k][1] + oz;
+            if (Math.abs(x1 - x0) + Math.abs(z1 - z0) < 0.02) continue;
+            // …plus a body-radius-padded AABB, precomputed once, for the reject
+            // in walkCollide.
+            out.push([x0, z0, x1, z1,
+              Math.min(x0, x1) - WALK_RADIUS, Math.max(x0, x1) + WALK_RADIUS,
+              Math.min(z0, z1) - WALK_RADIUS, Math.max(z0, z1) + WALK_RADIUS]);
+          }
+        });
+      });
+      return out;
+    }
+
+    /**
+     * Push a candidate position out of any wall it has entered, and let it slide
+     * along. Two passes, because a corner is two walls and resolving one can push
+     * you into the other.
+     */
+    function walkCollide(x, z) {
+      for (var pass = 0; pass < 2; pass++) {
+        for (var i = 0; i < walkSegs.length; i++) {
+          var s = walkSegs[i];
+          // Cheap reject first. A real floor is thousands of segments (3,314 on
+          // Tower A / Floor 1, mostly glazing mullions) and the projection below
+          // costs a sqrt each; four comparisons discard almost all of them.
+          if (x < s[4] || x > s[5] || z < s[6] || z > s[7]) continue;
+          var dx = s[2] - s[0], dz = s[3] - s[1];
+          var len2 = dx * dx + dz * dz;
+          if (len2 < 1e-6) continue;
+          var t = ((x - s[0]) * dx + (z - s[1]) * dz) / len2;
+          t = t < 0 ? 0 : t > 1 ? 1 : t;
+          var px = s[0] + dx * t, pz = s[1] + dz * t;
+          var ax = x - px, az = z - pz;
+          var d = Math.sqrt(ax * ax + az * az);
+          if (d >= WALK_RADIUS) continue;
+          if (d < 1e-4) { ax = -dz; az = dx; d = Math.sqrt(ax * ax + az * az); }  // dead centre
+          var push = (WALK_RADIUS - d) / d;
+          x += ax * push;
+          z += az * push;
+        }
+      }
+      return [x, z];
+    }
+
+    /** Where to stand when walking in: the middle of the biggest room. */
+    function walkStart(rb, rf) {
+      var plan = rf.data.plan;
+      var room = (plan.rooms || [])[0];
+      var lx = room && Number.isFinite(room.cx) ? room.cx : 0;
+      var lz = room && Number.isFinite(room.cz) ? room.cz : 0;
+      var spot = walkCollide(rb.data.x + lx, rb.data.z + lz);
+      return { x: spot[0], z: spot[1], y: rf.level * FLOOR_H + rf.peelGoal + 0.24 + WALK_EYE };
+    }
+
     function notify() { if (cb.onLevel) cb.onLevel({ level: level, buildingId: activeB, floorId: activeF }); }
 
     var api = {};
     api.enterBuilding = function (bid) {
+      if (camMode === 'walk') api.setCameraMode('orbit');
+
       var now = Date.now();
       if (activeB && activeB !== bid) setPeel(activeB, false, now);
       activeB = bid; activeF = null; level = 1;
       setPeel(bid, true, now); camBuilding(B[bid]); api.select(null); applyState(); notify();
     };
     api.enterFloor = function (bid, fid) {
+      if (camMode === 'walk') api.setCameraMode('orbit');
+
       if (activeB !== bid) return api.flyToFloor(bid, fid);
       var prev = activeF;
       activeF = fid; level = 2; focusId = null; focusSpaceId = null;
@@ -910,6 +1002,10 @@
       later(function () { api.enterFloor(bid, fid); }, 850);
     };
     api.back = function () {
+      // Standing inside the plan, "back" means stop standing inside it. Changing
+      // level while the camera is a first-person camera would leave it dangling
+      // in mid-air over a floor it is no longer in.
+      if (camMode === 'walk') { api.setCameraMode('orbit'); return; }
       if (focusId !== null && focusSpaceId === null) {
         var lf = api.locate(focusId);
         var owner = lf && lf.m.spaceId;
@@ -923,6 +1019,8 @@
       applyState(); notify();
     };
     api.reset = function () {
+      if (camMode === 'walk') api.setCameraMode('orbit');
+
       if (activeB) setPeel(activeB, false, Date.now());
       activeB = null; activeF = null; level = 0; api.select(null); camEstate(); applyState(); notify();
     };
@@ -1147,6 +1245,13 @@
       if (!down) return;
       var dx = e.movementX || 0, dy = e.movementY || 0;
       moved += Math.abs(dx) + Math.abs(dy);
+      if (camMode === 'walk') {
+        // Look, don't orbit. Pitch clamps just short of vertical so the horizon
+        // never flips over.
+        walk.yaw += dx * WALK_LOOK;
+        walk.pitch = Math.max(-1.2, Math.min(1.2, walk.pitch - dy * WALK_LOOK));
+        return;
+      }
       goal.theta -= dx * 0.0052;
       goal.phi = Math.max(0.18, Math.min(1.42, goal.phi - dy * 0.004));
     });
@@ -1172,6 +1277,8 @@
     });
     on(canvas, 'wheel', function (e) {
       e.preventDefault();
+      // Walking has no orbit radius; the wheel would move a camera invisibly.
+      if (camMode === 'walk') return;
       goal.radius = Math.max(14, Math.min(280, goal.radius * Math.pow(1.0015, e.deltaY)));
       lastTouch = Date.now();
     }, { passive: false });
@@ -1187,12 +1294,13 @@
         var hs = rf.spacesG.visible ? ray.intersectObjects(spaceMeshes, false)[0] : null;
         if (hs) { api.select(hs.object.userData.space.recordId, 'space'); return; }
         if (selectedId !== null) { api.select(null); return; }
+        if (camMode === 'walk') return;   // walking out of a room is not "go up a level"
         api.back(); return;
       }
       var shells = [];
       Object.keys(B).forEach(function (bid) { B[bid].floors.forEach(function (r) { if (r.group.visible) shells.push(r.shell); }); });
       var hit2 = ray.intersectObjects(shells, false)[0];
-      if (!hit2) { if (level > 0) api.back(); return; }
+      if (!hit2) { if (level > 0 && camMode !== 'walk') api.back(); return; }
       var ud = hit2.object.userData;
       if (level === 0 || ud.buildingId !== activeB) api.enterBuilding(ud.buildingId);
       else api.enterFloor(ud.buildingId, ud.floorId);
@@ -1219,15 +1327,42 @@
         planWallH = damp(planWallH, planWallGoal, dt, 5);
         for (var pw = 0; pw < planWalls.length; pw++) planWalls[pw].scale.y = planWallH;
       }
-      cam.theta = damp(cam.theta, goal.theta, dt, 5);
-      cam.phi = damp(cam.phi, goal.phi, dt, 5);
-      cam.radius = damp(cam.radius, goal.radius, dt, 4);
-      cam.target.lerp(goal.target, 1 - Math.exp(-dt * 4));
-      camera.position.set(
-        cam.target.x + cam.radius * Math.sin(cam.phi) * Math.cos(cam.theta),
-        cam.target.y + cam.radius * Math.cos(cam.phi),
-        cam.target.z + cam.radius * Math.sin(cam.phi) * Math.sin(cam.theta));
-      camera.lookAt(cam.target);
+      if (camMode === 'walk') {
+        // forward/strafe from the keyboard and the on-screen pad, combined so a
+        // tablet with a keyboard can use either
+        var fwd = (walkKeys.w ? 1 : 0) - (walkKeys.s ? 1 : 0) + walkPad.forward;
+        var str = (walkKeys.d ? 1 : 0) - (walkKeys.a ? 1 : 0) + walkPad.strafe;
+        fwd = Math.max(-1, Math.min(1, fwd));
+        str = Math.max(-1, Math.min(1, str));
+        if (fwd || str) {
+          var mag = Math.sqrt(fwd * fwd + str * str) || 1;   // no diagonal speed bonus
+          var step = (WALK_SPEED * dt) / mag;
+          var sinY = Math.sin(walk.yaw), cosY = Math.cos(walk.yaw);
+          // yaw 0 looks down -Z, so forward is (sin, -cos) and right is (cos, sin)
+          var nx = walk.x + (sinY * fwd + cosY * str) * step;
+          var nz = walk.z + (-cosY * fwd + sinY * str) * step;
+          var hit = walkCollide(nx, nz);
+          walk.x = hit[0];
+          walk.z = hit[1];
+        }
+        camera.position.set(walk.x, walk.y, walk.z);
+        var cp = Math.cos(walk.pitch);
+        camera.lookAt(
+          walk.x + Math.sin(walk.yaw) * cp,
+          walk.y + Math.sin(walk.pitch),
+          walk.z - Math.cos(walk.yaw) * cp,
+        );
+      } else {
+        cam.theta = damp(cam.theta, goal.theta, dt, 5);
+        cam.phi = damp(cam.phi, goal.phi, dt, 5);
+        cam.radius = damp(cam.radius, goal.radius, dt, 4);
+        cam.target.lerp(goal.target, 1 - Math.exp(-dt * 4));
+        camera.position.set(
+          cam.target.x + cam.radius * Math.sin(cam.phi) * Math.cos(cam.theta),
+          cam.target.y + cam.radius * Math.cos(cam.phi),
+          cam.target.z + cam.radius * Math.sin(cam.phi) * Math.sin(cam.theta));
+        camera.lookAt(cam.target);
+      }
       var tNow = Date.now();
       Object.keys(B).forEach(function (bid) {
         B[bid].floors.forEach(function (rf) {
@@ -1402,6 +1537,24 @@
       renderer.setSize(w, h, false);
       camera.aspect = w / h; camera.updateProjectionMatrix();
     }
+    /* Movement keys. Bound to the window, not the canvas, because the canvas is
+       not focusable — and gated on camMode so they never eat a keystroke meant
+       for the app's search box or its Escape handler. */
+    var WALK_KEY = { w: 'w', a: 'a', s: 's', d: 'd',
+      arrowup: 'w', arrowleft: 'a', arrowdown: 's', arrowright: 'd' };
+    function walkKey(e, held) {
+      if (camMode !== 'walk') return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      var k = WALK_KEY[String(e.key).toLowerCase()];
+      if (!k) return;
+      e.preventDefault();
+      walkKeys[k] = held;
+    }
+    on(window, 'keydown', function (e) { walkKey(e, true); });
+    on(window, 'keyup', function (e) { walkKey(e, false); });
+    // A window that loses focus mid-stride would otherwise walk forever.
+    on(window, 'blur', function () { walkKeys = {}; walkPad.forward = walkPad.strafe = 0; });
+
     var ro = new ResizeObserver(resize); ro.observe(canvas.parentElement);
     resize(); applyState(); requestAnimationFrame(tick);
     window.__estate = api;
@@ -1409,7 +1562,11 @@
       return { level: level, camR: cam.radius, goalR: goal.radius, camPhi: cam.phi, goalPhi: goal.phi,
         target: [Math.round(cam.target.x), Math.round(cam.target.y), Math.round(cam.target.z)],
         goalT: [Math.round(goal.target.x), Math.round(goal.target.y), Math.round(goal.target.z)],
-        aspect: Math.round(camera.aspect * 100) / 100 };
+        aspect: Math.round(camera.aspect * 100) / 100,
+        disposed: disposed, paused: paused,
+        camMode: camMode,
+        walk: { x: walk.x, y: walk.y, z: walk.z, yaw: walk.yaw, pitch: walk.pitch },
+        walkSegs: walkSegs.length };
     };
     /* PATCH (facilio-vision-3d): a dispose() that actually disposes.
      *
@@ -1426,6 +1583,7 @@
       offs.forEach(function (off) { off(); }); offs.length = 0;
       clearTimeout(focusT);
       flights.forEach(clearTimeout); flights.length = 0;
+      walkSegs.length = 0; walkKeys = {}; walkSaved = null; camMode = 'orbit';
 
       // 1. every GPU resource reachable from the graph. Sprites matter as much as
       //    meshes — the per-building name labels are CanvasTextures on sprite materials.
@@ -1479,6 +1637,9 @@
     api.setPlanMode = function (mode) {
       var next = mode === 'solid' ? 'solid' : 'drawing';
       if (next === planMode) return;
+      // Drawing-height walls are 0.85 m — you would be standing over them, not in
+      // them. Leaving walk first is the only coherent reading of this.
+      if (next === 'drawing' && camMode === 'walk') api.setCameraMode('orbit');
       planMode = next;
       planWallGoal = next === 'solid' ? PLAN_WALL_SOLID : PLAN_WALL_DRAWING;
       var rb = B[activeB];
@@ -1488,6 +1649,66 @@
       }
     };
     api.getPlanMode = function () { return planMode; };
+
+    /* PATCH (facilio-vision-3d): walk in / leave.
+     * Only meaningful inside a floor that has a plan — there is nothing to walk
+     * through on a schematic floor, and pretending otherwise would put the camera
+     * inside a box of invented rooms. Returns true when the mode actually changed,
+     * so the UI never shows a state the engine refused. */
+    api.setCameraMode = function (mode) {
+      var want = mode === 'walk' ? 'walk' : 'orbit';
+      if (want === camMode) return true;
+
+      if (want === 'walk') {
+        var rb = B[activeB];
+        var rf = rb && rb.floors.find(function (r) { return r.data.recordId === activeF; });
+        if (level !== 2 || !rf || !rf.data.plan) return false;
+
+        // Walls have to be at room height to be walls at all.
+        api.setPlanMode('solid');
+        planWallH = planWallGoal;           // no growing-wall animation to walk into
+        for (var i = 0; i < planWalls.length; i++) planWalls[i].scale.y = planWallH;
+
+        walkSegs = buildWalkSegs(rb, rf);
+        var start = walkStart(rb, rf);
+        walk.x = start.x; walk.y = start.y; walk.z = start.z;
+        // Face the way the orbit camera was looking, so entering is a step forward
+        // rather than a spin.
+        walk.yaw = cam.theta + Math.PI;
+        walk.pitch = 0;
+        walkKeys = {};
+        walkPad.forward = walkPad.strafe = 0;
+        walkSaved = { theta: goal.theta, phi: goal.phi, radius: goal.radius, target: goal.target.clone() };
+        camMode = 'walk';
+        canvas.style.cursor = 'grab';
+        if (cb.onCameraMode) cb.onCameraMode('walk');
+        return true;
+      }
+
+      camMode = 'orbit';
+      if (walkSaved) {
+        goal.theta = walkSaved.theta; goal.phi = walkSaved.phi; goal.radius = walkSaved.radius;
+        goal.target.copy(walkSaved.target);
+        // Come back from where you were standing, not from where you entered.
+        cam.target.set(walk.x, goal.target.y, walk.z);
+        cam.radius = 6;
+        walkSaved = null;
+      }
+      walkSegs = [];
+      canvas.style.cursor = editMode ? 'crosshair' : 'grab';
+      if (cb.onCameraMode) cb.onCameraMode('orbit');
+      return true;
+    };
+    api.getCameraMode = function () { return camMode; };
+
+    /**
+     * Movement from an on-screen control, for touch. -1..1 on each axis; the
+     * keyboard adds to this rather than replacing it, so either works.
+     */
+    api.setWalkInput = function (forward, strafe) {
+      walkPad.forward = Math.max(-1, Math.min(1, Number(forward) || 0));
+      walkPad.strafe = Math.max(-1, Math.min(1, Number(strafe) || 0));
+    };
 
     /* PATCH (facilio-vision-3d): stop rendering while the canvas is parked off-screen. */
     api.setPaused = function (v) {

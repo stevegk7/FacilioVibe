@@ -213,8 +213,13 @@ describe('AR HUD — mobile-native stage (mock mode)', () => {
     bootAt('?mock=1&tab=ar');
 
     await screen.findByRole('button', { name: 'AR on' });
+    // Wait for the mocked scan loop to arm itself. `scanBus.emit` is assigned by
+    // an effect inside the mock, and finding "AR on" does not guarantee that
+    // effect has flushed — emitting through `?.` before it has silently does
+    // NOTHING, which looks exactly like the app dropping the scan.
+    await waitFor(() => expect(scanBus.emit).not.toBeNull());
     await act(async () => {
-      scanBus.emit?.('ws-01-code');
+      scanBus.emit!('ws-01-code');
     });
 
     // the survey's markers: asset tag + note tag
@@ -254,8 +259,13 @@ describe('Place asset — the sheet that shipped broken', () => {
     await screen.findByRole('button', { name: 'AR on' });
 
     // localize by scanning the standpoint code
+    // Wait for the mocked scan loop to arm itself. `scanBus.emit` is assigned by
+    // an effect inside the mock, and finding "AR on" does not guarantee that
+    // effect has flushed — emitting through `?.` before it has silently does
+    // NOTHING, which looks exactly like the app dropping the scan.
+    await waitFor(() => expect(scanBus.emit).not.toBeNull());
     await act(async () => {
-      scanBus.emit?.('ws-01-code');
+      scanBus.emit!('ws-01-code');
     });
     await screen.findByRole('button', { name: /Pin here/ });
 

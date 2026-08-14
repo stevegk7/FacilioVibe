@@ -138,6 +138,25 @@ took one run and answered it immediately.
 **Optional chaining on a test double hides the case where the double is not
 ready.** Assert it is armed, then call it unconditionally.
 
+That rule was applied to one call site first and the suite stayed flaky, because
+the same `scanBus.emit?.(...)` appeared in three more places — in exactly the
+files that were still failing. Every emit in the suite now waits for the mock.
+
+Two other things were needed before the suite went quiet, both measured rather
+than assumed:
+
+- `estate-dispose.test.ts` builds a real engine per test, and an engine is a
+  `requestAnimationFrame` loop doing per-frame work. Sixteen of them, in a file
+  running in PARALLEL with everything else, is CPU contention that makes
+  timing-sensitive tests elsewhere fail. Each is now parked at construction and
+  disposed in `afterEach`.
+- vitest's default 5 s `testTimeout` is genuinely too small here: the
+  presence-decay test allows its own `waitFor` 4 s, so a boot plus a scan plus
+  that retry nearly exhausts the budget before contention counts. The captured
+  failure was literally "Test timed out in 5000ms".
+
+Rate across the same 20-run stress: **10/20 → 3/20 → 0/20**.
+
 ## Platform notes
 
 - "Agent teams" is not a Studio primitive — the tool loop IS the team:

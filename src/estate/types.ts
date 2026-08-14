@@ -168,6 +168,8 @@ export interface EngineCallbacks {
   onTags?(tags: EngineTag[], spaceTags: EngineTag[]): void;
   onFocus?(recordId: number | null): void;
   onMove?(recordId: number, x: number, z: number): void;
+  /** Fires whenever the engine enters or leaves walk-in, including on its own. */
+  onCameraMode?(mode: 'orbit' | 'walk'): void;
 }
 
 export interface EstateEngineApi {
@@ -199,6 +201,16 @@ export interface EstateEngineApi {
    */
   setPlanMode(mode: 'drawing' | 'solid'): void;
   getPlanMode(): 'drawing' | 'solid';
+  /**
+   * Added by this app: stand inside the plan at eye level, or come back out.
+   * Only possible inside a floor that HAS a plan — a schematic floor has no walls
+   * to walk between. Returns false when it refused, so the UI never shows a state
+   * the engine did not enter.
+   */
+  setCameraMode(mode: 'orbit' | 'walk'): boolean;
+  getCameraMode(): 'orbit' | 'walk';
+  /** Movement from an on-screen control, -1..1 per axis. Adds to the keyboard. */
+  setWalkInput(forward: number, strafe: number): void;
   /** Added by this app: repaint the status ramp from the CSS design tokens. */
   setPalette(palette: Record<string, number>): void;
   zoom(direction: number): void;

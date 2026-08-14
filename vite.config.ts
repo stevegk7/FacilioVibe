@@ -45,6 +45,19 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/__tests__/setup.ts'],
     globals: false,
+    /**
+     * vitest defaults to 5 s per test. That is not enough for the AR suites, and
+     * not because anything is slow in production: the presence-decay test alone
+     * allows its own `waitFor` 4 s, so a boot plus a scan plus that retry nearly
+     * exhausts the budget before contention is considered — and 44 test files run
+     * in parallel.
+     *
+     * Measured, not guessed: the captured failure is literally "Test timed out in
+     * 5000ms", and the AR maintenance loop takes ~1.8 s of its budget when the
+     * machine is idle. This does not weaken any assertion; a genuinely broken
+     * path still fails, and now says what was missing instead of just "timed out".
+     */
+    testTimeout: 20_000,
     exclude: ['**/node_modules/**', '**/dist/**', '**/.claude/**', '**/fixtures/**'],
   },
 });

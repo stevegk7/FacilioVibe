@@ -279,9 +279,13 @@ it('a sticker scanned before the survey registry loads still localizes', async (
   render(<App />);
   await screen.findByRole('button', { name: 'AR on' });
 
-  // Scan while the registry is still in flight. One emit, as the mock gives.
+  // Scan while the registry is still in flight. One emit, as the mock gives —
+  // but only once the mock is armed. Emitting through `?.` before its effect has
+  // flushed silently does nothing, which is indistinguishable from the app
+  // dropping the scan and is exactly the flake this file already fixed once.
+  await waitFor(() => expect(scanBus.emit).not.toBeNull());
   await act(async () => {
-    scanBus.emit?.(SURVEY.qrCode as string);
+    scanBus.emit!(SURVEY.qrCode as string);
   });
   expect(screen.queryByText(`Localized · ${SURVEY.name} · QR`)).toBeNull();
 

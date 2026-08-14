@@ -133,6 +133,7 @@ export default function EstateScreen() {
   const [links, setLinks] = useState<LinkTemplates>(EMPTY_LINKS);
   const [effiOpen, setEffiOpen] = useState(false);
   const [planMode, setPlanMode] = useState<'drawing' | 'solid'>('drawing');
+  const [camMode, setCamMode] = useState<'orbit' | 'walk'>('orbit');
   const [importState, setImportState] = useState<
     { kind: 'idle' } | { kind: 'busy'; label: string } | { kind: 'error'; message: string } | { kind: 'done'; message: string }
   >({ kind: 'idle' });
@@ -188,11 +189,16 @@ export default function EstateScreen() {
       else engine.clearFocus();
     },
     onTags: (_tags: EngineTag[], sTags: EngineTag[]) => setSpaceTags(sTags ?? []),
+    // The engine leaves walk on its own for several reasons (Back, a level
+    // change, dropping to Drawing), so the button follows the engine rather than
+    // the other way round.
+    onCameraMode: (mode: 'orbit' | 'walk') => setCamMode(mode),
   });
   const callbacks = useRef({
     onLevel: (n: EngineNav) => handlers.current.onLevel(n),
     onSelect: (s: EngineSelection | null) => handlers.current.onSelect(s),
     onTags: (t: EngineTag[], s: EngineTag[]) => handlers.current.onTags(t, s),
+    onCameraMode: (m: 'orbit' | 'walk') => handlers.current.onCameraMode(m),
   }).current;
 
   /* ---------- mount / park the shared canvas ---------- */
@@ -740,6 +746,14 @@ export default function EstateScreen() {
     }
   }
 
+  function walkIn() {
+    // The engine refuses on a floor with no plan; trust its answer rather than
+    // duplicating the rule here and letting the two disagree.
+    const ok = engineRef.current?.setCameraMode('walk');
+    if (!ok) setImportState({ kind: 'error', message: 'Walk-in needs a floor plan on this floor.' });
+    else setPlanMode('solid');
+  }
+
   function togglePlanMode() {
     const next = planMode === 'solid' ? 'drawing' : 'solid';
     setPlanMode(next);
@@ -874,9 +888,61 @@ export default function EstateScreen() {
           </button>
         </div>
 
+        {/* walking HUD — replaces the floor tools while you are inside the plan */}
+        {camMode === 'walk' && (
+          <>
+            <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: 14, zIndex: 26, display: 'flex', alignItems: 'center', gap: 10, background: C.white, border: `1px solid ${C.line}`, borderRadius: 8, padding: '7px 12px', boxShadow: 'var(--shadow-md)' }}>
+              <span style={{ fontSize: 12, color: C.sub, whiteSpace: 'nowrap' }}>
+                Drag to look · W A S D or arrows to walk
+              </span>
+              <button
+                className="est-primary"
+                onClick={() => engineRef.current?.setCameraMode('orbit')}
+                style={{ height: 26, padding: '0 11px', fontSize: 12, fontWeight: 500, color: C.white, background: C.blue, border: 'none', borderRadius: 4, cursor: 'pointer', whiteSpace: 'nowrap' }}
+              >
+                Leave
+              </button>
+            </div>
+
+            {/* Touch pad. A phone has no W A S D, and a virtual stick is a lot of
+                machinery for four directions — these are the four directions. */}
+            <div
+              aria-label="Walk"
+              style={{ position: 'absolute', left: 18, bottom: 18, zIndex: 26, display: 'grid', gridTemplateColumns: 'repeat(3, 44px)', gridTemplateRows: 'repeat(2, 44px)', gap: 6 }}
+            >
+              {([
+                { label: 'Forward', d: 'M12 19V5M6 11l6-6 6 6', col: 2, row: 1, f: 1, s: 0 },
+                { label: 'Left', d: 'M19 12H5M11 6l-6 6 6 6', col: 1, row: 2, f: 0, s: -1 },
+                { label: 'Back', d: 'M12 5v14M6 13l6 6 6-6', col: 2, row: 2, f: -1, s: 0 },
+                { label: 'Right', d: 'M5 12h14M13 6l6 6-6 6', col: 3, row: 2, f: 0, s: 1 },
+              ] as const).map((btn) => (
+                <button
+                  key={btn.label}
+                  aria-label={btn.label}
+                  // Pointer events, not click: walking is held, not tapped. The
+                  // cancel/leave pair is what stops a finger sliding off the pad
+                  // from walking forever.
+                  onPointerDown={(e) => {
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                    engineRef.current?.setWalkInput(btn.f, btn.s);
+                  }}
+                  onPointerUp={() => engineRef.current?.setWalkInput(0, 0)}
+                  onPointerCancel={() => engineRef.current?.setWalkInput(0, 0)}
+                  onPointerLeave={() => engineRef.current?.setWalkInput(0, 0)}
+                  style={{ gridColumn: btn.col, gridRow: btn.row, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.94)', border: `1px solid ${C.line}`, borderRadius: 8, color: C.sub, cursor: 'pointer', boxShadow: 'var(--shadow-md)', touchAction: 'none' }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d={btn.d} />
+                  </svg>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
         {/* floor tools: import a plan, and read it as a drawing or as a space.
             Only inside a floor — neither means anything at estate or building level. */}
-        {activeF && !selAsset && !selSpace && (
+        {activeF && camMode === 'orbit' && !selAsset && !selSpace && (
           <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: 14, zIndex: 23, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {activePlan && (
@@ -892,6 +958,18 @@ export default function EstateScreen() {
                     </button>
                   ))}
                 </div>
+              )}
+              {activePlan && planMode === 'solid' && (
+                <button
+                  className="est-ghost"
+                  onClick={walkIn}
+                  style={{ height: 32, padding: '0 12px', display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 500, color: C.ink, background: C.white, border: `1px solid ${C.line}`, borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: 'var(--shadow-md)' }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="4" r="2" /><path d="M10 21l1.5-6-2-2 1-5 3 2 2 2" /><path d="M9.5 13L8 21" />
+                  </svg>
+                  Walk in
+                </button>
               )}
               <button
                 className="est-ghost"

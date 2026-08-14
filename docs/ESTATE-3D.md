@@ -145,6 +145,44 @@ into a re-merge of every wall segment.
 
 Walk-in (first-person) is the deliberate next step on top of this, not part of it.
 
+## Walk-in
+
+`api.setCameraMode('walk')` puts the camera inside the plan at eye level (1.62 m
+above the slab), in the middle of the biggest room. Drag looks, `WASD`/arrows
+walk, and `setWalkInput(forward, strafe)` is the same movement from an on-screen
+pad, so a phone needs no keyboard.
+
+Only on a floor that **has a plan** — a schematic floor's rooms are laid out from
+containment, not surveyed, and standing inside them would present invented
+geometry as a place. `setCameraMode` returns `false` when it refuses, so the UI
+follows the engine rather than duplicating the rule.
+
+The orbit camera is spherical (theta/phi/radius about a target); walking is a
+position and a look direction. Rather than bend one into the other, `camMode`
+picks which drives `camera.position` each frame, and leaving restores the orbit
+goal exactly — you come back to the view you left, not a reset.
+
+**Collision is against the plan's own wall and glazing polylines**: the geometry
+that is drawn is the geometry you bump into, so there is no second model to keep
+in sync. Circle-vs-segment with a 0.34 m body radius, two passes so a corner
+resolves. Each segment carries a precomputed padded AABB — a real floor is
+thousands of segments (3,314 on Tower A / Floor 1, mostly glazing mullions) and
+four comparisons discard almost all of them before the sqrt.
+
+Walking is abandoned automatically wherever it stops making sense: `back()` (one
+press leaves the room, not the floor), a level change, and dropping to `drawing`
+— where 0.85 m walls would leave you standing over them rather than in them.
+
+### Debugging note: rAF does not run in a hidden tab
+
+Everything the engine animates — camera damping, the wall-height sweep, walking —
+is driven by `requestAnimationFrame`, which browsers **do not fire while the tab
+is hidden**. Automated checks that poke the engine through the console and then
+read `_debug()` will see nothing move, and it looks exactly like broken movement.
+It is not. `_debug()` reports `disposed` and `paused` so that state is at least
+answerable; `document.visibilityState` is the thing to check first. Screenshots
+force a paint, so stepping a check with them does advance frames.
+
 ## Offline checks
 
 Both run with no Facilio session and are worth keeping:
