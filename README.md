@@ -116,9 +116,23 @@ fails if three.js appears in the entry chunk or the entry exceeds its gzip budge
 ## Going live
 
 `facilio vibe deploy` publishes to the **preview** URL only. Promotion to
-production is a separate step, and the `fvApi` function is promoted **per
-channel** — a build promoted without it answers 404 on every KV call, at which
-point reads degrade to empty and writes throw. After promoting, confirm with:
+production is **a click in the Facilio platform UI, and only the user can make
+it** — open the app in Vibe Studio and press *Publish to production*.
+
+**`facilio vibe deploy --prod` does not do it.** The flag is real (CLI 0.10.5)
+and it really does POST `{production: true}` to the deployments endpoint, but
+the server does not treat that as a promotion: the deploy succeeds, reports the
+**preview** URL, and the app's `publishedAt` stays null. Tested on v12 of this
+app; `facilio vibe app list` is the check, since its `PUBLISHED` column is that
+field. The docs are the authoritative side of this disagreement, and they are
+explicit that it is deliberate — *"no `vibe promote` … by design. This is a
+safety property, not an option you can override."* There is no app-level
+publish command anywhere in the CLI; the only `/publish` endpoint it calls is
+per-deployment and means "finish uploading this build", not "make it live".
+
+The `fvApi` function is promoted **per channel** — a build promoted without it
+answers 404 on every KV call, at which point reads degrade to empty and writes
+throw. After promoting, confirm with:
 
 ```bash
 facilio vibe function run fvApi health
