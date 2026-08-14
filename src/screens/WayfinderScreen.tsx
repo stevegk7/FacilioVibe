@@ -63,6 +63,7 @@ import {
   anchorIsStale,
   arrivalPhase,
   estimateSeconds,
+  floorPhases,
   isFloorChange,
   minutesText,
   type Anchor,
@@ -1285,6 +1286,7 @@ function RoutePreview({
   onClear(): void;
 }) {
   const seconds = estimateSeconds(route.steps);
+  const phases = floorPhases(route.steps);
   return (
     <div className="wf-route">
       <div className="wf-route-head">
@@ -1292,13 +1294,44 @@ function RoutePreview({
         <span className="wf-total">
           {route.totalMeters != null && `${Math.round(route.totalMeters)}m · `}
           {minutesText(seconds)}
+          {phases.length > 1 && ` · ${phases.length} floors`}
         </span>
       </div>
-      <ol className="wf-steps">
-        {route.steps.map((step, i) => (
-          <StepRow key={step.edge.id + i} step={step} index={i} state="todo" />
-        ))}
-      </ol>
+      {/* Chunked per floor rather than one flat list. floorPhases has existed,
+          tested, since the rebuild — the design is documented on it (working
+          memory tops out around four segments, and a floor change is the
+          highest-error moment indoors) but nothing ever rendered it. A single
+          phase stays unlabelled, so a same-floor route reads exactly as before. */}
+      {phases.length > 1 ? (
+        phases.map((phase) => (
+          <div className="wf-phase" key={`${phase.label ?? 'floor'}-${phase.startIndex}`}>
+            {phase.label && (
+              <p className="wf-phase-label">
+                <Icon name="location" size={13} />
+                {phase.label}
+              </p>
+            )}
+            <ol className="wf-steps" start={phase.startIndex + 1}>
+              {route.steps
+                .slice(phase.startIndex, phase.startIndex + phase.count)
+                .map((step, i) => (
+                  <StepRow
+                    key={step.edge.id + (phase.startIndex + i)}
+                    step={step}
+                    index={phase.startIndex + i}
+                    state="todo"
+                  />
+                ))}
+            </ol>
+          </div>
+        ))
+      ) : (
+        <ol className="wf-steps">
+          {route.steps.map((step, i) => (
+            <StepRow key={step.edge.id + i} step={step} index={i} state="todo" />
+          ))}
+        </ol>
+      )}
       <p className="wf-last-leg">
         The last stretch isn't a step — at {route.destination.name}, the AR arrow points at{' '}
         {dest.label}.

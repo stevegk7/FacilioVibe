@@ -498,3 +498,29 @@
   min-height: 32px;
   cursor: pointer;
 }
+
+/* ---------- per-floor phases ----------
+   A long route reads as chunks, not a wall of rows: working-memory research puts
+   the limit around four segments, and a floor change is the highest-error moment
+   indoors. journey.ts has computed these since the rebuild; only the rendering
+   was missing. A single-phase route shows no label at all, so a same-floor walk
+   is untouched. */
+.wf-phase + .wf-phase {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--ink-200);
+}
+
+.wf-phase-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  /* ink-600, not ink-500: the review measured the lighter token at 3.22:1 on
+     white, below the 4.5:1 AA floor for text this size. */
+  color: var(--ink-600);
+}
