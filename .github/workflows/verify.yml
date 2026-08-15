@@ -1,0 +1,58 @@
+# The gate this repo already has, actually enforced.
+#
+# CONTRIBUTING.md says "there is no CI" — the gate is a person remembering to run
+# `npm run verify` before pushing, on a branch more than one person pushes to.
+# This runs the same five checks the repo already trusts, on every PR and on
+# pushes to main. Nothing new is invented here: `npm run verify` is
+# build → test → adapter smoke → 3D smoke → bundle budget.
+#
+# This file only REPORTS. It blocks nothing on its own — see the PR discussion:
+# making it a gate needs branch protection, which is a separate, deliberate call.
+name: verify
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Least privilege: this job reads the tree and runs the same checks a developer
+# runs. It never needs to write to the repo.
+permissions:
+  contents: read
+
+# A second push to the same PR cancels the first; the gate only needs to be true
+# for the tip.
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Node 20 is the floor the CLI and the toolchain expect (see ONBOARDING.md).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      # `npm ci` and not `npm install`: the lockfile is the contract, and a gate
+      # that silently resolves different dependencies than the developer had is
+      # not a gate.
+      - run: npm ci
+
+      - name: verify (build, tests, adapter smoke, 3D smoke, bundle budget)
+        run: npm run verify
+
+      # When the budget fails, the number matters more than the stack trace, so
+      # surface it in the job summary rather than making someone open the log.
+      # Deliberately no headroom figure in this comment: it moved from ~730 B to
+      # ~25 KB in a single commit, and a comment that has to be re-measured to
+      # stay true will simply go stale instead.
+      - name: report bundle size
+        if: always()
+        run: node check-bundle.mjs >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
