@@ -108,11 +108,55 @@ describe('the data layer scopes work, not the screens', () => {
     expect(mine.length).toBeLessThan(admin.length);
   });
 
+  /**
+   * Sites were the one level of the tree that did not narrow — and the one the
+   * user meets FIRST, in the picker every screen is scoped by. A technician was
+   * offered every site in the org, and choosing one their work never reaches
+   * showed an empty building list underneath: the app naming a place it had
+   * already decided not to show them.
+   */
+  it('narrows SITES too — the level the picker offers first', async () => {
+    setSessionScope({ role: 'admin' });
+    const all = (await mockProvider.listSites({ pageSize: 50 })).data;
+    expect(all.length).toBeGreaterThan(1); // the fixture must be able to show a difference
+
+    setSessionScope({ role: 'technician', uid: 1, employeeId: 1, email: 'mock@facilio.com' });
+    const mine = (await mockProvider.listSites({ pageSize: 50 })).data;
+    expect(mine.length).toBeLessThan(all.length);
+
+    // Every site offered must be one the technician's own buildings sit in —
+    // no site may be listed that has nothing they can reach beneath it.
+    const buildings = await mockProvider.listBuildings();
+    const reachable = new Set(buildings.map((b) => b.siteId));
+    for (const site of mine) expect(reachable.has(site.id)).toBe(true);
+  });
+
+  /**
+   * The 3D estate is a SECOND read path with its own payload, and it was
+   * narrowing four levels while spreading sites through untouched — the same
+   * omission as the picker, in a place the picker's test could not see.
+   */
+  it('narrows the estate payload at every level, sites included', async () => {
+    setSessionScope({ role: 'technician', uid: 1, employeeId: 1, email: 'mock@facilio.com' });
+    const estate = await mockProvider.loadEstate();
+
+    // Sites must not outrun the buildings beneath them.
+    const siteOf = new Set(estate.buildings.map((b) => (b.site as { id?: number } | null)?.id));
+    for (const site of estate.sites) expect(siteOf.has(Number(site.id))).toBe(true);
+
+    setSessionScope({ role: 'admin' });
+    const all = await mockProvider.loadEstate();
+    expect(estate.sites.length).toBeLessThan(all.sites.length);
+  });
+
   it('gives a technician with no assigned work an empty world, never the org', async () => {
     setSessionScope({ role: 'technician', uid: 999, employeeId: 999, email: 'nobody@facilio.com' });
 
     expect((await mockProvider.listWorkOrders({ pageSize: 50 })).data).toEqual([]);
     expect(await mockProvider.searchAssets({})).toEqual([]);
     expect(await mockProvider.listBuildings()).toEqual([]);
+    expect((await mockProvider.listSites({ pageSize: 50 })).data).toEqual([]);
+    // …including the estate's own payload, which is a separate read path.
+    expect((await mockProvider.loadEstate()).sites).toEqual([]);
   });
 });

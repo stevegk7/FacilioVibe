@@ -100,12 +100,12 @@ export async function loadEstateRaw(showRetired = false): Promise<EstateRaw> {
   // 3D model would quietly show a technician every marker in the portfolio.
   const scopedWorkOrders = visibleWorkOrders(workOrders as AssigneeRow[]);
   const narrowed = narrowEstate(
-    { buildings, floors, spaces, assets },
+    { sites, buildings, floors, spaces, assets },
     scopedWorkOrders,
   );
 
   return {
-    sites: visibleRows(sites, showRetired),
+    sites: visibleRows(narrowed.sites, showRetired),
     buildings: visibleRows(narrowed.buildings, showRetired),
     floors: visibleRows(narrowed.floors, showRetired),
     spaces: visibleRows(narrowed.spaces, showRetired),
@@ -126,9 +126,9 @@ type Lookup = { id?: number } | null | undefined;
  * gets the arrays back untouched — same object, no copying, no cost.
  */
 function narrowEstate(
-  rows: { buildings: RawRow[]; floors: RawRow[]; spaces: RawRow[]; assets: RawRow[] },
+  rows: { sites: RawRow[]; buildings: RawRow[]; floors: RawRow[]; spaces: RawRow[]; assets: RawRow[] },
   scopedWorkOrders: AssigneeRow[],
-): { buildings: RawRow[]; floors: RawRow[]; spaces: RawRow[]; assets: RawRow[] } {
+): { sites: RawRow[]; buildings: RawRow[]; floors: RawRow[]; spaces: RawRow[]; assets: RawRow[] } {
   if (sessionScope().role === 'admin') return rows;
 
   const assetIds = new Set<number>();
@@ -156,6 +156,9 @@ function narrowEstate(
   );
 
   return {
+    // Sites narrow too. The 3D estate rendered every site's ground plane for a
+    // technician who could only enter buildings in one of them.
+    sites: rows.sites.filter((s) => places.siteIds.has(Number(s.id))),
     buildings: rows.buildings.filter((b) => places.buildingIds.has(Number(b.id))),
     floors: rows.floors.filter((f) => places.floorIds.has(Number(f.id))),
     spaces: rows.spaces.filter((s) => places.spaceIds.has(Number(s.id))),

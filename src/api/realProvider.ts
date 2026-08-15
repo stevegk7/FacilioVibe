@@ -353,7 +353,21 @@ export const realProvider: DataProvider = {
     return row?.id ?? null;
   },
 
-  listSites: (q) => list<Site>('list-sites', q),
+  /**
+   * Sites narrow like everything else. They were the one level of the tree
+   * that did not, which is a leak you can SEE rather than reason about: the
+   * site picker offered a technician every site in the org, and picking one
+   * their work never reaches then showed an empty building list underneath —
+   * the app describing a place it had already decided not to show them.
+   *
+   * `allowedPlaces` has computed `siteIds` all along; nothing consumed it.
+   */
+  async listSites(q) {
+    const page = await list<Site>('list-sites', q);
+    const world = await myWorld();
+    if (!world) return page;
+    return { ...page, data: page.data.filter((s) => world.places.siteIds.has(s.id)) };
+  },
 
   async listBuildings(): Promise<Building[]> {
     const rows = await fetchAllPages<RawBuilding>('list-buildings', {

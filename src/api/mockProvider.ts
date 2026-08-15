@@ -222,7 +222,7 @@ export const mockProvider: DataProvider = {
     return email.trim().toLowerCase() === 'mock@facilio.com' ? 1 : null;
   },
 
-  listSites: (q) => paginate(sites, q),
+  listSites: (q) => paginate(narrow(sites, 'siteIds'), q),
   // Same record policy as realProvider — mock mode must not show a set the live
   // org would hide, or ?mock=1 stops being a faithful rehearsal. The same now
   // goes for assignment scoping: a technician here sees what a technician there
@@ -464,6 +464,9 @@ export const mockProvider: DataProvider = {
     };
     return delay({
       ...raw,
+      // `...raw` spreads sites through untouched unless they are narrowed here
+      // too — the spread is exactly how this level kept being missed.
+      sites: narrow(visibleRows(raw.sites, showRetired), 'siteIds'),
       buildings: narrow(visibleRows(raw.buildings, showRetired), 'buildingIds'),
       floors: narrow(visibleRows(raw.floors, showRetired), 'floorIds'),
       spaces: narrow(visibleRows(raw.spaces, showRetired), 'spaceIds'),
