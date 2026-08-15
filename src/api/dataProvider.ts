@@ -78,7 +78,9 @@ export interface DataProvider {
   /** Run one of those buttons. `formData` only for buttons that declare a form. */
   executeWorkOrderAction(
     workOrderId: number,
-    action: Pick<RecordAction, 'buttonId' | 'buttonType'>,
+    // toStateId rides along so a transition can still be completed when the
+    // platform's button runner is unreachable (see realProvider).
+    action: Pick<RecordAction, 'buttonId' | 'buttonType' | 'toStateId'>,
     formData?: Record<string, unknown>,
   ): Promise<void>;
   /** Create via the script lane — the create action itself is broken (see scriptFns.ts). */
