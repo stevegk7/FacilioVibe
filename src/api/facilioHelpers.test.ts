@@ -6,7 +6,7 @@
 // the AR panel then painted, red, at a technician standing in front of the
 // asset. The panel is for "what happened and what do I do"; the page is noise.
 import { describe, expect, it } from 'vitest';
-import { humanError } from './facilioHelpers';
+import { humanError, isGatewayFailure } from './facilioHelpers';
 
 // Abridged from the actual screenshot; the shape is what matters.
 const GATEWAY_PAGE =
@@ -33,5 +33,35 @@ describe('humanError', () => {
     const out = humanError('socket hang up', 'list-sites');
     expect(out).toBeInstanceOf(Error);
     expect(out.message).toBe('socket hang up');
+  });
+});
+
+/*
+ * The gateway detector decides whether a fallback is legitimate.
+ *
+ * Measured 2026-08-16 against org #2915: execute-button-for-a-record answers
+ * every button with the web client's index.html — the documented {id} lookup
+ * shape, a bare value, and a systemButton carrying no formData at all all fail
+ * identically. So the app finishes state transitions through
+ * change-work-order-status instead. That fallback must fire ONLY when the
+ * server never answered; a refusal it actually authored has to reach the user,
+ * or the app would move a record the workflow just declined to move.
+ */
+describe('isGatewayFailure', () => {
+  it('recognises the humanised sentence execute() has already written', () => {
+    expect(isGatewayFailure(humanError(new Error(GATEWAY_PAGE), 'execute-button-for-a-record'))).toBe(
+      true,
+    );
+  });
+
+  it('recognises a raw HTML page, for anything that skips humanError', () => {
+    expect(isGatewayFailure(new Error(GATEWAY_PAGE))).toBe(true);
+  });
+
+  it('does NOT claim a refusal the server actually authored', () => {
+    expect(isGatewayFailure(new Error('Insufficient permissions — READ access denied'))).toBe(false);
+    expect(isGatewayFailure(new Error('Transition criteria not met'))).toBe(false);
+    expect(isGatewayFailure(new Error('module is not accessible in this app'))).toBe(false);
+    expect(isGatewayFailure(undefined)).toBe(false);
   });
 });

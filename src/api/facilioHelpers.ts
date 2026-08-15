@@ -34,6 +34,25 @@ export function humanError(err: unknown, actionSlug: string): Error {
   );
 }
 
+/** The sentence `humanError` writes when it swallows a gateway HTML page. */
+const GATEWAY_SENTENCE = 'answered with an error page';
+
+/**
+ * True when a call died in the gateway rather than being refused by Facilio.
+ * Callers use it to decide whether a fallback is legitimate: a server that
+ * REFUSED something (permission, criteria) must never be worked around, while
+ * a server that never answered may be.
+ *
+ * Matches the humanised sentence, because `execute` converts the page before
+ * any caller sees it — and the raw markers too, for anything that skips it.
+ */
+export function isGatewayFailure(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err ?? '');
+  return (
+    message.includes(GATEWAY_SENTENCE) || /<!doctype\s|<html[\s>]/i.test(message)
+  );
+}
+
 /**
  * One connections action. The SDK sometimes wraps the payload in `{response}`,
  * and the CMMS layer reports failures in-band as `{success:false, error}` rather

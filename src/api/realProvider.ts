@@ -1,5 +1,5 @@
 import { vibe } from './vibe';
-import { cmms, chunk, execute, fetchAllPages, inFilter, rowsOf } from './facilioHelpers';
+import { cmms, chunk, execute, fetchAllPages, inFilter, isGatewayFailure, rowsOf } from './facilioHelpers';
 import { callFn } from './scriptFns';
 import { visibleRows } from './recordPolicy';
 import {
@@ -274,6 +274,44 @@ async function fetchSpaces(): Promise<Space[]> {
  */
 let worldMemo: { gen: number; value: Promise<{ assetIds: Set<number>; places: AllowedPlaces }> } | null =
   null;
+
+/**
+ * A transition names the state it moves TO by id; `change-work-order-status`
+ * wants that state's status NAME. `list-states` is the only place the two are
+ * stated together (183230 → "Assigned", measured against org #2915). Org
+ * config, so it is read once per session and never cached on failure.
+ */
+let statesMemo: Promise<Map<number, string>> | null = null;
+
+async function statusNameForState(stateId: number): Promise<string | null> {
+  statesMemo ??= (async () => {
+    const res = await execute<unknown>('facilio-process-automation', 'list-states', {
+      moduleName: 'workorder',
+    });
+    const raw = (res.data ?? (res as unknown as { items?: unknown[] })) as
+      | { items?: unknown[] }
+      | unknown[];
+    const rows = (Array.isArray(raw) ? raw : (raw?.items ?? [])) as Array<{
+      id?: number;
+      status?: string;
+      displayName?: string;
+    }>;
+    const map = new Map<number, string>();
+    for (const row of rows) {
+      const name = row.status ?? row.displayName;
+      if (typeof row.id === 'number' && name) map.set(row.id, name);
+    }
+    return map;
+  })();
+  statesMemo.catch(() => {
+    statesMemo = null;
+  });
+  try {
+    return (await statesMemo).get(stateId) ?? null;
+  } catch {
+    return null;
+  }
+}
 
 /** Narrow an asset list to the technician's own; a no-op for an admin. */
 async function scopeAssets(assets: Asset[]): Promise<Asset[]> {
@@ -583,20 +621,53 @@ export const realProvider: DataProvider = {
     };
   },
 
+  /**
+   * Run a workflow button — and finish the job when the platform's own button
+   * runner will not.
+   *
+   * `execute-button-for-a-record` is returning Facilio's web-client HTML
+   * instead of JSON for every button in this org, measured 2026-08-16 against
+   * work order 14275669: the documented `{id}` lookup shape fails, a bare
+   * value fails, and a `systemButton` carrying NO formData at all fails the
+   * same way. So it is not the payload — the endpoint itself is down, and no
+   * shape of ours will make it answer.
+   *
+   * What the user actually wants from a state transition is the state change,
+   * and `change-work-order-status` performs that today (it is the same call
+   * behind the window's own status capsule). So when the runner fails and the
+   * transition names where it was going, go there directly.
+   *
+   * This is deliberately a FALLBACK, not a replacement: the real runner also
+   * fires the transition's workflow actions, which this cannot. It is tried
+   * first every time, so the day the platform recovers, the app is already
+   * using it again with no change here.
+   */
   async executeWorkOrderAction(
     workOrderId: number,
-    action: Pick<RecordAction, 'buttonId' | 'buttonType'>,
+    action: Pick<RecordAction, 'buttonId' | 'buttonType' | 'toStateId'>,
     formData?: Record<string, unknown>,
   ): Promise<void> {
-    await execute('facilio-record-level-button-actions', 'execute-button-for-a-record', {
-      moduleName: 'workorder',
-      recordId: workOrderId,
-      buttonId: action.buttonId,
-      buttonType: action.buttonType,
-      // Only buttons that declare a form accept it; sending an empty object to
-      // the rest is a needless way to fail.
-      ...(formData && Object.keys(formData).length ? { formData } : {}),
-    });
+    try {
+      await execute('facilio-record-level-button-actions', 'execute-button-for-a-record', {
+        moduleName: 'workorder',
+        recordId: workOrderId,
+        buttonId: action.buttonId,
+        buttonType: action.buttonType,
+        // Only buttons that declare a form accept it; sending an empty object to
+        // the rest is a needless way to fail.
+        ...(formData && Object.keys(formData).length ? { formData } : {}),
+      });
+      return;
+    } catch (err) {
+      // Only the runner being unreachable earns the fallback. A refusal the
+      // server actually authored — a permission denial, a criteria that did
+      // not pass — must reach the user unchanged, or the app would quietly
+      // move a record the workflow had just declined to move.
+      if (!isGatewayFailure(err) || action.toStateId === undefined) throw err;
+      const status = await statusNameForState(action.toStateId);
+      if (!status) throw err;
+      await cmms('change-work-order-status', { id: workOrderId, status });
+    }
   },
 
   /**
