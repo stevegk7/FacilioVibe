@@ -43,7 +43,16 @@ jobs:
       # `npm ci` and not `npm install`: the lockfile is the contract, and a gate
       # that silently resolves different dependencies than the developer had is
       # not a gate.
-      - run: npm ci
+      #
+      # --registry is not optional here. Every entry in package-lock.json
+      # resolves to repo.facilio.in, Facilio's private Nexus mirror, because
+      # that is what our machines are authenticated to — so a runner that is
+      # not gets E401 and the job dies before a single test runs. The override
+      # makes npm rewrite the host; versions and integrity hashes are unchanged
+      # and still verified, so this is the same dependency tree, fetched from
+      # the source Nexus is mirroring. Checked: every dependency here is public,
+      # @facilio/vibe-sdk included.
+      - run: npm ci --registry=https://registry.npmjs.org/
 
       - name: verify (build, tests, adapter smoke, 3D smoke, bundle budget)
         run: npm run verify
