@@ -113,6 +113,41 @@ facilio vibe deploy
 `npm run check:bundle` is the guard that keeps the estate off the AR path: it
 fails if three.js appears in the entry chunk or the entry exceeds its gzip budget.
 
+## Source mirror to Facilio's GitHub — blocked above ~111 files
+
+`facilio vibe git push` mirrors this project's source to
+`github.com/facilio-vibe/facilio-vision-3d`. It should run before **every**
+deploy so the archived source matches the build behind the preview URL.
+
+**It cannot currently complete for this project**, and the cause is now
+measured rather than guessed. Bisected 2026-08-16, each a real push to a fresh
+repo under the org:
+
+| payload | result |
+|---|---|
+| 2 files, ~1 KB | pushed |
+| 61 files, 536 KB | pushed |
+| **111 files, 932 KB** | **pushed** |
+| 161 files, 1440 KB | `504` |
+| 288 files (this repo, 905 KB zipped) | `504` |
+
+The threshold is **file count, not bytes** — 111 files at 932 KB succeed while
+the whole repo at 905 KB *zipped* fails, so the server-side push does per-file
+work that runs past the gateway somewhere between 111 and 161 files. Two
+earlier hypotheses are disproved by the same table: it is not repo creation
+(fresh repos are created fine, and an empty one fails fast with `409 Git
+Repository is empty` rather than timing out), and it is not payload size.
+
+This repo has 288 tracked files, all legitimate source — `.gitignore` already
+excludes `node_modules`, `dist` and `.claude`. There is no way under the limit
+that does not amputate real code, and each push is a full mirror, so a partial
+push would *delete* whatever it omitted. It stays blocked until the platform
+raises the limit or chunks the push.
+
+Probe repos left under the org by this bisect, safe to delete:
+`fv-min-probe`, `fv-bisect-60`, `fv-bisect-110`, `fv-bisect-160`,
+`fv-vision-3d-src`.
+
 ## Going live
 
 `facilio vibe deploy` publishes to the **preview** URL only. Promotion to
