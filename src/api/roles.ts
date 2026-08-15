@@ -174,7 +174,13 @@ export function resolveRole(
   // So an EMPTY list means "not configured", not "everyone is denied". The
   // moment one administrator is named the gate closes behind them and every
   // unlisted person is a technician, which is the behaviour that was wanted.
-  if (!map || map.admins.length === 0) return { role: 'admin', source: 'unconfigured' };
+  // ...but ONLY when the platform has said nothing. `admin: false` is a real
+  // answer — the platform knows this person is not an org administrator — and
+  // an unconfigured list must not overrule it. Granting admin on top of an
+  // explicit false is what showed a technician every work order in the org.
+  if (platformAdmin === undefined && (!map || map.admins.length === 0)) {
+    return { role: 'admin', source: 'unconfigured' };
+  }
 
   return { role: 'technician', source: 'default' };
 }

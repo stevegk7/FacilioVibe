@@ -68,9 +68,15 @@ export function useEstate() {
         provider.loadEstate(),
         listPlanBindings().catch(() => ({})),
       ]);
-      const bound = await loadBoundPlans(bindings);
-      raw.plans = { ...raw.plans, ...bound.plans };
-      raw.planBindings = bound.planBindings;
+      // loadBoundPlans can resolve without a `plans` key at all — and when the
+      // signed-in role cannot read a module the estate needs, `raw` arrives
+      // shaped differently too. Reading `.plans` straight off either is what
+      // surfaced as "Cannot read properties of undefined (reading 'plans')" on
+      // the Wayfinder's start picker, which is a confusing place to learn that
+      // the ESTATE failed to load.
+      const bound = (await loadBoundPlans(bindings)) ?? {};
+      raw.plans = { ...(raw?.plans ?? {}), ...(bound.plans ?? {}) };
+      raw.planBindings = bound.planBindings ?? {};
 
       const rows = raw as unknown as Record<string, RawRowLike[]>;
 

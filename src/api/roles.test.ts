@@ -31,6 +31,17 @@ describe('role resolution', () => {
     expect(resolveRole('anyone@facilio.com', null).source).toBe('unconfigured');
   });
 
+  it('never lets an unconfigured list overrule an explicit platform "not admin"', () => {
+    // The regression this closes: with no administrators configured, the
+    // first-run rule promoted EVERYONE — so a technician the platform had
+    // already flagged as non-admin saw every work order in the org.
+    expect(resolveRole('tech@facilio.com', { admins: [] }, false, false)).toEqual({
+      role: 'technician',
+      source: 'default',
+    });
+    expect(resolveRole('tech@facilio.com', null, false, false).role).toBe('technician');
+  });
+
   it('closes the gate the moment one administrator is named', () => {
     expect(resolveRole('anyone@facilio.com', { admins: ['lead@facilio.com'] }).role).toBe(
       'technician',
