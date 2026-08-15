@@ -44,15 +44,28 @@ jobs:
       # that silently resolves different dependencies than the developer had is
       # not a gate.
       #
-      # --registry is not optional here. Every entry in package-lock.json
-      # resolves to repo.facilio.in, Facilio's private Nexus mirror, because
-      # that is what our machines are authenticated to — so a runner that is
-      # not gets E401 and the job dies before a single test runs. The override
-      # makes npm rewrite the host; versions and integrity hashes are unchanged
-      # and still verified, so this is the same dependency tree, fetched from
-      # the source Nexus is mirroring. Checked: every dependency here is public,
-      # @facilio/vibe-sdk included.
-      - run: npm ci --registry=https://registry.npmjs.org/
+      # KNOWN BLOCKER — this step is why the job is currently red. Every entry
+      # in package-lock.json resolves to repo.facilio.in, Facilio's private
+      # Nexus mirror, because that is the registry our machines are
+      # authenticated to. A runner is not, so npm ci returns E401 before a
+      # single test runs.
+      #
+      # A `--registry=https://registry.npmjs.org/` override does NOT fix it:
+      # npm honours the lockfile's `resolved` host over the configured
+      # registry. That override appeared to work locally only because the
+      # packages were already in the npm cache; with a cold cache it reproduces
+      # the same E401.
+      #
+      # Two real fixes, and picking one is an infrastructure call:
+      #   1. Rewrite the lockfile's hosts to registry.npmjs.org. Verified with a
+      #      cold cache: 241 packages, every integrity hash still checked, same
+      #      versions. Every dependency here is public, @facilio/vibe-sdk (MIT)
+      #      included. Also fixes cloning this PUBLIC repo, which today no one
+      #      outside Facilio can install. Cost: installs stop going through the
+      #      mirror.
+      #   2. Give CI a Nexus credential as a repo secret and write an .npmrc
+      #      here. Keeps the mirror as the only path; does not help clones.
+      - run: npm ci
 
       - name: verify (build, tests, adapter smoke, 3D smoke, bundle budget)
         run: npm run verify
