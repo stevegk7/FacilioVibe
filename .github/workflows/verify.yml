@@ -34,37 +34,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Node 20 is the floor the CLI and the toolchain expect (see ONBOARDING.md).
+      # 22, because ONBOARDING §1 is explicit that 20 is NOT enough: jsdom and
+      # oxlint refuse below 20.19/22.12, and the seeding tools need
+      # --experimental-strip-types, which lands in 22.6. This pinned '20' at
+      # first and the runner said so — @testing-library/jest-dom@7 wants >=22
+      # and logged EBADENGINE on every install. A gate that runs an older Node
+      # than contributors are told to install is testing the wrong thing.
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
 
       # `npm ci` and not `npm install`: the lockfile is the contract, and a gate
       # that silently resolves different dependencies than the developer had is
       # not a gate.
       #
-      # KNOWN BLOCKER — this step is why the job is currently red. Every entry
-      # in package-lock.json resolves to repo.facilio.in, Facilio's private
-      # Nexus mirror, because that is the registry our machines are
-      # authenticated to. A runner is not, so npm ci returns E401 before a
-      # single test runs.
+      # This works only because package-lock.json resolves to
+      # registry.npmjs.org. It used to resolve to repo.facilio.in — Facilio's
+      # private Nexus mirror, which our machines are authenticated to and a
+      # runner is not — and the job died on E401 before a single test ran.
+      # Same for anyone cloning this public repo.
       #
-      # A `--registry=https://registry.npmjs.org/` override does NOT fix it:
-      # npm honours the lockfile's `resolved` host over the configured
-      # registry. That override appeared to work locally only because the
-      # packages were already in the npm cache; with a cold cache it reproduces
-      # the same E401.
-      #
-      # Two real fixes, and picking one is an infrastructure call:
-      #   1. Rewrite the lockfile's hosts to registry.npmjs.org. Verified with a
-      #      cold cache: 241 packages, every integrity hash still checked, same
-      #      versions. Every dependency here is public, @facilio/vibe-sdk (MIT)
-      #      included. Also fixes cloning this PUBLIC repo, which today no one
-      #      outside Facilio can install. Cost: installs stop going through the
-      #      mirror.
-      #   2. Give CI a Nexus credential as a repo secret and write an .npmrc
-      #      here. Keeps the mirror as the only path; does not help clones.
+      # If you ever regenerate the lockfile on a machine configured against the
+      # mirror, it will point back at Nexus and this step starts failing again.
+      # Note that a `--registry=` override does NOT rescue it: npm honours the
+      # lockfile's `resolved` host over the configured registry.
       - run: npm ci
 
       - name: verify (build, tests, adapter smoke, 3D smoke, bundle budget)
