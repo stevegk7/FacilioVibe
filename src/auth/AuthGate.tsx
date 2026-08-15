@@ -130,11 +130,11 @@ export default function AuthGate({ embedded, children, provider = defaultProvide
             <div className="auth-brand">
               <span className="auth-logo" aria-hidden="true" />
               <span className="auth-word">
-                Facilio <span className="auth-sub">VISION 3D</span>
+                Facilio <span className="auth-sub">VISION</span>
               </span>
             </div>
             <h1>You’re signed in</h1>
-            <p className="auth-lead">Close this tab and return to Facilio Vision 3D.</p>
+            <p className="auth-lead">Close this tab and return to Facilio Vision.</p>
           </div>
         </main>
       );
@@ -148,7 +148,7 @@ export default function AuthGate({ embedded, children, provider = defaultProvide
         <div className="auth-brand">
           <span className="auth-logo" aria-hidden="true" />
           <span className="auth-word">
-            Facilio <span className="auth-sub">VISION 3D</span>
+            Facilio <span className="auth-sub">VISION</span>
           </span>
         </div>
 
@@ -156,7 +156,7 @@ export default function AuthGate({ embedded, children, provider = defaultProvide
           <>
             <h1>Sign in to continue</h1>
             <p className="auth-lead">
-              Vision 3D uses your Facilio account. You’ll come straight back here.
+              Vision uses your Facilio account. You’ll come straight back here.
             </p>
             {state.reason && <p className="auth-error">{state.reason}</p>}
             <button
@@ -174,7 +174,7 @@ export default function AuthGate({ embedded, children, provider = defaultProvide
           <>
             <h1>Sign in to continue</h1>
             <p className="auth-lead">
-              Vision 3D uses your Facilio account. Nothing is stored here — signing in opens
+              Vision uses your Facilio account. Nothing is stored here — signing in opens
               Facilio in a new tab and this panel updates the moment it succeeds.
             </p>
             <button
@@ -189,7 +189,7 @@ export default function AuthGate({ embedded, children, provider = defaultProvide
           <>
             <h1>Couldn’t check your session</h1>
             <p className="auth-lead">
-              Vision 3D could not confirm who you are. This is usually a signed-out session or a
+              Vision could not confirm who you are. This is usually a signed-out session or a
               blocked third-party cookie.
             </p>
             {state.reason && <p className="auth-error">{state.reason}</p>}

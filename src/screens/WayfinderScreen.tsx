@@ -290,7 +290,7 @@ export default function WayfinderScreen() {
       // route/find functions run in render paths, but the geometry builder is
       // the heavy half and already lives in the lazy 3D chunk.
       const { buildEstate } = await import('../estate/buildEstate');
-      const built = buildEstate(estate.data!, { sampleHealth: false });
+      const built = buildEstate(estate.data!);
       /* Site coordinates now come from the CMMS itself (the `location` lookup on
          the site record), with the Settings-typed KV kept as an OVERRIDE rather
          than the source. Before this the KV was the only lane, so a site nobody

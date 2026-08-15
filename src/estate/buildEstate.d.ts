@@ -17,14 +17,4 @@ export declare function statsOf(raw: EstateRaw): EstateStats;
  * before this is called — a missing taxonomy does not throw, it silently
  * degrades every asset to a generic box.
  */
-export declare function buildEstate(
-  raw: EstateRaw,
-  opts?: { sampleHealth?: boolean },
-): EstateData;
-
-/**
- * Overlay generated work orders and asset condition on the REAL hierarchy, so
- * the criticality colouring can be reviewed in an org with little live work.
- * Mutates and returns the estate. Nothing is written back to Facilio.
- */
-export declare function applySampleHealth(estate: EstateData): EstateData;
+export declare function buildEstate(raw: EstateRaw): EstateData;

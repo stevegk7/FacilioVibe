@@ -82,10 +82,11 @@ function seed() {
   );
 }
 
-/** Boot the AR tab (camera live on open) and scan the standpoint sticker. */
-async function standAtStandpoint() {
+/** Boot the AR tab (camera live on open) and scan the standpoint sticker.
+    `query` appends to the boot URL — '&role=technician' rehearses the gate. */
+async function standAtStandpoint(query = '') {
   const user = userEvent.setup();
-  window.history.replaceState({}, '', '/?mock=1&tab=ar');
+  window.history.replaceState({}, '', `/?mock=1&tab=ar${query}`);
   render(<App />);
   // AR is live on open now; just wait for the stage.
   await screen.findByRole('button', { name: 'AR on' });
@@ -125,6 +126,38 @@ afterEach(() => {
 });
 
 describe('AR maintenance loop (mock mode)', () => {
+  /* FIRST in the suite on purpose: the flow-walking test below drives WO 4001
+     Open -> In Progress -> Resolved -> Closed, and the mock's state is
+     deliberately session-sticky — run after it, the strip is legitimately
+     empty and this test would prove nothing. */
+  it('a technician is not offered Assign Worker, whatever the flow returns', async () => {
+    /* The gap this pins: the strip rendered every button the platform's flow
+       offered, and this org's flow offers Assign Worker to technicians — so the
+       app was tight on what a technician could SEE (scope.ts) and wide open on
+       what they could PRESS. The strip now consults the app's own capability
+       matrix (capabilityForAction); the admin test above pins the button's
+       PRESENCE so this can never pass by the flow simply going empty. */
+    seed();
+    const user = await standAtStandpoint('&role=technician');
+
+    const marker = await screen.findByRole('button', { name: /AHU-03/ });
+    await user.click(marker);
+    const panel = await screen.findByRole('complementary');
+    await user.click(within(panel).getByRole('button', { name: /Work orders/ }));
+    // WO 4001 is assigned to the mock user, so the technician legitimately sees it.
+    await user.click(
+      await within(panel).findByRole('button', { name: /AHU-03 vibration above threshold/ }),
+    );
+
+    const group = await within(panel).findByRole('group', { name: 'Actions' });
+    // Doing the work is the job — Start Work stays.
+    await waitFor(() =>
+      expect(within(group).getByRole('button', { name: 'Start Work' })).toBeInTheDocument(),
+    );
+    // Directing other people's work is not.
+    expect(within(group).queryByRole('button', { name: 'Assign Worker' })).toBeNull();
+  });
+
   it('scan → marker → work orders → task → status → note → survives a remount', async () => {
     seed();
     const user = await standAtStandpoint();
@@ -167,9 +200,11 @@ describe('AR maintenance loop (mock mode)', () => {
     // transition, which is the whole contract of this panel.
     const actions = () => within(panel).findByRole('group', { name: 'Actions' });
 
-    // Open offers Start Work; it does NOT offer Resolve or Close.
+    // Open offers Start Work; it does NOT offer Resolve or Close. As an ADMIN,
+    // Assign Worker is offered too — the technician test below pins its absence.
     let group = await actions();
     expect(within(group).queryByRole('button', { name: /^Close$/ })).toBeNull();
+    expect(within(group).getByRole('button', { name: 'Assign Worker' })).toBeInTheDocument();
     await user.click(within(group).getByRole('button', { name: 'Start Work' }));
     await waitFor(() => expect(panel.querySelector('.vg-chip')).toHaveTextContent('In Progress'));
 
@@ -226,6 +261,7 @@ describe('AR maintenance loop (mock mode)', () => {
     await user.click(rows[0]);
     expect(await screen.findByText('AHU-03', { selector: '.vs-guide-name' })).toBeInTheDocument();
   });
+
 });
 
 it('minimize sends the window to a DOT; tapping the dot brings it back', async () => {

@@ -20,7 +20,7 @@ describe('shell-smoke', () => {
 
     // Auth gate resolves against the mock provider
     expect(await screen.findByRole('tab', { name: 'Vision' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: '3D Estate' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '3D plan' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Wayfinder' })).toBeInTheDocument();
 
     // Non-dock screens stay out of the bar

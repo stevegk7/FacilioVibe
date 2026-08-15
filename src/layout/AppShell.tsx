@@ -283,7 +283,7 @@ export default function AppShell({ screens, initialTab }: AppShellProps) {
           </button>
           <div className="as-logo">
             <span className="as-logo-word">Facilio</span>
-            <span className="as-logo-sub">Vision 3D</span>
+            <span className="as-logo-sub">Vision</span>
           </div>
         </header>
         <aside className="as-sidebar">

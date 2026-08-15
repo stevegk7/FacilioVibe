@@ -439,7 +439,7 @@ function CoverageCard() {
       const { buildEstate } = await import('../estate/buildEstate');
       const { buildAutoGraph } = await import('../wayfinding/autoGraph');
       const { siteCoverage, unroutableAssets } = await import('../wayfinding/coverage');
-      const built = buildEstate(estate.data!, { sampleHealth: false });
+      const built = buildEstate(estate.data!);
       const graph = buildAutoGraph(built, {});
 
       // Standpoints and landmarks are per site, read straight from the KV the
@@ -597,7 +597,7 @@ function RouteLandmarksCard() {
       // which the bundle guard has already caught once.
       const { buildEstate } = await import('../estate/buildEstate');
       const { buildAutoGraph } = await import('../wayfinding/autoGraph');
-      const graph = buildAutoGraph(buildEstate(estate.data!, { sampleHealth: false }), {});
+      const graph = buildAutoGraph(buildEstate(estate.data!), {});
       const byNode = new Map(graph.nodes.map((n) => [n.id, n.label]));
       const byEdge = new Map(
         graph.edges.map((e) => [

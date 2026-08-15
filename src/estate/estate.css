@@ -405,7 +405,6 @@
   .est-floor-tools > * { flex: none; }
 
   /* the switch stays; its caption doesn't fit next to a live search box */
-  .est-health-label { display: none; }
 
   .est-search-wrap { flex: 1 1 130px; }
 

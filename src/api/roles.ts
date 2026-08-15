@@ -105,6 +105,29 @@ export function can(role: Role, capability: Capability): boolean {
   return MATRIX[capability].includes(role);
 }
 
+/**
+ * Which capability, if any, gates a workflow BUTTON.
+ *
+ * The action strip renders whatever the org's published flow returns, and for
+ * this org the flow offers "Assign Worker" to technicians — verified in the
+ * field 2026-08-15. The platform's own filtering is per its role config, which
+ * this app cannot edit; the matrix above IS this app's policy, and until this
+ * function existed nothing consulted it for actions, so a technician was tight
+ * on what they could SEE and wide open on what they could PRESS.
+ *
+ * Matched on the display name because that is all a flow button carries — the
+ * buttonType enumerates transition kinds, not intents. Names come from the
+ * org's flow ("Assign Worker"), so substrings, case-insensitive. Anything
+ * unmatched is ungated: executing the work (Start Work, Resolve, Close) IS the
+ * technician's job, and inventing a gate the matrix doesn't state would be
+ * policy by accident.
+ */
+export function capabilityForAction(name: string): Capability | null {
+  if (/assign/i.test(name)) return 'wo.assign';
+  if (/delete/i.test(name)) return 'wo.delete';
+  return null;
+}
+
 export const ROLES_KEY = 'perm.roles';
 
 export interface RoleMap {

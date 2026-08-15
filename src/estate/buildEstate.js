@@ -136,8 +136,7 @@ export function statsOf(raw) {
 
 /* ---------- adapter: records -> engine data ---------- */
 
-export function buildEstate(raw, opts = {}) {
-  const { sampleHealth = false } = opts;
+export function buildEstate(raw) {
   const plans = raw.plans || {};
   /* floorRecordId -> planId, for plans imported against a specific floor. */
   const bindings = raw.planBindings || {};
@@ -615,71 +614,5 @@ export function buildEstate(raw, opts = {}) {
     },
   };
 
-  if (sampleHealth) applySampleHealth(estate);
-  return estate;
-}
-
-/* ---------- optional sample health layer ----------
- * This org has 1 work order (a closed test record) and no operationalStatus, condition,
- * run-hours or service dates on any asset, so the design's health/jobs behaviour has nothing
- * real to render. Turning this on layers generated work orders and asset states over the REAL
- * hierarchy so the interaction can be reviewed. It is off by default and labelled in the UI.
- * Nothing here is written back to Facilio.
- */
-export function applySampleHealth(estate) {
-  const pickStatus = (h) => (h < 0.14 ? 'critical' : h < 0.34 ? 'overdue' : 'healthy');
-  const SUBJECTS = {
-    critical: ['%s tripped on high head pressure', '%s alarm — no flow detected', '%s shut down, awaiting attendance'],
-    overdue: ['%s service overdue', '%s filter change due', '%s running outside setpoint'],
-  };
-
-  estate.buildings.forEach((b) => {
-    b.floors.forEach((f) => {
-      f.markers = f.markers.filter((m) => m.markerModuleName === 'asset');
-      f.markers.forEach((a) => {
-        const h = hash01(a.recordId * 7 + 13);
-        a.status = pickStatus(h);
-        a.condition = h < 0.14 ? 'poor' : h < 0.34 ? 'fair' : 'good';
-        a.criticality = h < 0.2 ? 'High' : h < 0.55 ? 'Medium' : 'Low';
-        a.runHours = Math.round(2000 + hash01(a.recordId * 3) * 46000);
-        a.lastServicedOn = Date.now() - Math.round(hash01(a.recordId * 11) * 300) * 86400000;
-        a.nextServiceDue = a.lastServicedOn + 180 * 86400000;
-        a.workOrders = [];
-        a.inspections = [];
-        a._sample = true;
-      });
-
-      f.markers.slice().forEach((a) => {
-        if (a.status === 'healthy') return;
-        const crit = a.status === 'critical';
-        const pool = SUBJECTS[crit ? 'critical' : 'overdue'];
-        const pick = pool[Math.floor(hash01(a.recordId * 17) * pool.length)];
-        const wo = {
-          recordId: a.recordId * 100 + 1,
-          markerModuleName: 'workorder',
-          subject: pick.replace('%s', a.name),
-          trade: a.trade,
-          color: a.color,
-          priority: crit ? 1 : 2,
-          status: crit ? 'overdue' : 'open',
-          assetId: a.recordId,
-          assetName: a.name,
-          raisedAt: Date.now() - Math.round(hash01(a.recordId * 23) * 72 * 3600000),
-          dueOn: Date.now() + (crit ? -6 : 48) * 3600000,
-          assignedTo: 'Unassigned',
-          x: a.x + 0.9,
-          z: a.z + 0.9,
-          _sample: true,
-        };
-        a.workOrders = [wo.recordId];
-        a.inspections = [{
-          name: `${a.taxonomyName} scheduled inspection`,
-          dueOn: Date.now() + Math.round(hash01(a.recordId * 29) * 30) * 86400000,
-          status: crit ? 'overdue' : 'scheduled',
-        }];
-        f.markers.push(wo);
-      });
-    });
-  });
   return estate;
 }

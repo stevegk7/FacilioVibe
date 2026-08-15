@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BOOTSTRAP_ADMINS,
   can,
+  capabilityForAction,
   normaliseRoleMap,
   resolveRole,
   type RoleMap,
@@ -152,5 +153,27 @@ describe('the platform’s own admin flag', () => {
 
   it('still denies an unlisted, unflagged user', () => {
     expect(resolveRole('someone@facilio.com', MAP, false, false).role).toBe('technician');
+  });
+});
+
+describe('capabilityForAction', () => {
+  it('maps assignment and deletion buttons to their gates, by substring', () => {
+    // The org's flow names them "Assign Worker" etc.; custom buttons vary.
+    expect(capabilityForAction('Assign Worker')).toBe('wo.assign');
+    expect(capabilityForAction('Re-assign')).toBe('wo.assign');
+    expect(capabilityForAction('Delete')).toBe('wo.delete');
+    expect(capabilityForAction('delete work order')).toBe('wo.delete');
+  });
+
+  it('leaves execution buttons ungated — doing the work IS the technician job', () => {
+    for (const name of ['Start Work', 'Resolve', 'Close', 'Cancel', 'Pause', 'Resume']) {
+      expect(capabilityForAction(name)).toBeNull();
+    }
+  });
+
+  it('composes with the matrix: technician loses assign, keeps execution', () => {
+    const gate = capabilityForAction('Assign Worker')!;
+    expect(can('technician', gate)).toBe(false);
+    expect(can('admin', gate)).toBe(true);
   });
 });

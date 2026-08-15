@@ -57,7 +57,9 @@ installGlobalErrorHandlers();
 // give up their dock slots but stay in Workspace — they are field tools, not
 // admin screens.
 const SCREENS: ShellScreen[] = [
-  { id: 'estate', label: '3D Estate', icon: <CubeIcon />, visible: true, bleed: true, component: EstateScreen },
+  // "3D plan" (the user's pick, 2026-08-15). id stays 'estate' for the same
+  // reason 'ar' did: ?tab= and goToTab() are wired into hand-offs.
+  { id: 'estate', label: '3D plan', icon: <CubeIcon />, visible: true, bleed: true, component: EstateScreen },
   // Label is "Vision" (the user's pick, 2026-08-15 — matches the app's own
   // name); the id stays 'ar' because ?tab=ar and goToTab('ar') are baked into
   // hand-offs, QR flows and bookmarks, and an id is plumbing, not copy.

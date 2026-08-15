@@ -23,6 +23,8 @@ import {
   useWorkOrderTasks,
 } from '../api/hooks';
 import { briefAsset, suggestTasks } from '../api/agents';
+import { capabilityForAction } from '../api/roles';
+import { useCan } from '../state/SessionContext';
 import type { Asset, RecordAction, RecordActions, WorkOrder } from '../api/types';
 import Icon from '../components/Icon';
 import { isEmbeddedInFacilio, openRecordSummary } from '../api/nav';
@@ -317,7 +319,22 @@ function WoDetail({ wo, assetId, assetName }: { wo: WorkOrder; assetId: number; 
   const addTask = useAddWorkOrderTask(wo.id);
   const actions = useWorkOrderActions(wo.id);
   const runAction = useExecuteWorkOrderAction(wo.id, assetId);
+  const can = useCan();
   const done = (tasks.data ?? []).filter((t) => t.closed).length;
+
+  /* The flow's answer, filtered through THIS app's capability matrix. The flow
+     is authoritative about what the state allows; the matrix is authoritative
+     about what this role may do — and for this org the flow offers "Assign
+     Worker" to technicians, so without this filter the strip was tight on what
+     a technician could see and wide open on what they could press. Buttons the
+     matrix doesn't name pass through untouched. */
+  const visibleActions = (actions.data?.stateTransitions ?? [])
+    .concat(actions.data?.approvalTransitions ?? [])
+    .concat(actions.data?.customButtons ?? [])
+    .filter((action) => {
+      const gate = capabilityForAction(action.name);
+      return gate === null || can(gate);
+    });
 
   // `wo` is a snapshot captured into the view stack when the row was tapped, so
   // it does not change when a transition lands. The flow's own answer does, and
@@ -443,10 +460,7 @@ function WoDetail({ wo, assetId, assetName }: { wo: WorkOrder; assetId: number; 
         stays in front of a live camera.
       */}
       <div className="vg-status-row" role="group" aria-label="Actions">
-        {(actions.data?.stateTransitions ?? [])
-          .concat(actions.data?.approvalTransitions ?? [])
-          .concat(actions.data?.customButtons ?? [])
-          .map((action) => (
+        {visibleActions.map((action) => (
             <button
               key={`${action.buttonType}-${action.buttonId}`}
               className="vg-status-btn"
@@ -465,8 +479,14 @@ function WoDetail({ wo, assetId, assetName }: { wo: WorkOrder; assetId: number; 
             </button>
           ))}
         {actions.isLoading && <p className="vg-dim">Reading the workflow…</p>}
-        {actions.data && !hasActions(actions.data) && (
-          <p className="vg-dim">No actions available in this state.</p>
+        {actions.data && visibleActions.length === 0 && (
+          <p className="vg-dim">
+            {hasActions(actions.data)
+              ? // The flow offered something, the matrix hid all of it. Say so —
+                // silence here reads as a broken panel, not a policy.
+                'The remaining actions in this state need an administrator.'
+              : 'No actions available in this state.'}
+          </p>
         )}
       </div>
 

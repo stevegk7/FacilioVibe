@@ -54,7 +54,7 @@ describe('AppShell chrome selection', () => {
 
     // Wordmark
     expect(screen.getByText('Facilio')).toBeInTheDocument();
-    expect(screen.getByText('Vision 3D')).toBeInTheDocument();
+    expect(screen.getByText('Vision')).toBeInTheDocument();
 
     // Hidden screens are first-class citizens of the admin layout
     expect(screen.getByText('Admin')).toBeInTheDocument();

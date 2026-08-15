@@ -222,7 +222,6 @@ export default function EstateScreen() {
   const [tab, setTab] = useState<'details' | 'work' | 'insp'>('details');
   const [search, setSearch] = useState('');
   const role = useRole();
-  const [sampleHealth, setSampleHealth] = useState(false);
   const [panelOpen, setPanelOpen] = useState(true);
   const [engineError, setEngineError] = useState<string | null>(null);
   const [plan, setPlan] = useState<FindOnSitePlan | null>(null);
@@ -260,8 +259,8 @@ export default function EstateScreen() {
   }
 
   const data: EstateData | null = useMemo(
-    () => (estate.data ? buildEstate(estate.data, { sampleHealth }) : null),
-    [estate.data, sampleHealth],
+    () => (estate.data ? buildEstate(estate.data) : null),
+    [estate.data],
   );
 
   /* The engine's own setSearch only dims pins on a floor that is already open —
@@ -574,7 +573,7 @@ export default function EstateScreen() {
     (w) => !/closed|cancel|resolved|complete/i.test(String((w as { moduleState?: string }).moduleState ?? '')),
   ).length;
   /* Status colouring activates on the sample overlay OR on genuinely open work. */
-  const health = sampleHealth || openWorkOrders > 0;
+  const health = openWorkOrders > 0;
 
   const wosOf = (f: EstateFloor): EstateMarker[] =>
     health ? f.markers.filter((m) => m.markerModuleName === 'workorder') : [];
@@ -1117,18 +1116,6 @@ export default function EstateScreen() {
                     </div>
                   )}
                 </div>
-                <button
-                  role="switch"
-                  aria-checked={sampleHealth}
-                  onClick={() => setSampleHealth((v) => !v)}
-                  title="Overlay sample work orders and asset health on the estate. Nothing is written back to Facilio."
-                  style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 500, height: 34, padding: '0 12px', borderRadius: 8, cursor: 'pointer', color: sampleHealth ? C.blueDk : C.sub, background: sampleHealth ? C.blueBg : C.white, border: `1px solid ${sampleHealth ? C.blueBd : C.line}`, whiteSpace: 'nowrap' }}
-                >
-                  <span style={{ width: 22, height: 12, borderRadius: 7, background: sampleHealth ? C.blue : '#c6d3e4', position: 'relative', flex: 'none', transition: 'background var(--dur-base) var(--ease-standard)' }}>
-                    <span style={{ position: 'absolute', top: 2, left: sampleHealth ? 12 : 2, width: 8, height: 8, borderRadius: '50%', background: C.white, transition: 'left var(--dur-base) var(--ease-standard)' }} />
-                  </span>
-                  <span className="est-health-label">Sample health</span>
-                </button>
               </>
             )}
           </div>
