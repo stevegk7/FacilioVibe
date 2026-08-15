@@ -57,14 +57,15 @@ describe('shell-smoke', () => {
   });
 
   it('hidden screens join the bar when active via ?tab=', async () => {
-    // Was ?tab=diagnostics until Diagnostics moved inside Settings and stopped
-    // being a screen at all. Rooms is the equivalent case: hidden, non-dock.
-    bootAt('?mock=1&tab=rooms');
+    // Was ?tab=diagnostics (moved into Settings), then ?tab=rooms (withdrawn).
+    // Portfolio is the surviving example of the case under test: hidden from
+    // the dock, reachable by ?tab=, and joins the bar while active.
+    bootAt('?mock=1&tab=portfolio');
 
-    expect(await screen.findByRole('tab', { name: 'Rooms' })).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: 'Portfolio' })).toBeInTheDocument();
     // Non-dock screens load in their own chunk now, so the heading arrives
     // after a Suspense fallback rather than on the same tick as the tab.
-    expect(await screen.findByRole('heading', { name: 'Rooms' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Portfolio' })).toBeInTheDocument();
     // The dock tabs are still there alongside it
     expect(screen.getByRole('tab', { name: 'AR' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Wayfinder' })).toBeInTheDocument();

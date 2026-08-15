@@ -922,3 +922,118 @@ html.kb-open #root { transform: translateY(var(--vv-top, 0px)); }
 @media (prefers-reduced-motion: reduce) {
   .auth-bar > span { animation: none; width: 100%; opacity: 0.5; }
 }
+
+/* ================= Screen interiors =================
+   The chrome was refreshed first; these are the SURFACES inside it, which is
+   where "plain and overly white" actually lived. Every rule below is about
+   hierarchy — making the thing you are looking for louder than the thing
+   next to it — rather than decoration. */
+
+/* Page headings had the same weight as the content beneath them. */
+.screen.page > h2,
+.screen > h2 {
+  margin: 0 0 var(--space-5);
+  font-size: var(--fs-h2);
+  line-height: var(--lh-h2);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+/* ---- list rows (Portfolio, pickers) ----
+   Flat white rectangles separated by nothing. They lift, they respond, and the
+   accent edge on hover says "this is the one you are about to open". */
+.card-list { display: flex; flex-direction: column; gap: var(--space-2); }
+.card.card-btn {
+  position: relative;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-xs);
+  padding: var(--space-4) var(--space-5);
+  transition:
+    box-shadow var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard),
+    transform var(--dur-fast) var(--ease-standard);
+}
+.card.card-btn:hover {
+  border-color: var(--accent-soft);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.card.card-btn:active { transform: none; box-shadow: var(--shadow-xs); }
+
+/* Category / location chips were the same grey as the name they sit beside. */
+.pill {
+  border-radius: var(--radius-pill);
+  background: var(--accent-wash);
+  border: 1px solid transparent;
+  color: var(--accent-strong);
+  font-weight: 600;
+  font-size: var(--fs-small);
+  padding: 3px 10px;
+}
+
+/* ---- stat tiles ---- */
+.stat {
+  font-size: 30px;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.stat-cap {
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ---- data tables ----
+   A header that reads as a header, and rows that respond to the pointer. */
+.data-table thead th {
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--bg-app);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.data-table tbody tr { transition: background var(--dur-fast) var(--ease-standard); }
+.data-table tbody tr:hover { background: var(--accent-wash); }
+.data-table td { border-bottom: 1px solid var(--border-subtle); }
+
+/* ---- empty states ----
+   Bare grey sentences in the middle of nowhere. Give them a frame so an empty
+   screen looks finished rather than broken — the distinction this app has
+   needed all day. */
+.empty,
+.empty-tile,
+.empty-card {
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-xl);
+  background: var(--bg-app);
+  padding: var(--space-8) var(--space-5);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+/* ---- inputs ---- */
+.search-box input,
+.field input,
+.field textarea {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  transition:
+    border-color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+.search-box input:focus,
+.field input:focus,
+.field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-focus);
+  outline: none;
+}

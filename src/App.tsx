@@ -32,14 +32,14 @@ import { lazyScreen } from './screens/lazyScreen';
 // Only the dock three stay eager. Everything else is deferred — see lazyScreen
 // for why the entry chunk had no room left.
 //
-// Rounds and Capture are deliberately absent: both modules were withdrawn from
-// the product. Their source is still in the tree (src/rounds/, CaptureScreen,
-// and the vision capture pipeline that AR, Rooms, Dashboard and Voice all still
-// import) but neither is registered, so neither is reachable — including by
-// ?tab=, which resolves against this array. Diagnostics moved inside Settings.
+// Rounds, Capture and Rooms are deliberately absent: all three were withdrawn
+// from the product. Their source is still in the tree (src/rounds/,
+// CaptureScreen, RoomsScreen, and the vision capture pipeline that AR,
+// Dashboard and Voice all still import) but none is registered, so none is
+// reachable — including by ?tab=, which resolves against this array.
+// Diagnostics moved inside Settings.
 const SurveysScreen = lazyScreen(() => import('./screens/SurveysScreen'), 'surveys');
 const PortfolioScreen = lazyScreen(() => import('./screens/PortfolioScreen'), 'the portfolio');
-const RoomsScreen = lazyScreen(() => import('./screens/RoomsScreen'), 'rooms');
 const VoiceSheet = lazyScreen(() => import('./screens/VoiceSheet'), 'Effi');
 const DashboardScreen = lazyScreen(() => import('./screens/DashboardScreen'), 'the dashboard');
 const SettingsScreen = lazyScreen(() => import('./screens/SettingsScreen'), 'settings');
@@ -63,7 +63,6 @@ const SCREENS: ShellScreen[] = [
   { id: 'surveys', label: 'Surveys', icon: <MapPinIcon />, visible: false, section: 'workspace', component: SurveysScreen },
   { id: 'dashboard', label: 'Dashboard', icon: <LayoutGridIcon />, visible: false, component: DashboardScreen },
   { id: 'portfolio', label: 'Portfolio', icon: <HomeIcon />, visible: false, component: PortfolioScreen },
-  { id: 'rooms', label: 'Rooms', icon: <HomeIcon />, visible: false, component: RoomsScreen },
   { id: 'voice', label: 'Voice', icon: <MicIcon />, visible: false, component: VoiceSheet },
   { id: 'settings', label: 'Settings', icon: <SettingsIcon />, visible: false, component: SettingsScreen },
   // Deliberate crash screen for the error-boundary test — ?tab=boom only.
