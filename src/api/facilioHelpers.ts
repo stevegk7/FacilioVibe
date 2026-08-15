@@ -14,6 +14,27 @@ export interface ActionResult<T> {
 }
 
 /**
+ * When a gateway hiccups it answers an API call with an HTML PAGE — seen live
+ * on 2026-08-15: execute-button-for-a-record got a 502 whose body was the
+ * Facilio web client's index.html, and the SDK's error message carried all of
+ * it, doctype, source comments and font links, straight into the AR panel a
+ * technician was reading. An error surface is for what happened and what to do;
+ * keep the status, drop the page.
+ */
+export function humanError(err: unknown, actionSlug: string): Error {
+  const message = err instanceof Error ? err.message : String(err ?? '');
+  if (!/<!doctype\s|<html[\s>]/i.test(message)) {
+    return err instanceof Error ? err : new Error(message || `${actionSlug} failed`);
+  }
+  const status = message.match(/failed:\s*(\d{3})/)?.[1];
+  return new Error(
+    `${actionSlug}: the server answered with an error page${
+      status ? ` (HTTP ${status})` : ''
+    } instead of data — usually a moment of platform maintenance. Try again shortly.`,
+  );
+}
+
+/**
  * One connections action. The SDK sometimes wraps the payload in `{response}`,
  * and the CMMS layer reports failures in-band as `{success:false, error}` rather
  * than by HTTP status — unwrap both so callers only deal with data or a throw.
@@ -23,9 +44,12 @@ export async function execute<T>(
   actionSlug: string,
   payload: Record<string, unknown>,
 ): Promise<ActionResult<T>> {
-  const result = (await vibe.executeAction(connection, actionSlug, payload)) as
-    | ({ response?: ActionResult<T> } & ActionResult<T>)
-    | undefined;
+  let result: ({ response?: ActionResult<T> } & ActionResult<T>) | undefined;
+  try {
+    result = (await vibe.executeAction(connection, actionSlug, payload)) as typeof result;
+  } catch (err) {
+    throw humanError(err, actionSlug);
+  }
   const res = (result?.response ?? result ?? {}) as ActionResult<T>;
   if (res?.success === false) throw new Error(res.error?.message ?? `${actionSlug} failed`);
   return res;

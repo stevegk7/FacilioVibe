@@ -27,7 +27,7 @@ describe('navigation is role-aware', () => {
       bootAs('admin', tab);
 
       // The app boots and falls back rather than erroring…
-      expect(await screen.findByRole('tab', { name: 'AR' })).toBeInTheDocument();
+      expect(await screen.findByRole('tab', { name: 'Vision' })).toBeInTheDocument();
       // …and the withdrawn module is nowhere, even for an admin.
       expect(screen.queryByRole('tab', { name: /diagnostics|rounds|capture/i })).toBeNull();
     },

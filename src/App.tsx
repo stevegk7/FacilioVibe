@@ -58,7 +58,10 @@ installGlobalErrorHandlers();
 // admin screens.
 const SCREENS: ShellScreen[] = [
   { id: 'estate', label: '3D Estate', icon: <CubeIcon />, visible: true, bleed: true, component: EstateScreen },
-  { id: 'ar', label: 'AR', icon: <CameraIcon />, visible: true, bleed: true, component: ARScreen },
+  // Label is "Vision" (the user's pick, 2026-08-15 — matches the app's own
+  // name); the id stays 'ar' because ?tab=ar and goToTab('ar') are baked into
+  // hand-offs, QR flows and bookmarks, and an id is plumbing, not copy.
+  { id: 'ar', label: 'Vision', icon: <CameraIcon />, visible: true, bleed: true, component: ARScreen },
   { id: 'wayfinder', label: 'Wayfinder', icon: <RouteIcon />, visible: true, component: WayfinderScreen },
   { id: 'surveys', label: 'Surveys', icon: <MapPinIcon />, visible: false, section: 'workspace', component: SurveysScreen },
   { id: 'dashboard', label: 'Dashboard', icon: <LayoutGridIcon />, visible: false, component: DashboardScreen },
