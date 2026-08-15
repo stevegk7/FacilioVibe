@@ -10,7 +10,15 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildEstate } from '../estate/buildEstate';
 import type { EstateData, EstateFloor, RawRow } from '../estate/types';
-import { buildAutoGraph, findNode, routeOnGraph } from './autoGraph';
+import {
+  buildAutoGraph,
+  childrenOf,
+  findNode,
+  hasChildren,
+  nearestSiteByFix,
+  nodeContext,
+  routeOnGraph,
+} from './autoGraph';
 import type { AutoLeg } from './autoGraph';
 
 /* ---------- synthetic estate ---------- */
@@ -308,6 +316,84 @@ describe('findNode', () => {
 
     expect(findNode(g, 'zzz-nothing')).toEqual([]);
     expect(findNode(g, '  ')).toEqual([]);
+  });
+});
+
+describe('browse hierarchy', () => {
+  const g = buildAutoGraph(fixtureEstate(), { siteGeo: GEO });
+  const byLabel = (label: string) => {
+    const n = g.nodes.find((x) => x.label === label);
+    if (!n) throw new Error(`fixture has no node labelled "${label}"`);
+    return n;
+  };
+
+  it('roots are the sites — nothing else leaks to the top level', () => {
+    const roots = childrenOf(g, null);
+    expect(roots.map((n) => n.label).sort()).toEqual(['Alpha Campus', 'Beta Depot']);
+    expect(roots.every((n) => n.kind === 'site')).toBe(true);
+  });
+
+  it('drills site → buildings → floors (by level) → spaces → assets', () => {
+    const buildings = childrenOf(g, byLabel('Alpha Campus'));
+    expect(buildings.map((n) => n.label)).toEqual(['Annex B', 'Tower A']);
+
+    const floors = childrenOf(g, byLabel('Tower A'));
+    // Level order, not name order — the list reads like the building stands.
+    expect(floors.map((n) => n.label)).toEqual(['Ground', 'Floor 2']);
+    // The stair core is real plumbing in the graph but not a place to go.
+    expect(floors.some((n) => n.kind === 'core')).toBe(false);
+
+    const onGround = childrenOf(g, byLabel('Ground'));
+    expect(onGround.map((n) => n.label)).toEqual(['Corridor East', 'Plant Room', 'Store']);
+
+    expect(childrenOf(g, byLabel('Plant Room')).map((n) => n.label)).toEqual(['AHU 1']);
+  });
+
+  it('a site with no buildings and an asset are both leaves', () => {
+    expect(childrenOf(g, byLabel('Beta Depot'))).toEqual([]);
+    expect(hasChildren(g, byLabel('Beta Depot'))).toBe(false);
+    expect(hasChildren(g, byLabel('AHU 1'))).toBe(false);
+    expect(hasChildren(g, byLabel('Alpha Campus'))).toBe(true);
+  });
+
+  it('nodeContext names where a thing lives, two segments at most', () => {
+    // Duplicate names are why this exists: a portfolio holds several "Floor 1"s.
+    expect(nodeContext(g, byLabel('AHU 1'))).toBe('Plant Room · Tower A');
+    expect(nodeContext(g, byLabel('Server Room'))).toBe('Floor 2 · Tower A');
+    expect(nodeContext(g, byLabel('Ground'))).toBe('Tower A');
+    expect(nodeContext(g, byLabel('Tower A'))).toBe('Alpha Campus');
+    expect(nodeContext(g, byLabel('Alpha Campus'))).toBe('');
+  });
+});
+
+describe('nearestSiteByFix', () => {
+  const g = buildAutoGraph(fixtureEstate(), { siteGeo: GEO });
+
+  it('matches the site the device is standing on', () => {
+    // GEO['11'] — Alpha Campus — is 12.97212 / 77.59369.
+    const site = nearestSiteByFix(g, { lat: 12.9722, lng: 77.5937, accuracy: 25 });
+    expect(site?.label).toBe('Alpha Campus');
+  });
+
+  it('picks the nearer of two geotagged sites', () => {
+    // Beside Beta Depot (12.9812 / 77.6041), ~1.4 km from Alpha.
+    const site = nearestSiteByFix(g, { lat: 12.9813, lng: 77.6042, accuracy: 30 });
+    expect(site?.label).toBe('Beta Depot');
+  });
+
+  it('refuses a fix in transit rather than inventing a position', () => {
+    // ~25 km out — nearest exists, but "nearest" is not "at".
+    expect(nearestSiteByFix(g, { lat: 13.2, lng: 77.7, accuracy: 20 })).toBeNull();
+  });
+
+  it('refuses a cell-tower-grade fix outright', () => {
+    // Standing ON the campus, but the fix cannot support even a site claim.
+    expect(nearestSiteByFix(g, { lat: 12.97212, lng: 77.59369, accuracy: 800 })).toBeNull();
+  });
+
+  it('ignores sites that carry no geo', () => {
+    const bare = buildAutoGraph(fixtureEstate()); // no siteGeo at all
+    expect(nearestSiteByFix(bare, { lat: 12.97212, lng: 77.59369, accuracy: 10 })).toBeNull();
   });
 });
 

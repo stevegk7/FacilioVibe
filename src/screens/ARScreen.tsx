@@ -134,31 +134,23 @@ interface PinPoint {
 /**
  * The shared Sheet primitive, named for assistive tech.
  *
- * Sheet owns the dialog root but takes no label prop (it is frozen for this
- * workstream), and a `role="dialog"` gets no accessible name from its
- * contents — so the name is stamped on the mounted root instead of nesting a
- * second dialog inside it.
+ * This used to stamp aria-label onto .sheet-root by querying under a host div,
+ * because Sheet had no label prop. Sheet portals to <body> now (the webview
+ * fixed-position fix) — there is nothing under the host to query — and it grew
+ * the label prop this was working around, so the wrapper is a pass-through.
  */
-function ArSheet(props: {
-  label: string;
-  open: boolean;
-  title?: ReactNode;
-  onClose(): void;
-  footer?: ReactNode;
-  size?: 'auto' | 'tall';
-  children: ReactNode;
-}) {
-  const { label, open, ...rest } = props;
-  const host = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    host.current?.querySelector('.sheet-root')?.setAttribute('aria-label', label);
-  });
-  if (!open) return null;
-  return (
-    <div ref={host} className="ar-sheet-host">
-      <Sheet open {...rest} />
-    </div>
-  );
+function ArSheet(
+  props: {
+    label: string;
+    open: boolean;
+    title?: ReactNode;
+    onClose(): void;
+    footer?: ReactNode;
+    size?: 'auto' | 'tall';
+    children: ReactNode;
+  },
+) {
+  return <Sheet {...props} />;
 }
 
 const ArIcon = () => (

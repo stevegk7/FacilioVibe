@@ -34,6 +34,8 @@ export interface AutoNode {
   label: string;
   buildingId?: number;
   floorId?: number;
+  /** The owning space's record id — asset nodes only, absent for corridor plant. */
+  spaceId?: number;
   /** Floor-local metres for floor-scoped nodes; world metres for buildings/sites. */
   x?: number;
   z?: number;
@@ -373,6 +375,7 @@ export function buildAutoGraph(estate: EstateData, opts: AutoGraphOptions = {}):
           label: m.name || m.code || `Asset #${m.recordId}`,
           buildingId: b.recordId,
           floorId: f.recordId,
+          ...(m.spaceId != null ? { spaceId: m.spaceId } : {}),
           level: floorLevel(f),
           ...(m.x != null && m.z != null ? { x: m.x, z: m.z } : {}),
         };
@@ -498,7 +501,12 @@ type Adjacency = Map<string, Array<{ to: string; meters: number }>>;
  */
 const graphCache = new WeakMap<
   AutoGraph,
-  { byId?: Map<string, AutoNode>; strict?: Adjacency; permissive?: Adjacency }
+  {
+    byId?: Map<string, AutoNode>;
+    strict?: Adjacency;
+    permissive?: Adjacency;
+    browse?: BrowseIndex;
+  }
 >();
 
 function cacheFor(graph: AutoGraph) {
@@ -774,4 +782,175 @@ export function findNode(graph: AutoGraph, query: string): AutoNode[] {
         b.s - a.s || a.n.label.length - b.n.label.length || a.n.label.localeCompare(b.n.label),
     )
     .map((e) => e.n);
+}
+
+/* ---------- browse ----------
+   The pickers used to show the whole portfolio as ONE flat list, kind-sorted.
+   That fails exactly when it matters: two buildings both have a "Floor 1", two
+   plants both have a "Mechanical Floor", and the flat row gives no way to tell
+   which is which — the reader has to already know the answer. Browsing is the
+   containment hierarchy instead: sites, then that site's buildings, then that
+   building's floors, and so on, the way a person actually narrows a place. */
+
+interface BrowseIndex {
+  /** Every site, the roots of the browse tree. */
+  roots: AutoNode[];
+  /** Children keyed by the parent node's id. */
+  byParent: Map<string, AutoNode[]>;
+}
+
+/**
+ * Built once per graph and cached beside the router's adjacency: the picker
+ * asks for children on every render, and rescanning 20k nodes per row is how
+ * the router got slow before it, too, was indexed.
+ */
+function browseIndex(graph: AutoGraph): BrowseIndex {
+  const entry = cacheFor(graph);
+  if (entry.browse) return entry.browse;
+
+  const roots: AutoNode[] = [];
+  const byParent = new Map<string, AutoNode[]>();
+  const add = (parentId: string, child: AutoNode) => {
+    const list = byParent.get(parentId);
+    if (list) list.push(child);
+    else byParent.set(parentId, [child]);
+  };
+
+  /* A building's site is written in the containment edges, not on the node —
+     recover the mapping in one pass over the edges instead of one per building. */
+  const siteOfBuilding = new Map<string, string>();
+  for (const e of graph.edges) {
+    const [b, s] =
+      e.from.startsWith('building:') && e.to.startsWith('site:')
+        ? [e.from, e.to]
+        : e.from.startsWith('site:') && e.to.startsWith('building:')
+          ? [e.to, e.from]
+          : [null, null];
+    if (b && s && !siteOfBuilding.has(b)) siteOfBuilding.set(b, s);
+  }
+
+  for (const n of graph.nodes) {
+    switch (n.kind) {
+      case 'site':
+        roots.push(n);
+        break;
+      case 'building': {
+        const site = siteOfBuilding.get(n.id);
+        if (site) add(site, n);
+        break;
+      }
+      case 'floor':
+        if (n.buildingId != null) add(`building:${n.buildingId}`, n);
+        break;
+      case 'space':
+        if (n.floorId != null) add(`floor:${n.floorId}`, n);
+        break;
+      case 'asset':
+        // Corridor plant has no space — it lists under its floor, which is
+        // where a person walking the floor would look for it.
+        if (n.spaceId != null) add(`space:${n.spaceId}`, n);
+        else if (n.floorId != null) add(`floor:${n.floorId}`, n);
+        break;
+      case 'core':
+        break; // stair cores are plumbing, not places
+    }
+  }
+
+  const rank: Record<AutoNodeKind, number> = {
+    site: 0,
+    building: 1,
+    floor: 2,
+    space: 3,
+    asset: 4,
+    core: 9,
+  };
+  const order = (a: AutoNode, b: AutoNode) =>
+    rank[a.kind] - rank[b.kind] ||
+    // Floors by level, so the list reads like the building stands.
+    (a.level ?? 0) - (b.level ?? 0) ||
+    a.label.localeCompare(b.label);
+  roots.sort(order);
+  for (const list of byParent.values()) list.sort(order);
+
+  entry.browse = { roots, byParent };
+  return entry.browse;
+}
+
+/** Children of a browse node; null is the portfolio root (all sites). */
+export function childrenOf(graph: AutoGraph, parent: AutoNode | null): AutoNode[] {
+  const idx = browseIndex(graph);
+  return parent ? (idx.byParent.get(parent.id) ?? []) : idx.roots;
+}
+
+/** True when drilling into this node shows anything — drives the row chevron. */
+export function hasChildren(graph: AutoGraph, node: AutoNode): boolean {
+  return (browseIndex(graph).byParent.get(node.id)?.length ?? 0) > 0;
+}
+
+/**
+ * Where a node lives, as a short human line — "Floor 1 · Tower B".
+ *
+ * This exists for search results and duplicate names: a portfolio legitimately
+ * holds several "Floor 1"s and "AHU-01"s, and a row that cannot say which
+ * building it means makes the reader guess. Two segments at most — enough to
+ * disambiguate, short enough for one row.
+ */
+export function nodeContext(graph: AutoGraph, node: AutoNode): string {
+  const byId = nodeIndex(graph);
+  const parts: string[] = [];
+  if (node.kind === 'asset') {
+    const owner =
+      node.spaceId != null
+        ? byId.get(`space:${node.spaceId}`)
+        : node.floorId != null
+          ? byId.get(`floor:${node.floorId}`)
+          : undefined;
+    if (owner) parts.push(owner.label);
+  }
+  if (node.kind === 'space' && node.floorId != null) {
+    const floor = byId.get(`floor:${node.floorId}`);
+    if (floor) parts.push(floor.label);
+  }
+  if (node.kind !== 'site' && node.kind !== 'building' && node.buildingId != null) {
+    const building = byId.get(`building:${node.buildingId}`);
+    if (building) parts.push(building.label);
+  }
+  if (node.kind === 'building') {
+    const site = siteOfNode(graph, node);
+    if (site) parts.push(site.label);
+  }
+  return parts.slice(0, 2).join(' · ');
+}
+
+/* ---------- device location → site ----------
+   The entrance anchor (router.anchorFromFix) is deliberately narrow: entrances
+   only, 50m accuracy ceiling, walking-distance bound — because it claims "you
+   are AT this door". Matching a SITE is a much weaker claim ("you are on this
+   campus"), so it tolerates a worse fix and a wider radius, and it is exactly
+   what the portfolio lane needs for a start: a technician opening the app in
+   the yard should not have to tell it which site they are standing on. */
+
+/** Worse than this and the fix is cell-tower grade — it can sit on the wrong
+    one of two neighbouring sites, so refuse rather than guess. */
+export const SITE_MATCH_MAX_ACCURACY_M = 500;
+/** A campus is hundreds of metres across; beyond this the technician is in
+    transit, and "nearest" would be an invention, not a position. */
+export const SITE_MATCH_MAX_M = 2500;
+
+export function nearestSiteByFix(
+  graph: AutoGraph,
+  fix: { lat: number; lng: number; accuracy?: number },
+): AutoNode | null {
+  if (fix.accuracy != null && fix.accuracy > SITE_MATCH_MAX_ACCURACY_M) return null;
+  let best: AutoNode | null = null;
+  let bestM = Infinity;
+  for (const n of graph.nodes) {
+    if (n.kind !== 'site' || !n.geo) continue;
+    const m = haversineMeters(fix, n.geo);
+    if (m < bestM) {
+      best = n;
+      bestM = m;
+    }
+  }
+  return bestM <= SITE_MATCH_MAX_M ? best : null;
 }

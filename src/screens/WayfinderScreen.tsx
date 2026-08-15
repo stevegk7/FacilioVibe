@@ -48,7 +48,17 @@ import { surveyForAsset, surveyForPlace } from '../wayfinding/resolve';
 import { canShowFacing, relativeBearing, turnPhrase } from '../wayfinding/facing';
 import type { PlateGeometry, PlateRect } from '../wayfinding/plate';
 import { useEstate } from '../estate/useEstate';
-import { buildAutoGraph, findNode, legEdge, routeOnGraph, siteOfNode } from '../wayfinding/autoGraph';
+import {
+  buildAutoGraph,
+  childrenOf,
+  findNode,
+  hasChildren,
+  legEdge,
+  nearestSiteByFix,
+  nodeContext,
+  routeOnGraph,
+  siteOfNode,
+} from '../wayfinding/autoGraph';
 import type { AutoGraph, AutoNode, AutoRoute } from '../wayfinding/autoGraph';
 import {
   OverlayConflictError,
@@ -132,15 +142,9 @@ function outdoorGeoEnds(
   return { from: sites[0].geo!, to: sites[sites.length - 1].geo! };
 }
 
-/** Browse order for the pickers: the containment hierarchy, coarse to fine. */
-function defaultPickList(graph: AutoGraph | null): AutoNode[] {
-  if (!graph) return [];
-  const order: Record<string, number> = { site: 0, building: 1, floor: 2, space: 3, asset: 4, core: 9 };
-  return graph.nodes
-    .filter((n) => n.kind !== 'core') // stair cores are plumbing, not places
-    .slice()
-    .sort((a, b) => (order[a.kind] ?? 9) - (order[b.kind] ?? 9) || a.label.localeCompare(b.label));
-}
+/* The pickers used to flatten the whole portfolio into one kind-sorted list
+   (defaultPickList). It collapsed under duplicates — two "Floor 1"s with no way
+   to say whose — and is replaced by childrenOf(), the containment hierarchy. */
 
 function useGraph(siteId: number | undefined, surveys: Survey[], surveysReady: boolean) {
   return useQuery({
@@ -336,12 +340,42 @@ export default function WayfinderScreen() {
   const [autoTo, setAutoTo] = useState<AutoNode | null>(null);
   const [pickerFor, setPickerFor] = useState<'from' | 'to' | null>(null);
   const [pickerQ, setPickerQ] = useState('');
+  /** Drill-down trail inside the picker — empty means the portfolio root. */
+  const [pickerPath, setPickerPath] = useState<AutoNode[]>([]);
   const [outdoorInfo, setOutdoorInfo] = useState<OutdoorRoute | null>(null);
   const [autoArrived, setAutoArrived] = useState(false);
+  /** The site the device fix landed on — the weakest position we will claim. */
+  const [gpsSite, setGpsSite] = useState<AutoNode | null>(null);
+
+  // Site-level GPS. The entrance anchor above is deliberately narrow (doors
+  // only, 50m accuracy, walking distance) — so a technician standing in the
+  // yard, or scoped to yesterday's site, got NOTHING from a perfectly good
+  // fix. Matching the SITE is a weaker claim a worse fix can still support,
+  // and it is all the portfolio lane needs for a start. Polled for the same
+  // reason the anchor effect is: the fix lives in a ref, and the first one
+  // lands seconds after the graph settles.
+  useEffect(() => {
+    if (!autoGraph || gpsSite) return;
+    const tryMatch = (): boolean => {
+      const fix = getFix();
+      if (!fix) return false;
+      const site = nearestSiteByFix(autoGraph, fix);
+      if (!site) return false;
+      setGpsSite(site);
+      return true;
+    };
+    if (tryMatch()) return;
+    const timer = setInterval(() => {
+      if (tryMatch()) clearInterval(timer);
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [autoGraph, gpsSite, getFix]);
 
   /** "Current location", resolved honestly and in trust order: a scan proves,
-      the 3D view's live selection shows, the location scope suggests. */
-  const currentAutoNode = useMemo((): AutoNode | null => {
+      the 3D view's live selection shows, the device fix names the site, the
+      location scope suggests. The `via` is surfaced next to the label — a
+      GPS-derived start must say so, never dress up as certainty. */
+  const currentAuto = useMemo((): { node: AutoNode; via: 'here' | 'gps' } | null => {
     if (!autoGraph) return null;
     if (anchor && graph) {
       const at = nodeById(graph, anchor.nodeId);
@@ -363,12 +397,12 @@ export default function WayfinderScreen() {
         ]) {
           if (!id) continue;
           const node = autoGraph.nodes.find((n) => n.id === id);
-          if (node) return node;
+          if (node) return { node, via: 'here' };
         }
         /* Last resort, kept because it costs nothing: a standpoint named after
            the space it stands in ("Plant Room B") still resolves by name. */
         const hit = findNode(autoGraph, at.name)[0];
-        if (hit) return hit;
+        if (hit) return { node: hit, via: 'here' };
       }
     }
     // What the user last looked at in the 3D estate (shared nav context).
@@ -384,11 +418,19 @@ export default function WayfinderScreen() {
         ]) {
           if (!id) continue;
           const node = autoGraph.nodes.find((n) => n.id === id);
-          if (node) return node;
+          if (node) return { node, via: 'here' };
         }
       }
     } catch {
       /* unreadable context — fall through to the scope */
+    }
+    /* The device fix, above the scope: the scope is a menu choice that can be
+       days old, the fix is where the phone IS. Resolved by id against the
+       CURRENT graph — the match may have been made against a build the overlay
+       has since replaced. */
+    if (gpsSite) {
+      const node = autoGraph.nodes.find((n) => n.id === gpsSite.id);
+      if (node) return { node, via: 'gps' };
     }
     const scoped = [
       scope.floorId != null ? `floor:${scope.floorId}` : null,
@@ -398,10 +440,11 @@ export default function WayfinderScreen() {
     for (const id of scoped) {
       if (!id) continue;
       const node = autoGraph.nodes.find((n) => n.id === id);
-      if (node) return node;
+      if (node) return { node, via: 'here' };
     }
     return null;
-  }, [autoGraph, anchor, graph, scope]);
+  }, [autoGraph, anchor, graph, scope, gpsSite]);
+  const currentAutoNode = currentAuto?.node ?? null;
 
   const fromNode = autoFrom ?? currentAutoNode;
   const autoRoute: AutoRoute | null = useMemo(
@@ -1227,14 +1270,23 @@ export default function WayfinderScreen() {
         <div className="wf-auto" role="group" aria-label="Route anywhere">
           <span className="section-label">Route anywhere in the portfolio</span>
           <div className="wf-auto-ends">
-            <button className="wf-where-btn" onClick={() => { setPickerFor('from'); setPickerQ(''); }}>
+            <button
+              className="wf-where-btn"
+              onClick={() => { setPickerFor('from'); setPickerQ(''); setPickerPath([]); }}
+            >
               <span className="wf-where-name">
                 <span className="wf-auto-endlabel">From</span>
-                {autoFrom?.label ?? (currentAutoNode ? `${currentAutoNode.label} · current` : 'Pick a start')}
+                {autoFrom?.label ??
+                  (currentAuto
+                    ? `${currentAuto.node.label} · ${currentAuto.via === 'gps' ? 'nearest by GPS' : 'current'}`
+                    : 'Pick a start')}
               </span>
               <Icon name="chevron-down" size={16} />
             </button>
-            <button className="wf-where-btn" onClick={() => { setPickerFor('to'); setPickerQ(''); }}>
+            <button
+              className="wf-where-btn"
+              onClick={() => { setPickerFor('to'); setPickerQ(''); setPickerPath([]); }}
+            >
               <span className="wf-where-name">
                 <span className="wf-auto-endlabel">To</span>
                 {autoTo?.label ?? 'Any site, building, floor, space or asset'}
@@ -1605,8 +1657,27 @@ export default function WayfinderScreen() {
           placeholder="Search sites, buildings, floors, spaces, assets"
           aria-label="Search the portfolio"
         />
+        {/* Typing searches the WHOLE portfolio flat (context line tells twins
+            apart); an empty box browses the containment hierarchy instead —
+            sites, then that site's buildings, then floors — the way a person
+            narrows a place they cannot spell. */}
+        {!pickerQ && pickerPath.length > 0 && (
+          <div className="wf-crumbs">
+            <button
+              className="wf-crumb-back"
+              onClick={() => setPickerPath((p) => p.slice(0, -1))}
+              aria-label="Back"
+            >
+              <Icon name="chevron-left" size={16} />
+              Back
+            </button>
+            <span className="wf-crumb-trail">
+              {pickerPath.map((n) => n.label).join(' › ')}
+            </span>
+          </div>
+        )}
         <div className="wf-picker-list">
-          {pickerFor === 'from' && currentAutoNode && !pickerQ && (
+          {pickerFor === 'from' && currentAutoNode && !pickerQ && pickerPath.length === 0 && (
             <button
               className="row-card"
               onClick={() => {
@@ -1620,22 +1691,64 @@ export default function WayfinderScreen() {
               </span>
             </button>
           )}
-          {autoGraph &&
-            (pickerQ ? findNode(autoGraph, pickerQ) : defaultPickList(autoGraph)).slice(0, 30).map((n) => (
-              <button
-                key={n.id}
-                className="row-card"
-                onClick={() => {
-                  (pickerFor === 'from' ? setAutoFrom : setAutoTo)(n);
-                  setPickerFor(null);
-                }}
-              >
-                <span className="sv-row-main">
-                  <span className="row-card-title">{n.label}</span>
-                  <span className="row-card-meta">{n.kind}</span>
+          {/* Where the trail stands is itself a destination: drilling into
+              Tower B must not cost the ability to route to Tower B. */}
+          {autoGraph && !pickerQ && pickerPath.length > 0 && (
+            <button
+              className="row-card wf-pick-self"
+              onClick={() => {
+                const here = pickerPath[pickerPath.length - 1];
+                (pickerFor === 'from' ? setAutoFrom : setAutoTo)(here);
+                setPickerFor(null);
+              }}
+            >
+              <span className="sv-row-main">
+                <span className="row-card-title">
+                  {pickerFor === 'from' ? 'Start from' : 'Route to'}{' '}
+                  {pickerPath[pickerPath.length - 1].label}
                 </span>
-              </button>
-            ))}
+                <span className="row-card-meta">
+                  this {pickerPath[pickerPath.length - 1].kind}
+                </span>
+              </span>
+            </button>
+          )}
+          {autoGraph &&
+            (pickerQ
+              ? findNode(autoGraph, pickerQ).slice(0, 30)
+              : childrenOf(autoGraph, pickerPath[pickerPath.length - 1] ?? null)
+            ).map((n) => {
+              // In browse mode a container drills IN; the row at the top of
+              // the next level selects it. Leaves select directly. Search
+              // results always select — the search was already the narrowing.
+              const drills = !pickerQ && hasChildren(autoGraph, n);
+              // Context only on search hits: browsing you are already inside
+              // the parent, and "floor · Tower B" under Tower B is noise.
+              const context = pickerQ ? nodeContext(autoGraph, n) : '';
+              return (
+                <button
+                  key={n.id}
+                  className="row-card"
+                  onClick={() => {
+                    if (drills) {
+                      setPickerPath((p) => [...p, n]);
+                      return;
+                    }
+                    (pickerFor === 'from' ? setAutoFrom : setAutoTo)(n);
+                    setPickerFor(null);
+                  }}
+                >
+                  <span className="sv-row-main">
+                    <span className="row-card-title">{n.label}</span>
+                    <span className="row-card-meta">
+                      {n.kind}
+                      {context ? ` · ${context}` : ''}
+                    </span>
+                  </span>
+                  {drills && <Icon name="chevron-right" size={16} />}
+                </button>
+              );
+            })}
           {/* An unbounded "Reading the portfolio…" was the only feedback for a
               failed estate read or a thrown graph build — the picker simply span
               forever with no way to retry. */}

@@ -49,6 +49,17 @@ export function installGlobalErrorHandlers() {
   });
 
   window.addEventListener('error', (event) => {
+    /* A cross-origin script that throws without CORS clearance reaches this
+       listener as exactly "Script error." with every useful field stripped —
+       no error object, no filename, no stack. Inside the Facilio mobile app
+       this fires for the HOST's own bundles, and the red banner it painted
+       read as OUR app failing, with nothing anyone could act on. Masked
+       errors are logged, not shown; an error the banner can actually name
+       still comes through. */
+    if (!event.error && !event.filename && /^script error\.?$/i.test(event.message ?? '')) {
+      console.warn('[wayfinder] masked cross-origin script error (suppressed from the banner)');
+      return;
+    }
     emitUnlessClaimed(event.error, event.message || 'Unknown script error');
   });
 }

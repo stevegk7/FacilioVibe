@@ -30,6 +30,7 @@ import { withSurveyNodes } from '../wayfinding/graph';
 import { findRoute } from '../wayfinding/router';
 import { setOrientationForTest } from '../hooks/useHeading';
 import { ACTIVE_KEY, type ActiveRound } from '../rounds/roundsStore';
+import { appStore } from '../api/appStore';
 
 function renderScreen() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -563,5 +564,120 @@ describe('round in progress', () => {
     renderScreen();
     expect(await screen.findByText(/no longer exists/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Route to it/ })).toBeDisabled();
+  });
+});
+
+/* ---------------- portfolio picker ----------------
+   The picker used to flatten the whole portfolio into one kind-sorted list, so
+   two buildings' "Floor 1"s sat side by side with nothing to tell them apart,
+   and the root screen-full was sites the user then had to scroll past to find
+   anything. Browsing is the containment hierarchy now; typing still searches
+   flat, with a context line naming where each hit lives. */
+describe('portfolio picker — hierarchy and search', () => {
+  /** The sheet, as a scope — the header repeats site names, so queries must not
+      leak out of the dialog. (jsdom computes accessible names with no space
+      between the title and meta spans, hence never /label kind/ with one.) */
+  async function openToPicker(user: ReturnType<typeof userEvent.setup>) {
+    renderScreen();
+    await user.click(
+      await screen.findByRole('button', { name: /Any site, building, floor, space or asset/ }),
+    );
+    const dialog = screen.getByRole('dialog');
+    // The graph behind the picker lazily imports the estate builder.
+    await within(dialog).findByRole('button', { name: /Greenfield Business Park/ }, {
+      timeout: ESTATE_BUILD_MS,
+    });
+    return dialog;
+  }
+
+  it('starts at sites only — floors and assets do not leak to the root', async () => {
+    const user = userEvent.setup();
+    const dialog = await openToPicker(user);
+
+    expect(
+      within(dialog).getByRole('button', { name: /Harborview Medical Center/ }),
+    ).toBeInTheDocument();
+    // "Floor 1" exists in the portfolio (Tower B) but must not sit at the root.
+    expect(within(dialog).queryByRole('button', { name: /Floor 1/ })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: /Ground Floor/ })).not.toBeInTheDocument();
+  });
+
+  it('drills site → building → floor, offering the container itself at each level', async () => {
+    const user = userEvent.setup();
+    const dialog = await openToPicker(user);
+
+    await user.click(within(dialog).getByRole('button', { name: /Greenfield Business Park/ }));
+    expect(await within(dialog).findByRole('button', { name: /Tower A/ })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /Tower B/ })).toBeInTheDocument();
+    // Another site's building stays in its own site.
+    expect(within(dialog).queryByRole('button', { name: /Production Wing/ })).not.toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('button', { name: /^Tower A/ }));
+    expect(await within(dialog).findByRole('button', { name: /Ground Floor/ })).toBeInTheDocument();
+
+    // Drilling into Tower A must not cost the ability to route TO Tower A.
+    await user.click(within(dialog).getByRole('button', { name: /Route to Tower A/ }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    const ends = screen.getByRole('group', { name: 'Route anywhere' });
+    // The To end reads Tower A (jsdom joins the spans without a space).
+    expect(within(ends).getByRole('button', { name: /^To ?Tower A$/ })).toBeInTheDocument();
+  });
+
+  it('Back climbs one level, not to the root', async () => {
+    const user = userEvent.setup();
+    const dialog = await openToPicker(user);
+
+    await user.click(within(dialog).getByRole('button', { name: /Greenfield Business Park/ }));
+    await user.click(await within(dialog).findByRole('button', { name: /^Tower A/ }));
+    await within(dialog).findByRole('button', { name: /Ground Floor/ });
+
+    await user.click(within(dialog).getByRole('button', { name: 'Back' }));
+    // Back at the building level: Tower B is a sibling again.
+    expect(await within(dialog).findByRole('button', { name: /Tower B/ })).toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: /Ground Floor/ })).not.toBeInTheDocument();
+  });
+
+  it('search stays flat and names where each duplicate lives', async () => {
+    const user = userEvent.setup();
+    const dialog = await openToPicker(user);
+
+    await user.type(within(dialog).getByLabelText('Search the portfolio'), 'floor 1');
+    // Tower B's "Floor 1" hit carries its building, so twins are tellable apart.
+    expect(await within(dialog).findByText(/floor · Tower B/)).toBeInTheDocument();
+  });
+});
+
+/* ---------------- device location → site ----------------
+   The entrance anchor is deliberately narrow (doors only, tight accuracy), so a
+   technician in the yard got nothing from a good fix. The SITE is a weaker
+   claim the same fix can support — and it fills the portfolio From on its own,
+   labelled as the guess it is. */
+describe('GPS names the site when no entrance is near', () => {
+  it('fills From with the nearest geotagged site, saying it came from GPS', async () => {
+    // No site scoped — the cold, first-open state.
+    sessionStorage.removeItem('fv.location');
+    // Put Greenfield where the mock device fix is (the CMMS coordinates are in
+    // Wales; the typed KV override is defined to win over them).
+    await appStore.kvPut('settings', 'sitegeo.1001', { lat: 12.9722, lng: 77.5937 });
+
+    renderScreen();
+    expect(
+      await screen.findByText(/Greenfield Business Park · nearest by GPS/, undefined, {
+        timeout: ESTATE_BUILD_MS,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('claims nothing when every site is genuinely far away', async () => {
+    sessionStorage.removeItem('fv.location');
+    // CMMS coordinates only: Wales / Wisconsin / Seattle — the mock fix is in
+    // Bangalore, thousands of km from all three.
+    renderScreen();
+
+    const from = await screen.findByRole('button', { name: /Pick a start/ }, {
+      timeout: ESTATE_BUILD_MS,
+    });
+    expect(from).toBeInTheDocument();
+    expect(screen.queryByText(/nearest by GPS/)).not.toBeInTheDocument();
   });
 });

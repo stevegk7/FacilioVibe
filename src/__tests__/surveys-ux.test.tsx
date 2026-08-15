@@ -110,7 +110,7 @@ describe('survey detail — bottom sheet', () => {
   it('opens as a Sheet with photo-slot, info table, QR explainer, markers and delete', async () => {
     const user = userEvent.setup();
     await seed(survey());
-    const { container } = renderScreen(<SurveysScreen />);
+    renderScreen(<SurveysScreen />);
 
     await user.click(await screen.findByRole('button', { name: /WS-01 point/ }));
 
@@ -119,8 +119,9 @@ describe('survey detail — bottom sheet', () => {
     expect(sheet.querySelector('.sheet-body')).toHaveClass('scroll-y'); // body scrolls, not the page
     expect(within(sheet).getByRole('heading', { name: 'WS-01 point' })).toBeInTheDocument();
 
-    // info table rows
-    const table = container.querySelector('.info-table')!;
+    // info table rows — sheet content lives in the PORTALED dialog, not the
+    // render container (sheets mount on <body>: the webview fixed-position fix)
+    const table = sheet.querySelector('.info-table')!;
     expect(within(table as HTMLElement).getByText(/Open Office 3F/)).toBeInTheDocument();
     expect(within(table as HTMLElement).getByText('12 frames · ±12m fix')).toBeInTheDocument();
 
@@ -132,14 +133,14 @@ describe('survey detail — bottom sheet', () => {
 
     // markers carry DSM ICONS, never emoji (emoji cannot inherit colour and
     // render differently per platform)
-    const markers = container.querySelectorAll('.sv-marker');
+    const markers = sheet.querySelectorAll('.sv-marker');
     expect(markers).toHaveLength(2);
     for (const marker of markers) {
       const icon = marker.querySelector('.sv-marker-icon svg');
       expect(icon).not.toBeNull();
       expect(icon!.getAttribute('stroke')).toBe('currentColor');
     }
-    expect(container.textContent).not.toMatch(/[\u{1F300}-\u{1FAFF}]/u);
+    expect(document.body.textContent).not.toMatch(/[\u{1F300}-\u{1FAFF}]/u);
     // sweep frame 0 is 100° and the marker sits 30° off it → 130° absolute
     expect(markers[0].querySelector('.sv-marker-meta')!.textContent).toBe(
       'bearing 130° · pitch -27°',
@@ -189,7 +190,9 @@ describe('new survey point — camera + sheet', () => {
     expect(screen.getByRole('button', { name: '← Exit survey' })).toHaveClass('pa-exit');
 
     // the form is a bottom sheet over the lens, not a page that replaces it
-    const panel = container.querySelector('.sheet-panel');
+    // (sheets portal to <body> — the webview fixed-position fix — so the panel
+    // is queried from the document, not the render container)
+    const panel = document.body.querySelector('.sheet-panel');
     expect(panel).not.toBeNull();
     expect(panel!.querySelector('.sheet-grip')).not.toBeNull();
     expect(within(panel as HTMLElement).getByRole('heading', { name: 'New survey point' })).toBeInTheDocument();
@@ -199,8 +202,11 @@ describe('new survey point — camera + sheet', () => {
     // scope is already chosen (and shown) on the Surveys screen.
     const input = screen.getByLabelText('Survey point name');
     expect(input).toHaveClass('sv-input');
-    expect(container.querySelector('select')).toBeNull();
-    expect(container.querySelectorAll('.ds-select-btn')).toHaveLength(0);
+    // Scoped to the whole document, not the render container: the sheet
+    // portals to <body>, and a container-scoped "no select" would pass without
+    // ever looking at the sheet it is about.
+    expect(document.body.querySelector('select')).toBeNull();
+    expect(document.body.querySelectorAll('.ds-select-btn')).toHaveLength(0);
 
     const start = screen.getByRole('button', { name: /scan the standpoint code/i });
     expect(start).toHaveClass('btn-cta');

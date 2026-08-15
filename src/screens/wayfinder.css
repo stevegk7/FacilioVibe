@@ -328,6 +328,45 @@
 .wf-edge-row { margin-bottom: 8px; }
 .wf-picker-list { display: grid; gap: 8px; margin-top: 10px; }
 
+/* Browse trail: Back on the left, the path so far beside it. */
+.wf-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  min-width: 0;
+}
+
+.wf-crumb-back {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 32px;
+  padding: 0 10px 0 6px;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface);
+  color: var(--ink-700);
+  font: 500 13px/1 var(--font-sans);
+  cursor: pointer;
+}
+
+.wf-crumb-back:active { background: var(--ink-050); }
+
+.wf-crumb-trail {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--ink-500);
+}
+
+/* "Route to ⟨where the trail stands⟩" — visually the level's header row. */
+.wf-pick-self { border-color: var(--blue-500); }
+.wf-pick-self .row-card-title { color: var(--blue-600); }
+
 /* ---------- portfolio route lane ---------- */
 
 .wf-auto {

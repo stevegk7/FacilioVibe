@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import './sheet.css';
 
 interface Props {
@@ -10,6 +11,10 @@ interface Props {
   footer?: ReactNode;
   /** 'auto' hugs content up to 88vh; 'tall' opens at 88vh. */
   size?: 'auto' | 'tall';
+  /** Accessible name for the dialog. Defaults to the title when it is plain
+      text — a role="dialog" gets no name from its contents, and an unnamed
+      dialog is unfindable to a screen reader (and to getByRole). */
+  label?: string;
 }
 
 /**
@@ -20,7 +25,7 @@ interface Props {
  * The BODY scrolls — never the page (html/body are overflow:hidden). Swipe
  * down on the handle or backdrop tap closes.
  */
-export default function Sheet({ open, title, onClose, children, footer, size = 'auto' }: Props) {
+export default function Sheet({ open, title, onClose, children, footer, size = 'auto', label }: Props) {
   const startY = useRef<number | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -35,8 +40,17 @@ export default function Sheet({ open, title, onClose, children, footer, size = '
 
   if (!open) return null;
 
-  return (
-    <div className="sheet-root" role="dialog" aria-modal="true">
+  /* PORTALED to <body>, not rendered in place. The sheet is position:fixed,
+     and in the iOS webview that hosts this app a fixed element inside the
+     shell's momentum scroller (.as-mobile-main, -webkit-overflow-scrolling:
+     touch) gets CONTAINED by it: the sheet was laid out against the scroller,
+     slid under the tab dock, and its bottom rows — real, selectable records —
+     were unreachable on a phone while desktop looked fine. From <body> there is
+     no ancestor scroller or transform to trap it, and z-index finally means
+     what it says against the dock. */
+  const accessibleName = label ?? (typeof title === 'string' ? title : undefined);
+  return createPortal(
+    <div className="sheet-root" role="dialog" aria-modal="true" aria-label={accessibleName}>
       <button className="sheet-backdrop" aria-label="Close" onClick={onClose} />
       <div
         className={size === 'tall' ? 'sheet-panel tall' : 'sheet-panel'}
@@ -66,6 +80,7 @@ export default function Sheet({ open, title, onClose, children, footer, size = '
         <div className="sheet-body scroll-y">{children}</div>
         {footer && <div className="sheet-footer">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
