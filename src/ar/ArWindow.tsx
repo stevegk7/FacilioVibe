@@ -18,6 +18,7 @@ import {
   useExecuteWorkOrderAction,
   useSetTaskStatus,
   useWorkOrderActions,
+  useWorkers,
   useWorkOrdersForAsset,
   useWorkOrderTasks,
 } from '../api/hooks';
@@ -327,6 +328,9 @@ function WoDetail({ wo, assetId, assetName }: { wo: WorkOrder; assetId: number; 
   // the button opens the form in place rather than firing.
   const [openForm, setOpenForm] = useState<RecordAction | null>(null);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
+  // Only fetched once a form that needs people is actually open.
+  const needsPeople = (openForm?.form?.fields ?? []).some(isPersonField);
+  const workers = useWorkers(needsPeople);
 
   // AI-proposed checklist: each proposal is a chip; tapping WRITES that task.
   // Proposals the agent already sees exist are filtered by the agent seam.
@@ -487,16 +491,45 @@ function WoDetail({ wo, assetId, assetName }: { wo: WorkOrder; assetId: number; 
                 {field.displayName ?? field.name}
                 {field.required ? ' *' : ''}
               </span>
-              <input
-                type={field.displayType === 'number' ? 'number' : 'text'}
-                required={field.required}
-                value={formValues[field.name] ?? ''}
-                onChange={(e) =>
-                  setFormValues((prev) => ({ ...prev, [field.name]: e.target.value }))
-                }
-              />
+              {isPersonField(field) ? (
+                /*
+                  A person is PICKED, never typed. This was a free-text box, and
+                  typing a display name into it earned a 502 every time — the
+                  field wants a record reference and got prose. A native select
+                  rather than DsSelect: this lives inside the glass window over a
+                  live camera, where a floating listbox has no good home.
+                */
+                <select
+                  required={field.required}
+                  value={formValues[field.name] ?? ''}
+                  onChange={(e) =>
+                    setFormValues((prev) => ({ ...prev, [field.name]: e.target.value }))
+                  }
+                >
+                  <option value="">
+                    {workers.isLoading ? 'Loading people…' : 'Select a person'}
+                  </option>
+                  {(workers.data ?? []).map((w) => (
+                    <option key={w.id} value={String(w.id)}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type={field.displayType === 'number' ? 'number' : 'text'}
+                  required={field.required}
+                  value={formValues[field.name] ?? ''}
+                  onChange={(e) =>
+                    setFormValues((prev) => ({ ...prev, [field.name]: e.target.value }))
+                  }
+                />
+              )}
             </label>
           ))}
+          {needsPeople && workers.isError && (
+            <p className="vg-err">Couldn’t load the people list.</p>
+          )}
           <div className="vg-form-row">
             <button type="submit" className="vg-status-btn" disabled={runAction.isPending}>
               {openForm.name}
@@ -514,6 +547,21 @@ function WoDetail({ wo, assetId, assetName }: { wo: WorkOrder; assetId: number; 
         <p className="vg-err">Couldn’t read the workflow: {(actions.error as Error).message}</p>
       )}
     </div>
+  );
+}
+
+/**
+ * Fields that name a PERSON, which must be chosen from the directory rather
+ * than typed. The org configures the display type, so match the known one and
+ * fall back to the field's own name.
+ */
+function isPersonField(field: { name: string; displayType?: string }): boolean {
+  const type = (field.displayType ?? '').toLowerCase();
+  return (
+    type.includes('assignment') ||
+    type.includes('staff') ||
+    type.includes('user') ||
+    field.name.toLowerCase() === 'assignment'
   );
 }
 

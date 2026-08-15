@@ -122,6 +122,13 @@ export interface RecordActions {
   systemButtons: RecordAction[];
 }
 
+/** Someone a work order can be assigned to. */
+export interface Worker {
+  id: number;
+  name: string;
+  email?: string;
+}
+
 /** One entry of the status catalogue (workorder.moduleState allowed_values). */
 export interface WorkOrderStatus {
   label: string;

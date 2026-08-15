@@ -23,6 +23,7 @@ import type {
   PageResult,
   RecordAction,
   RecordActions,
+  Worker,
   Site,
   Space,
   WorkOrder,
@@ -573,6 +574,28 @@ export const realProvider: DataProvider = {
       // the rest is a needless way to fail.
       ...(formData && Object.keys(formData).length ? { formData } : {}),
     });
+  },
+
+  /**
+   * The people an assignment transition can name.
+   *
+   * The employee module is the only directory reachable from here. Note its id
+   * is NOT the id space `workorder.assignedTo` reports (that is 2282340-style,
+   * an org-user id, and employee has no `ouid` field to bridge the two — asking
+   * for one fails INVALID_FIELD). So this sends the employee id and lets the
+   * server resolve it. It replaces a free-text box that sent a display NAME and
+   * earned a 502 every time, which is strictly worse than a wrong id: at least
+   * an id either works or fails once, visibly.
+   */
+  async listWorkers(): Promise<Worker[]> {
+    const rows = await fetchAllPages<RawEmployee>('list-employees', {
+      select: 'id,name,email',
+      page_size: 200,
+    });
+    return rows
+      .filter((r) => r.name)
+      .map((r) => ({ id: r.id, name: String(r.name), email: r.email }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   },
 
   async changeWorkOrderStatus(workOrderId: number, status: string) {

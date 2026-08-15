@@ -344,6 +344,14 @@ export const mockProvider: DataProvider = {
     await delay(undefined);
   },
 
+  async listWorkers() {
+    return delay([
+      { id: 1, name: 'Mock User', email: 'mock@facilio.com' },
+      { id: 2, name: 'Arun', email: 'arun@facilio.com' },
+      { id: 3, name: 'Priya', email: 'priya@facilio.com' },
+    ]);
+  },
+
   async getWorkOrder(id: number) {
     const wo = workOrders.find((w) => w.id === id) ?? null;
     return delay(canReadWorkOrder(wo) ? wo : null);

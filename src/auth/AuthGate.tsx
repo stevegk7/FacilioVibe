@@ -29,6 +29,7 @@ function isLoginTab(): boolean {
 type GateState =
   | { phase: 'checking' }
   | { phase: 'redirecting' }
+  | { phase: 'signin'; reason: string | null }
   | { phase: 'ready'; me: CurrentUser }
   | { phase: 'embedded-signin' }
   | { phase: 'error'; reason: string | null };
@@ -86,13 +87,12 @@ export default function AuthGate({ embedded, children, provider = defaultProvide
         setState({ phase: 'embedded-signin' });
         return;
       }
-      if (!marker(true)) {
-        marker(false, true);
-        setState({ phase: 'redirecting' });
-        provider.login(); // navigates away; state above only shows if it doesn't
-      } else {
-        setState({ phase: 'error', reason: failReason.current });
-      }
+      // Show the sign-in screen and WAIT for a tap, rather than redirecting on
+      // arrival. On a phone an instant bounce to SSO means no tap target, no
+      // recoverable state if the redirect stalls, and nothing recognisable if
+      // identity sends you back — you simply never see the product. The
+      // once-per-session marker still guards the redirect itself.
+      setState({ phase: 'signin', reason: marker(true) ? failReason.current : null });
     });
 
     return () => {
@@ -152,7 +152,25 @@ export default function AuthGate({ embedded, children, provider = defaultProvide
           </span>
         </div>
 
-        {state.phase === 'embedded-signin' ? (
+        {state.phase === 'signin' ? (
+          <>
+            <h1>Sign in to continue</h1>
+            <p className="auth-lead">
+              Vision 3D uses your Facilio account. You’ll come straight back here.
+            </p>
+            {state.reason && <p className="auth-error">{state.reason}</p>}
+            <button
+              className="btn btn-primary auth-cta"
+              onClick={() => {
+                marker(false, true);
+                setState({ phase: 'redirecting' });
+                provider.login();
+              }}
+            >
+              Sign in with Facilio
+            </button>
+          </>
+        ) : state.phase === 'embedded-signin' ? (
           <>
             <h1>Sign in to continue</h1>
             <p className="auth-lead">

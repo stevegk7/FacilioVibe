@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import AuthGate from '../auth/AuthGate';
 import type { DataProvider } from '../api/dataProvider';
@@ -16,7 +17,7 @@ function failingProvider(login = vi.fn()): DataProvider & { login: ReturnType<ty
 }
 
 describe('auth gate (1.4)', () => {
-  it('on a thrown check calls login() exactly once across mounts, then offers a manual button', async () => {
+  it('waits for a tap instead of redirecting, then calls login() once', async () => {
     const login = vi.fn();
 
     // First mount: thrown check → auto login(), marker set
@@ -25,12 +26,19 @@ describe('auth gate (1.4)', () => {
         {() => <p>app</p>}
       </AuthGate>,
     );
+    // Nothing happens until the person asks for it. On a phone an instant
+    // bounce to SSO leaves no tap target and nothing recoverable if the
+    // redirect stalls, so the screen waits.
+    const signIn = await screen.findByRole('button', { name: 'Sign in with Facilio' });
+    expect(login).not.toHaveBeenCalled();
+
+    await userEvent.click(signIn);
     await waitFor(() => expect(login).toHaveBeenCalledTimes(1));
     expect(sessionStorage.getItem('fv.autoLoginAttempted')).toBe('1');
     first.unmount();
 
-    // Second mount (login() didn't navigate — broken round-trip): NO second
-    // auto-attempt, a manual sign-in button instead.
+    // Second mount (login() didn't navigate — broken round-trip): the screen is
+    // still there with the reason attached, and still does not fire on its own.
     render(
       <AuthGate embedded={false} provider={failingProvider(login)}>
         {() => <p>app</p>}

@@ -156,3 +156,13 @@ export function useExecuteWorkOrderAction(workOrderId: number, assetId: number |
     },
   });
 }
+
+/** The assignment picker's options. Rarely changes; cache for the session. */
+export function useWorkers(enabled: boolean) {
+  return useQuery({
+    queryKey: ['workers'],
+    queryFn: () => provider.listWorkers(),
+    enabled,
+    staleTime: 10 * 60 * 1000,
+  });
+}

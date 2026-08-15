@@ -8,6 +8,7 @@ import type {
   PageResult,
   RecordAction,
   RecordActions,
+  Worker,
   Site,
   Space,
   WorkOrder,
@@ -38,6 +39,8 @@ export interface DataProvider {
    * Null when the org has no employee row for that address.
    */
   resolveEmployeeId(email: string): Promise<number | null>;
+  /** People a work order can be assigned to, for the AR assignment picker. */
+  listWorkers(): Promise<Worker[]>;
 
   // ---- portfolio reads (Phase 2.1) ----
   listSites(query?: ListQuery): Promise<PageResult<Site>>;

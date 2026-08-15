@@ -441,3 +441,17 @@ button.vg-ornament { border: none; cursor: pointer; }
 }
 .vg-field > input:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.5); outline-offset: 1px; }
 .vg-form-row { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Same treatment as the text input — a person is picked, not typed. */
+.vg-field > select {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+  color: var(--vg-text-1);
+  font: 500 16px/1 inherit;
+  font-family: inherit;
+}
+.vg-field > select option { color: #1a1a1a; }
