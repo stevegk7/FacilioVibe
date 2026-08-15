@@ -50,18 +50,29 @@ import type {
 import '../estate/estate.css';
 
 /* ---------- design tokens, used as values ---------- */
+/**
+ * Every colour on this screen, in one place — which is the only reason it could
+ * be restyled at all. The screen is built from ~110 inline style objects, and
+ * inline styles beat any stylesheet, so tokens, accent and card treatment
+ * applied elsewhere in the app could never reach it. They all read from here,
+ * so repointing these entries re-tints the whole screen at once.
+ *
+ * The accent entries kept their `blue*` names deliberately: renaming them
+ * would touch all ~110 call sites for no behavioural gain, and the names are
+ * local to this file. They mean "the accent", and now they are it.
+ */
 const C = {
   ink: 'var(--ink-900)',
   sub: 'var(--ink-600)',
   mute: 'var(--ink-500)',
   faint: 'var(--ink-400)',
-  line: 'var(--ink-200)',
+  line: 'var(--border-subtle)',
   hair: 'var(--ink-100)',
-  white: 'var(--white)',
-  blue: 'var(--blue-500)',
-  blueDk: 'var(--blue-600)',
-  blueBg: 'var(--blue-025)',
-  blueBd: 'var(--blue-100)',
+  white: 'var(--bg-surface)',
+  blue: 'var(--accent)',
+  blueDk: 'var(--accent-strong)',
+  blueBg: 'var(--accent-wash)',
+  blueBd: 'var(--accent-soft)',
   red: 'var(--danger-500)',
   redBg: 'var(--danger-050)',
   redBd: 'var(--danger-050)',

@@ -491,3 +491,39 @@
   letter-spacing: 0.04em;
   color: var(--ink-700, #384a62);
 }
+
+/* ---- Estate chrome, brought onto the shared elevation and motion scale ----
+   The floating panels were flat white boxes with a hairline. They are surfaces
+   over a 3D scene, so they should read as floating — that is the whole reason
+   the viewport is tinted a step darker than the app background. */
+.est-nav-card,
+.est-search-pop,
+.est-detail,
+.est-zoom-rail,
+.est-legend > div {
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+.est-zoom-rail { border-radius: var(--radius-lg) !important; }
+
+/* Rows in the navigator: a real hover, and the accent on the active one. */
+.est-nav-row,
+.est-row {
+  border-radius: var(--radius-md);
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+.est-nav-row:hover,
+.est-row:hover { background: var(--accent-wash); }
+
+/* The tool rail reads as one control, and each button answers the pointer. */
+.est-tool { transition: background var(--dur-fast) var(--ease-standard); }
+.est-tool:hover { background: var(--accent-wash) !important; color: var(--accent-strong) !important; }
+
+/* The search field matches every other input in the app now. */
+.est-search-wrap input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: var(--shadow-focus) !important;
+  outline: none;
+}
