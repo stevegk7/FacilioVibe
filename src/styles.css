@@ -116,6 +116,16 @@ button {
 
 button:hover { border-color: var(--muted); }
 
+/* An icon is its stated size or it is not an icon.
+   Every icon in this app sits inside a flex button, where an <svg> is a flex
+   item with the default flex-shrink: 1 — so the moment the button is width
+   constrained the icon is what gives way. Measured on one Wayfinder screen:
+   the "add a landmark" plus rendered 2px wide instead of 14 (a blank dashed
+   box, which is what a technician reported), "Guide me there" 8.6 of 18, the
+   From chevron 12 of 16. Text can wrap or ellipsise; a squeezed glyph just
+   stops being a symbol. */
+button svg { flex: none; }
+
 .placeholder {
   margin-top: 32px;
   padding: 32px;

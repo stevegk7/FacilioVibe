@@ -4,6 +4,7 @@
 // stage is class-driven (no inline/vh sizing), it is the only element between
 // the shell pane and the camera, and nothing inside it is a page-level
 // scroller — sheets and panels carry their own scrollers instead.
+import { readFileSync } from 'node:fs';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -327,5 +328,25 @@ describe('Effi — the AR voice agent (design: Vision AR Voice Agent)', () => {
     // ✕ returns to the orb
     await user.click(within(panel).getByRole('button', { name: 'Close Effi' }));
     expect(await screen.findByRole('button', { name: 'Talk to Effi' })).toBeInTheDocument();
+  });
+});
+
+/* The compass prompt's button, guarded at the CSS source the way
+   keyboard-viewport.test.ts guards the sheet's anchoring — jsdom does not apply
+   these stylesheets, so the file is the only place the contract lives. */
+describe('compass prompt — the button has to be readable on the dark banner', () => {
+  it('overrides .btn-quiet\'s light fill, not just its text colour', () => {
+    // Shipped broken: this rule set color:#fff and border-color for the dark
+    // banner but left .btn-quiet's --bg-surface (white) background, so "Enable"
+    // was white-on-white and read as a blank box on a technician's phone.
+    const css = readFileSync('src/styles/ar.css', 'utf8').replace(/\/\*[^]*?\*\//g, '');
+    const start = css.indexOf('.ar-nocompass .btn-quiet');
+    expect(start).toBeGreaterThan(-1);
+    const rule = css.slice(start, css.indexOf('}', start));
+
+    expect(rule).toMatch(/color:\s*#fff/);
+    // The fix: a fill of its own. Anything but the inherited light surface.
+    expect(rule).toMatch(/background:\s*rgba\(255,\s*255,\s*255/);
+    expect(rule).not.toMatch(/background:\s*var\(--bg-surface\)/);
   });
 });

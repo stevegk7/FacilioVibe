@@ -49,17 +49,73 @@ export function installGlobalErrorHandlers() {
   });
 
   window.addEventListener('error', (event) => {
-    /* A cross-origin script that throws without CORS clearance reaches this
-       listener as exactly "Script error." with every useful field stripped —
-       no error object, no filename, no stack. Inside the Facilio mobile app
-       this fires for the HOST's own bundles, and the red banner it painted
-       read as OUR app failing, with nothing anyone could act on. Masked
-       errors are logged, not shown; an error the banner can actually name
-       still comes through. */
-    if (!event.error && !event.filename && /^script error\.?$/i.test(event.message ?? '')) {
-      console.warn('[wayfinder] masked cross-origin script error (suppressed from the banner)');
+    if (isUnattributable(event)) {
+      // Logged in full, never bannered — see isUnattributable for why.
+      console.warn(
+        '[wayfinder] script error from outside this app, suppressed from the banner:',
+        event.message,
+        event.error,
+      );
       return;
     }
     emitUnlessClaimed(event.error, event.message || 'Unknown script error');
   });
+}
+
+/**
+ * True when nothing on this page's script graph can be blamed for the error.
+ *
+ * The banner exists for OUR failures. Two kinds of foreign error were reaching
+ * it and reading, to a technician, as this app crashing — with nothing they
+ * could act on:
+ *
+ *  - a cross-origin script without CORS clearance, which arrives as exactly
+ *    "Script error." with every field stripped (the Facilio host app's own
+ *    bundles do this when the app runs inside it);
+ *  - a script the BROWSER injects into the page, which is how Brave Shields'
+ *    cosmetic filtering reported `undefined is not an object (evaluating
+ *    'n.standardSelectors')` on a technician's phone. Brave has a documented
+ *    history of load-order races in that content script, and it runs in the
+ *    page's main world on iOS, so its throws land on our window.
+ *
+ * Both share one property, confirmed by measuring real ErrorEvents rather than
+ * guessing: they name NO source. An injected inline script reports
+ * `filename: ""` and a stack whose every frame is `<anonymous>`. Our own
+ * errors always name one — `filename` is the module, and even when the TOP
+ * frame is native (`at WeakMap.set (<anonymous>)`) a later frame names the
+ * file. So the whole stack is scanned, not just its head.
+ *
+ * Deliberately conservative. Anything we can attribute, and anything we cannot
+ * inspect at all, is shown; only the two shapes above are dropped.
+ */
+function isUnattributable(event: ErrorEvent): boolean {
+  if (event.filename) return false; // a source file owns it
+
+  const stack = event.error instanceof Error ? event.error.stack : undefined;
+  if (typeof stack === 'string' && stack.trim()) return !stackNamesASource(stack);
+
+  /* No stack to reason about. Only the classic masked shape is foreign here;
+     any other message is specific enough to be worth showing even though we
+     cannot place it. */
+  return /^(uncaught )?script error\.?$/i.test(event.message ?? '');
+}
+
+/**
+ * Does any frame of this stack name a file?
+ *
+ * Matches a URL scheme or a script file extension, so it holds for a bundle
+ * (`https://…/index-abc.js:1:200`), a dev module
+ * (`http://localhost:5173/src/wayfinding/autoGraph.ts:274:16`) and a stack
+ * under the test runner, where frames are bare paths with no scheme at all
+ * (`/Users/…/globalErrors.test.ts:39:21`). A browser-injected script matches
+ * none of them: its frames are `at <anonymous>:1:23`.
+ *
+ * The first line is the message, not a frame — skipped, so an error whose TEXT
+ * happens to mention a filename cannot vouch for itself.
+ */
+function stackNamesASource(stack: string): boolean {
+  return stack
+    .split('\n')
+    .slice(1)
+    .some((frame) => /:\/\/|\.[cm]?[jt]sx?[:)]/.test(frame));
 }

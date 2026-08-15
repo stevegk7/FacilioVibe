@@ -574,6 +574,10 @@
   justify-content: center;
   width: 32px;
   height: 32px;
+  /* The base `button` rule's 7px 14px, under border-box, left a 32px-wide
+     button with a 4px content box — nowhere for a 14px icon to stand. A
+     square icon button is sized by its box, not padded into one. */
+  padding: 0;
   border: 1px dashed var(--ink-300);
   border-radius: var(--radius-sm);
   background: transparent;

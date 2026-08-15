@@ -600,7 +600,14 @@
   flex: 0 0 auto;
   color: #fff;
   border-color: rgba(255, 255, 255, 0.35);
+  /* .btn-quiet's base background is --bg-surface (white). This rule overrode
+     the colour and the border for the dark banner but not the fill, so "Enable"
+     was white text on a white box — the button read as a blank rectangle and
+     nobody could tell it was the control that grants compass access. */
+  background: rgba(255, 255, 255, 0.14);
 }
+
+.ar-nocompass .btn-quiet:active { background: rgba(255, 255, 255, 0.26); }
 
 /* Walked off the standpoint: pins stay visible but stop claiming precision. */
 .ar-marker-layer { display: contents; }

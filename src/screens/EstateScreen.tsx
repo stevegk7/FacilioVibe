@@ -573,7 +573,7 @@ export default function EstateScreen() {
     return {
       key: b.id,
       name: b.name,
-      meta: `${b.nF}${b.nF === 1 ? ' floor' : ' floors'} · ${nAssets} assets`,
+      meta: `${b.nF} floor${b.nF === 1 ? '' : 's'} · ${nAssets} asset${nAssets === 1 ? '' : 's'}`,
       n: health && nJobs ? nJobs : false,
       pillBg: anyCrit ? C.redBg : '#f1f4f9',
       pillFg: anyCrit ? C.red : C.sub,
@@ -835,10 +835,14 @@ export default function EstateScreen() {
       ? `${buildings.length} buildings`
       : level === 1
         ? openB
-          ? `${openB.nF} floors — pick one to enter`
+          ? `${openB.nF} floor${openB.nF === 1 ? '' : 's'} — pick one to enter`
           : ''
         : activeF
-          ? `${activeF.spaces.length} spaces · ${activeF.markers.filter((m) => m.markerModuleName === 'asset').length} assets`
+          ? (() => {
+              const spaces = activeF.spaces.length;
+              const assets = activeF.markers.filter((m) => m.markerModuleName === 'asset').length;
+              return `${spaces} space${spaces === 1 ? '' : 's'} · ${assets} asset${assets === 1 ? '' : 's'}`;
+            })()
           : '';
 
   const activePlan = activeF?.plan as { widthM: number; depthM: number; rooms: unknown[] } | null | undefined;

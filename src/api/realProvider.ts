@@ -482,15 +482,24 @@ export const realProvider: DataProvider = {
   },
 
   async addWorkOrderTask(workOrderId: number, subject: string): Promise<number> {
-    // Same script lane as work orders (see scriptFns.ts): the V3 task module,
-    // parented to its ticket. create-work-order-task has the same broken
-    // schema family as create-work-order, so it is not used.
-    const out = (await callFn('createRecord', [
-      'task',
-      { subject, parentTicketId: workOrderId },
-    ])) as { id?: number } | null;
-    if (!out?.id) throw new Error('Task create returned no id — script lane failed');
-    return out.id;
+    /* The plain action, NOT the script lane.
+       This used to go through `createRecord('task', {subject, parentTicketId})`,
+       on the note that create-work-order-task shared create-work-order's broken
+       schema family. That is no longer true, and the script lane silently did
+       not work for tasks: `v3Add` writes the new id back into the map for
+       workorder but not for task, so the handler always threw "Task create
+       returned no id" AFTER the record may or may not have been written —
+       which is what the AI-suggested-tasks button was reporting in the field.
+       Verified against the live org on 2026-08-15: this action returns
+       {id, subject, status, createdTime} and the task appears in
+       list-work-order-tasks. */
+    const res = await cmms<{ id?: number }>('create-work-order-task', {
+      id: workOrderId,
+      subject,
+    });
+    const created = rowsOf<{ id?: number }>(res.data)[0];
+    if (!created?.id) throw new Error('Task create returned no id');
+    return created.id;
   },
 
   async setWorkOrderTaskStatus(workOrderId: number, taskId: number, closed: boolean) {
