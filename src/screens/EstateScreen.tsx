@@ -155,34 +155,54 @@ export default function EstateScreen() {
    * The same variable is what a camera-framing offset should read later, so the
    * focus flight can keep a selected asset out of the occluded band.
    */
-  const publishSheetHeight = useCallback((el: HTMLDivElement | null) => {
+  /* TWO sheets dock at the bottom on a phone, not one: the detail card and the
+     browse panel. Only the card reported itself, so with the panel open the
+     variable was 0, the rail centred on the whole stage, and its top button sat
+     ON the panel's Collapse — measured overlapping by 16x19px at 375px wide,
+     with the panel's z-index 24 over the rail's 22, so a tap meant to reset the
+     view collapsed the panel instead. Each sheet publishes its own coverage and
+     the variable carries the larger. */
+  const cardElRef = useRef<HTMLDivElement | null>(null);
+  const panelElRef = useRef<HTMLDivElement | null>(null);
+  /* Bumped when either sheet mounts or unmounts, to re-run the effect below.
+     The measuring CANNOT live in the ref callback: React attaches child refs
+     before parent ones, so the panel — which mounts with the screen — ran while
+     stageRef was still null and published nothing at all. The card only ever
+     worked because it mounts later, on selection. */
+  const [sheetTick, setSheetTick] = useState(0);
+  const cardRef = useCallback((el: HTMLDivElement | null) => {
+    cardElRef.current = el;
+    setSheetTick((t) => t + 1);
+  }, []);
+  const panelRef = useCallback((el: HTMLDivElement | null) => {
+    panelElRef.current = el;
+    setSheetTick((t) => t + 1);
+  }, []);
+
+  useEffect(() => {
     const stage = stageRef.current;
     if (!stage) return;
-    if (!el) {
-      stage.style.removeProperty('--est-sheet-h');
-      return;
-    }
     const write = () => {
       const stageBox = stage.getBoundingClientRect();
-      const cardBox = el.getBoundingClientRect();
-      // Only the part that actually overlaps the stage counts.
-      const covered = Math.max(0, Math.round(stageBox.bottom - cardBox.top));
-      stage.style.setProperty('--est-sheet-h', `${Math.min(covered, Math.round(stageBox.height))}px`);
+      let covered = 0;
+      for (const el of [cardElRef.current, panelElRef.current]) {
+        if (!el) continue;
+        // Only the part that actually overlaps the stage counts.
+        covered = Math.max(covered, Math.max(0, Math.round(stageBox.bottom - el.getBoundingClientRect().top)));
+      }
+      covered = Math.min(covered, Math.round(stageBox.height));
+      if (covered <= 0) stage.style.removeProperty('--est-sheet-h');
+      else stage.style.setProperty('--est-sheet-h', `${covered}px`);
     };
     write();
     if (typeof ResizeObserver === 'undefined') return;
+    // The stage too: a rotation changes the free band without either sheet
+    // resizing.
     const ro = new ResizeObserver(write);
-    ro.observe(el);
+    ro.observe(stage);
+    for (const el of [cardElRef.current, panelElRef.current]) if (el) ro.observe(el);
     return () => ro.disconnect();
-  }, []);
-  const cardCleanupRef = useRef<(() => void) | undefined>(undefined);
-  const cardRef = useCallback(
-    (el: HTMLDivElement | null) => {
-      cardCleanupRef.current?.();
-      cardCleanupRef.current = publishSheetHeight(el) ?? undefined;
-    },
-    [publishSheetHeight],
-  );
+  }, [sheetTick]);
   const engineRef = useRef<EstateEngineApi | null>(null);
 
   const [nav, setNav] = useState<EngineNav>({ level: 0, buildingId: null, floorId: null });
@@ -957,6 +977,7 @@ export default function EstateScreen() {
           >
             <div
               className="est-panel-in"
+              ref={panelRef}
               style={{ display: 'flex', flexDirection: 'column', maxHeight: '100%', background: C.white, border: `1px solid ${C.line}`, borderRadius: 10, boxShadow: 'var(--shadow-md)', overflow: 'hidden', pointerEvents: 'auto' }}
             >
               <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 8, padding: '12px 12px 11px', borderBottom: `1px solid ${C.hair}` }}>

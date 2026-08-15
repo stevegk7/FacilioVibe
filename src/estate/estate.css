@@ -57,6 +57,48 @@
   cursor: grabbing;
 }
 
+/* ---------- touch targets in the estate panel ----------
+   styles.css states the contract: nothing tappable goes below 44px. The panel
+   header's Back and Collapse are drawn 24px square, and the breadcrumb links
+   render about 20px tall — measured on a 375px viewport, they were the only
+   controls in the app still under it.
+
+   The fix is hit area, not size: a pseudo-element takes no part in layout, so
+   the panel stays as dense as it was drawn while the thumb gets the target it
+   needs. Each expansion is bounded by the row it sits in — the header row is
+   47px, the crumb row 34px — so no two targets can overlap and steal each
+   other's taps. Scoped to .est-panel-in on purpose: .est-tool is also the
+   zoom rail's class, where the buttons are stacked 36px apart and expanding
+   them WOULD overlap.
+   The toolbar rail keeps its own 36px rows, which is a deliberate trade for a
+   camera control that sits under the thumb already. */
+.est-panel-in .est-tool,
+.est-panel-in .est-crumb {
+  position: relative;
+}
+
+.est-panel-in .est-tool::after,
+.est-panel-in .est-crumb::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+}
+
+.est-panel-in .est-tool::after {
+  width: 44px;
+  height: 44px;
+}
+
+/* Vertical only: crumbs sit shoulder to shoulder, so widening them would make
+   adjacent levels fight over the same tap. */
+.est-panel-in .est-crumb::after {
+  height: 34px;
+}
+
 /* ---------- hover states (were `style-hover` in the design runtime) ---------- */
 
 .est-back:hover { background: rgba(0, 89, 214, 0.08); }
