@@ -248,7 +248,16 @@ async function resolveScopeSpaceIds(scope: LocationScope | undefined): Promise<n
 async function fetchSpaces(): Promise<Space[]> {
   const rows = await fetchAllPages<RawSpace>('list-spaces', {
     select: 'id,name,site,building,floor',
-    expand: 'site,building,floor',
+    // `site` is NOT expanded, and must not be. Measured against org #2915 on
+    // 2026-08-16: adding it to the expand makes list-spaces return an EMPTY
+    // list — the select/expand trap from ROADMAP.md, silent as always. It was
+    // live: this function backs the space tree that scopes asset search, so a
+    // site- or building-scoped search was matching against zero spaces.
+    //
+    // Nothing is lost by dropping it. An unexpanded lookup still arrives as
+    // `{id}`, which is the only part `siteId` below reads; the expand was only
+    // ever going to add a name nobody used.
+    expand: 'building,floor',
   });
   return visibleRows(rows).map((s) => ({
     id: s.id,
